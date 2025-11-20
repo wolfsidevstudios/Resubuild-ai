@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ResumeData, Experience, Education, Project, CustomSectionItem } from '../types';
-import { generateResumeSummary, improveJobDescription, suggestSkills } from '../services/geminiService';
+import { ResumeData, Experience, Education, Project, CustomSectionItem, ResumeAuditResult } from '../types';
+import { generateResumeSummary, improveJobDescription, suggestSkills, auditResume, generateCoverLetter } from '../services/geminiService';
 import { saveResume, createEmptyResume } from '../services/storageService';
 import { publishResume } from '../services/supabase';
 import { ResumePreview } from './ResumePreview';
@@ -26,7 +26,12 @@ import {
   FileCheck,
   Grid,
   FileText,
-  AlignLeft
+  AlignLeft,
+  Zap,
+  X,
+  Copy,
+  PenTool,
+  AlertCircle
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -64,6 +69,17 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [isATSMode, setIsATSMode] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
+  
+  // New Feature States
+  const [showAudit, setShowAudit] = useState(false);
+  const [auditResult, setAuditResult] = useState<ResumeAuditResult | null>(null);
+  const [isAuditing, setIsAuditing] = useState(false);
+
+  const [showCoverLetter, setShowCoverLetter] = useState(false);
+  const [coverLetterJobDesc, setCoverLetterJobDesc] = useState('');
+  const [coverLetterCompany, setCoverLetterCompany] = useState('');
+  const [generatedCoverLetter, setGeneratedCoverLetter] = useState('');
+  const [isWritingLetter, setIsWritingLetter] = useState(false);
   
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -173,6 +189,32 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
     }
   };
 
+  const handleAudit = async () => {
+      setIsAuditing(true);
+      setShowAudit(true);
+      try {
+          const result = await auditResume(data);
+          setAuditResult(result);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsAuditing(false);
+      }
+  };
+
+  const handleCreateCoverLetter = async () => {
+      if (!coverLetterJobDesc || !coverLetterCompany) return;
+      setIsWritingLetter(true);
+      try {
+          const letter = await generateCoverLetter(data, coverLetterJobDesc, coverLetterCompany);
+          setGeneratedCoverLetter(letter);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsWritingLetter(false);
+      }
+  };
+
   // --- Actions ---
   const handlePrint = () => {
     window.print();
@@ -231,9 +273,27 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                <button onClick={onGoHome} className="flex items-center text-sm text-neutral-500 hover:text-neutral-900 transition-colors">
                    <ChevronLeft className="w-4 h-4 mr-1" /> Back to Dashboard
                </button>
-               <span className="text-xs text-neutral-400 flex items-center gap-1">
-                   <Save className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-               </span>
+               <div className="flex items-center gap-2">
+                    <Button 
+                        variant="ghost" 
+                        className="text-xs h-7 px-2" 
+                        icon={<FileCheck className="w-3 h-3" />}
+                        onClick={handleAudit}
+                    >
+                        AI Audit
+                    </Button>
+                    <Button 
+                        variant="ghost" 
+                        className="text-xs h-7 px-2" 
+                        icon={<PenTool className="w-3 h-3" />}
+                        onClick={() => setShowCoverLetter(true)}
+                    >
+                        Cover Letter
+                    </Button>
+                    <span className="text-xs text-neutral-400 flex items-center gap-1 border-l border-neutral-200 pl-2 ml-2">
+                        <Save className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </span>
+               </div>
            </div>
            <div className="flex items-center justify-between gap-4">
              <input 
@@ -546,6 +606,158 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
 
       {/* Right Panel: Preview */}
       <ResumePreview data={data} previewRef={previewRef} isATSMode={isATSMode} />
+
+      {/* AI Audit Modal */}
+      {showAudit && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95">
+                  <div className="p-6 border-b flex justify-between items-center">
+                      <h3 className="text-xl font-bold flex items-center gap-2">
+                          <Zap className="w-5 h-5 text-yellow-500" /> AI Resume Audit
+                      </h3>
+                      <button onClick={() => setShowAudit(false)} className="p-2 hover:bg-neutral-100 rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-8">
+                      {isAuditing ? (
+                           <div className="flex flex-col items-center justify-center py-12">
+                               <Sparkles className="w-12 h-12 text-neutral-900 animate-pulse mb-4" />
+                               <p className="text-neutral-500">Analyzing your resume against 50+ checkpoints...</p>
+                           </div>
+                      ) : auditResult ? (
+                          <div className="space-y-8">
+                              {/* Score */}
+                              <div className="flex items-center gap-6 p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                  <div className="relative w-24 h-24 flex-shrink-0">
+                                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                          <path className="text-neutral-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                          <path className={`${auditResult.score > 80 ? 'text-green-500' : auditResult.score > 50 ? 'text-yellow-500' : 'text-red-500'} transition-all duration-1000`} strokeDasharray={`${auditResult.score}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                      </svg>
+                                      <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                          <span className="text-2xl font-bold">{auditResult.score}</span>
+                                          <span className="text-[10px] uppercase font-bold text-neutral-400">Score</span>
+                                      </div>
+                                  </div>
+                                  <div>
+                                      <h4 className="font-bold text-lg mb-1">Audit Summary</h4>
+                                      <p className="text-sm text-neutral-600">{auditResult.summary}</p>
+                                  </div>
+                              </div>
+
+                              {/* Strengths */}
+                              <div>
+                                  <h4 className="font-bold flex items-center gap-2 mb-3 text-green-700">
+                                      <CheckCircle2 className="w-5 h-5" /> Key Strengths
+                                  </h4>
+                                  <div className="grid gap-2">
+                                      {auditResult.strengths.map((s, i) => (
+                                          <div key={i} className="px-4 py-3 bg-green-50 text-green-800 text-sm rounded-xl border border-green-100">
+                                              {s}
+                                          </div>
+                                      ))}
+                                  </div>
+                              </div>
+
+                              {/* Improvements */}
+                              <div>
+                                  <h4 className="font-bold flex items-center gap-2 mb-3 text-red-700">
+                                      <AlertCircle className="w-5 h-5" /> Needs Improvement
+                                  </h4>
+                                  <div className="grid gap-2">
+                                      {auditResult.improvements.map((s, i) => (
+                                          <div key={i} className="px-4 py-3 bg-red-50 text-red-800 text-sm rounded-xl border border-red-100">
+                                              {s}
+                                          </div>
+                                      ))}
+                                  </div>
+                              </div>
+                          </div>
+                      ) : null}
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Cover Letter Modal */}
+      {showCoverLetter && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden animate-in zoom-in-95">
+                  <div className="p-6 border-b flex justify-between items-center">
+                      <h3 className="text-xl font-bold flex items-center gap-2">
+                          <PenTool className="w-5 h-5 text-blue-600" /> AI Cover Letter Generator
+                      </h3>
+                      <button onClick={() => setShowCoverLetter(false)} className="p-2 hover:bg-neutral-100 rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-8">
+                      {!generatedCoverLetter ? (
+                          <div className="space-y-6">
+                              <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
+                                  <p>We'll use your current resume data to write a tailored cover letter. Just paste the job details below.</p>
+                              </div>
+                              <div className="grid md:grid-cols-2 gap-4">
+                                  <Input 
+                                    label="Company Name" 
+                                    value={coverLetterCompany} 
+                                    onChange={e => setCoverLetterCompany(e.target.value)}
+                                    placeholder="e.g. TechCorp Inc."
+                                  />
+                                  <Input 
+                                    label="Target Job Title" 
+                                    value={data.personalInfo.jobTitle} 
+                                    disabled
+                                    className="bg-neutral-100 text-neutral-500"
+                                  />
+                              </div>
+                              <TextArea 
+                                label="Job Description"
+                                value={coverLetterJobDesc}
+                                onChange={e => setCoverLetterJobDesc(e.target.value)}
+                                placeholder="Paste the full job description here..."
+                                className="min-h-[200px]"
+                              />
+                          </div>
+                      ) : (
+                          <div className="space-y-4 h-full flex flex-col">
+                               <div className="flex justify-end gap-2">
+                                   <Button 
+                                      variant="ghost" 
+                                      onClick={() => {
+                                          navigator.clipboard.writeText(generatedCoverLetter);
+                                          alert("Copied to clipboard!");
+                                      }}
+                                      icon={<Copy className="w-4 h-4" />}
+                                   >
+                                       Copy Text
+                                   </Button>
+                                   <Button variant="secondary" onClick={() => setGeneratedCoverLetter('')}>
+                                       Start Over
+                                   </Button>
+                               </div>
+                               <textarea 
+                                  className="flex-1 w-full p-6 bg-neutral-50 border border-neutral-200 rounded-xl font-serif text-neutral-800 leading-relaxed focus:outline-none resize-none"
+                                  value={generatedCoverLetter}
+                                  onChange={(e) => setGeneratedCoverLetter(e.target.value)}
+                               ></textarea>
+                          </div>
+                      )}
+                  </div>
+
+                  {!generatedCoverLetter && (
+                      <div className="p-6 border-t bg-neutral-50 flex justify-end">
+                          <Button 
+                            onClick={handleCreateCoverLetter} 
+                            isLoading={isWritingLetter}
+                            disabled={!coverLetterCompany || !coverLetterJobDesc}
+                            className="w-full md:w-auto"
+                          >
+                              Generate Cover Letter <Sparkles className="ml-2 w-4 h-4" />
+                          </Button>
+                      </div>
+                  )}
+              </div>
+          </div>
+      )}
 
     </div>
   );

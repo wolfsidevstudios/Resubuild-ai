@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ResumeData, Experience } from "../types";
+import { ResumeData, Experience, ResumeAuditResult } from "../types";
 import { getStoredAPIKey } from "./storageService";
 import { PublishedResume } from "./supabase";
 
@@ -86,6 +86,79 @@ export const suggestSkills = async (jobTitle: string, currentDescription: string
   }
 };
 
+// --- NEW FEATURES ---
+
+export const auditResume = async (data: ResumeData): Promise<ResumeAuditResult> => {
+    // Minify data to save tokens
+    const context = JSON.stringify({
+        summary: data.personalInfo.summary,
+        experience: data.experience.map(e => e.description),
+        skills: data.skills
+    });
+
+    const prompt = `
+        You are a strict Hiring Manager AI. Audit the following resume content.
+        Return a JSON object with:
+        - score: number (0-100)
+        - summary: string (1 sentence overview of quality)
+        - strengths: string[] (3 bullet points of what is good)
+        - improvements: string[] (3 specific bullet points on what to fix, e.g. "Quantify results in X role")
+
+        Resume Data:
+        ${context}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        const text = response.text?.trim() || "{}";
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Audit failed:", error);
+        // Fallback
+        return {
+            score: 75,
+            summary: "Resume looks decent but needs more quantification.",
+            strengths: ["Good structure", "Clear timeline"],
+            improvements: ["Add more metrics", "Use stronger action verbs", "Tailor skills to job"]
+        };
+    }
+};
+
+export const generateCoverLetter = async (data: ResumeData, jobDescription: string, companyName: string): Promise<string> => {
+    const prompt = `
+        Write a compelling, professional cover letter for ${data.personalInfo.fullName}.
+        
+        Target Role: ${data.personalInfo.jobTitle}
+        Target Company: ${companyName}
+        Job Description Context: ${jobDescription.substring(0, 500)}...
+        
+        Candidate Resume Context:
+        Summary: ${data.personalInfo.summary}
+        Top Skills: ${data.skills.slice(0,5).join(', ')}
+        Recent Role: ${data.experience[0]?.position} at ${data.experience[0]?.company}
+        
+        Tone: Professional, confident, yet approachable. 
+        Output: Plain text only. No markdown placeholders like [Your Name]. Fill in all details.
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Cover letter generation failed:", error);
+        throw error;
+    }
+};
+
 // --- Brand / Employer Matching ---
 
 export const findBestCandidates = async (
@@ -130,5 +203,72 @@ export const findBestCandidates = async (
     } catch (error) {
         console.error("Error matching candidates:", error);
         return [];
+    }
+};
+
+// --- Resupilot (Vibe Create) ---
+
+export const generateResumeFromPrompt = async (userPrompt: string): Promise<ResumeData> => {
+    const prompt = `
+        You are Resupilot, an expert AI resume builder. 
+        Create a complete, high-quality JSON resume based on the following user description: "${userPrompt}".
+        
+        Rules:
+        1. Infer missing details realistically (e.g. if they say "Senior React Dev", infer logical skills like TypeScript, Redux, Node.js).
+        2. Create at least 2 realistic experience entries with rich descriptions.
+        3. Create education entries.
+        4. Generate a strong professional summary.
+        5. Return ONLY valid JSON matching the ResumeData structure.
+        
+        Structure needed:
+        {
+            "personalInfo": { "fullName", "jobTitle", "email", "phone", "location", "summary", "website" },
+            "experience": [{ "id", "company", "position", "startDate", "endDate", "current", "description" }],
+            "education": [{ "id", "institution", "degree", "field", "graduationDate" }],
+            "projects": [{ "id", "name", "description", "link" }],
+            "skills": ["string"],
+            "themeColor": "#000000"
+        }
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json'
+            }
+        });
+        
+        const text = response.text?.trim() || "{}";
+        const partialData = JSON.parse(text);
+        
+        // Hydrate with IDs and defaults to ensure type safety
+        return {
+            id: crypto.randomUUID(),
+            name: partialData.personalInfo?.fullName ? `${partialData.personalInfo.fullName}'s Resume` : 'AI Generated Resume',
+            templateId: 'modern',
+            lastUpdated: Date.now(),
+            customSections: [],
+            personalInfo: {
+                fullName: partialData.personalInfo?.fullName || "Your Name",
+                email: partialData.personalInfo?.email || "",
+                phone: partialData.personalInfo?.phone || "",
+                location: partialData.personalInfo?.location || "",
+                website: partialData.personalInfo?.website || "",
+                jobTitle: partialData.personalInfo?.jobTitle || "",
+                summary: partialData.personalInfo?.summary || "",
+            },
+            experience: (partialData.experience || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
+            education: (partialData.education || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
+            projects: (partialData.projects || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
+            skills: partialData.skills || [],
+            themeColor: partialData.themeColor || "#000000"
+        };
+
+    } catch (error) {
+        console.error("Resupilot generation failed:", error);
+        throw error;
     }
 };

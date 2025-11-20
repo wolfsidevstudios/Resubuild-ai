@@ -8,6 +8,7 @@ import { Button } from './Button';
 import { Input } from './InputField';
 import { Messaging } from './Messaging';
 import { Notifications } from './Notifications';
+import { Resupilot } from './Resupilot';
 
 interface DashboardProps {
   onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
@@ -28,6 +29,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   const [showSettings, setShowSettings] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showResupilot, setShowResupilot] = useState(false);
   
   // Creation Flow State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -67,18 +69,39 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
       setCreateStep('method');
       setShowCreateModal(true);
   }
+  
+  const handleResupilotSave = (newResume: ResumeData) => {
+      setShowResupilot(false);
+      setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
+      onEdit(newResume);
+  };
+
+  if (showResupilot) {
+      return <Resupilot userId={userId} onExit={() => setShowResupilot(false)} onSave={handleResupilotSave} />;
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans relative">
       {/* Header */}
       <nav className="bg-white border-b border-neutral-200 px-6 py-4 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={onHome}>
-            <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white">
-              <FileText className="w-5 h-5" />
-            </div>
-            <span className="font-bold text-xl tracking-tight">Resubuild</span>
+          <div className="flex items-center gap-6">
+              <div className="flex items-center gap-3 cursor-pointer" onClick={onHome}>
+                <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white">
+                  <FileText className="w-5 h-5" />
+                </div>
+                <span className="font-bold text-xl tracking-tight">Resubuild</span>
+              </div>
+              
+              {/* Resupilot Button */}
+              <button 
+                onClick={() => setShowResupilot(true)}
+                className="hidden md:flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 px-4 py-2 rounded-full text-sm font-bold transition-all"
+              >
+                  <Sparkles className="w-4 h-4 text-blue-600" /> Resupilot AI
+              </button>
           </div>
+
           <div className="flex items-center gap-2">
              <Button variant="ghost" className="relative" onClick={() => setShowNotifications(!showNotifications)}>
                  <Bell className="w-4 h-4" />
@@ -121,9 +144,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
             <p className="text-neutral-500 mb-8 max-w-md mx-auto">
               Start building your professional resume today with our AI-powered tools.
             </p>
-            <Button onClick={openCreateModal} variant="primary">
-              Create Your First Resume
-            </Button>
+            <div className="flex justify-center gap-3">
+                <Button onClick={openCreateModal} variant="primary">
+                Create Your First Resume
+                </Button>
+                <Button onClick={() => setShowResupilot(true)} variant="secondary" icon={<Sparkles className="w-4 h-4 text-blue-600" />}>
+                    Try Resupilot
+                </Button>
+            </div>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">

@@ -98,3 +98,11 @@ export interface Notification {
   is_read: boolean;
   created_at: string;
 }
+
+// AI Audit Types
+export interface ResumeAuditResult {
+  score: number;
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+}
