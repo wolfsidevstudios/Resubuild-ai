@@ -159,6 +159,92 @@ export const generateCoverLetter = async (data: ResumeData, jobDescription: stri
     }
 };
 
+export const generateInterviewQuestions = async (data: ResumeData): Promise<string[]> => {
+    const context = JSON.stringify({
+        title: data.personalInfo.jobTitle,
+        skills: data.skills,
+        experience: data.experience.map(e => ({ role: e.position, company: e.company, desc: e.description }))
+    });
+
+    const prompt = `
+        Based on this resume, act as a hiring manager and generate 5 targeted interview questions.
+        Include:
+        - 2 specific technical/skill-based questions related to their stack.
+        - 2 behavioral questions based on their experience descriptions.
+        - 1 curveball/critical thinking question related to their job title.
+        
+        Return ONLY a JSON array of strings. No other text.
+        
+        Resume Context:
+        ${context}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        const text = response.text?.trim() || "[]";
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Interview Prep failed:", error);
+        return [
+            "Tell me about a time you faced a technical challenge.",
+            "What is your greatest strength?",
+            "Why do you want this role?",
+            "Describe a conflict with a coworker.",
+            "Where do you see yourself in 5 years?"
+        ];
+    }
+};
+
+export const analyzeJobMatch = async (data: ResumeData, jobDescription: string): Promise<{
+    score: number;
+    missingKeywords: string[];
+    advice: string;
+}> => {
+    const context = JSON.stringify({
+        skills: data.skills,
+        summary: data.personalInfo.summary,
+        experience: data.experience.map(e => e.description).join(" ")
+    });
+
+    const prompt = `
+        Compare this resume data against the provided Job Description.
+        
+        Job Description:
+        ${jobDescription.substring(0, 1000)}
+        
+        Resume Data:
+        ${context}
+        
+        Return a JSON object with:
+        - score: number (0-100 match score)
+        - missingKeywords: string[] (List of 3-5 important keywords from JD missing in resume)
+        - advice: string (1 sentence on how to improve alignment)
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        const text = response.text?.trim() || "{}";
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Job Match failed:", error);
+        return {
+            score: 0,
+            missingKeywords: [],
+            advice: "Could not analyze job match at this time."
+        };
+    }
+};
+
 // --- AI Tools Toolbar ---
 
 export const fixGrammarAndSpelling = async (data: ResumeData): Promise<ResumeData> => {

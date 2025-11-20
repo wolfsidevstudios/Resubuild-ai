@@ -1,7 +1,16 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ResumeData, Experience, Education, Project, CustomSectionItem, ResumeAuditResult } from '../types';
-import { generateResumeSummary, improveJobDescription, suggestSkills, auditResume, generateCoverLetter, fixGrammarAndSpelling } from '../services/geminiService';
+import { 
+    generateResumeSummary, 
+    improveJobDescription, 
+    suggestSkills, 
+    auditResume, 
+    generateCoverLetter, 
+    fixGrammarAndSpelling,
+    generateInterviewQuestions,
+    analyzeJobMatch
+} from '../services/geminiService';
 import { saveResume, createEmptyResume } from '../services/storageService';
 import { publishResume } from '../services/supabase';
 import { ResumePreview } from './ResumePreview';
@@ -33,7 +42,10 @@ import {
   PenTool,
   AlertCircle,
   Wand2,
-  Feather
+  Feather,
+  Mic,
+  Target,
+  ListChecks
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -84,6 +96,17 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [isWritingLetter, setIsWritingLetter] = useState(false);
   
   const [isFixingGrammar, setIsFixingGrammar] = useState(false);
+
+  // Interview Prep State
+  const [showInterviewPrep, setShowInterviewPrep] = useState(false);
+  const [interviewQuestions, setInterviewQuestions] = useState<string[]>([]);
+  const [isGeneratingQuestions, setIsGeneratingQuestions] = useState(false);
+
+  // Job Match State
+  const [showJobMatch, setShowJobMatch] = useState(false);
+  const [jobMatchDesc, setJobMatchDesc] = useState('');
+  const [jobMatchResult, setJobMatchResult] = useState<{score: number, missingKeywords: string[], advice: string} | null>(null);
+  const [isAnalyzingJob, setIsAnalyzingJob] = useState(false);
   
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -239,6 +262,31 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
       }
   };
 
+  const handleInterviewPrep = async () => {
+      setIsGeneratingQuestions(true);
+      try {
+          const questions = await generateInterviewQuestions(data);
+          setInterviewQuestions(questions);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsGeneratingQuestions(false);
+      }
+  };
+
+  const handleJobMatch = async () => {
+      if(!jobMatchDesc) return;
+      setIsAnalyzingJob(true);
+      try {
+          const result = await analyzeJobMatch(data, jobMatchDesc);
+          setJobMatchResult(result);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsAnalyzingJob(false);
+      }
+  };
+
   // --- Actions ---
   const handlePrint = () => {
     window.print();
@@ -303,19 +351,40 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                         className="text-xs h-7 px-2" 
                         icon={<FileCheck className="w-3 h-3" />}
                         onClick={handleAudit}
+                        title="AI Audit"
                     >
-                        AI Audit
+                        Audit
                     </Button>
                     <Button 
                         variant="ghost" 
                         className="text-xs h-7 px-2" 
                         icon={<PenTool className="w-3 h-3" />}
                         onClick={() => setShowCoverLetter(true)}
+                        title="Cover Letter"
                     >
-                        Cover Letter
+                        Letter
                     </Button>
+                     <Button 
+                        variant="ghost" 
+                        className="text-xs h-7 px-2" 
+                        icon={<Mic className="w-3 h-3" />}
+                        onClick={() => setShowInterviewPrep(true)}
+                        title="Interview Prep"
+                    >
+                        Prep
+                    </Button>
+                     <Button 
+                        variant="ghost" 
+                        className="text-xs h-7 px-2" 
+                        icon={<Target className="w-3 h-3" />}
+                        onClick={() => setShowJobMatch(true)}
+                        title="Tailor to Job"
+                    >
+                        Tailor
+                    </Button>
+
                     <span className="text-xs text-neutral-400 flex items-center gap-1 border-l border-neutral-200 pl-2 ml-2">
-                        <Save className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        <Save className="w-3 h-3" /> {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                     </span>
                </div>
            </div>
@@ -803,6 +872,136 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                           </Button>
                       </div>
                   )}
+              </div>
+          </div>
+      )}
+
+      {/* Interview Prep Modal */}
+      {showInterviewPrep && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95">
+                  <div className="p-6 border-b flex justify-between items-center">
+                      <h3 className="text-xl font-bold flex items-center gap-2">
+                          <Mic className="w-5 h-5 text-purple-600" /> Interview Prep
+                      </h3>
+                      <button onClick={() => setShowInterviewPrep(false)} className="p-2 hover:bg-neutral-100 rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-8">
+                      {isGeneratingQuestions ? (
+                          <div className="flex flex-col items-center justify-center py-12">
+                              <Sparkles className="w-12 h-12 text-neutral-900 animate-pulse mb-4" />
+                              <p className="text-neutral-500">Generating custom interview questions based on your experience...</p>
+                          </div>
+                      ) : interviewQuestions.length > 0 ? (
+                          <div className="space-y-6">
+                              <div className="bg-purple-50 p-4 rounded-xl border border-purple-100 text-sm text-purple-800 mb-4">
+                                  <p>Here are 5 potential questions a recruiter might ask you based on this resume.</p>
+                              </div>
+                              <ul className="space-y-4">
+                                  {interviewQuestions.map((q, i) => (
+                                      <li key={i} className="bg-white p-4 rounded-xl border border-neutral-200 shadow-sm">
+                                          <span className="font-bold text-neutral-400 mr-2">Q{i+1}.</span>
+                                          <span className="font-medium text-neutral-900">{q}</span>
+                                      </li>
+                                  ))}
+                              </ul>
+                              <div className="flex justify-center mt-6">
+                                  <Button variant="secondary" onClick={handleInterviewPrep}>Regenerate Questions</Button>
+                              </div>
+                          </div>
+                      ) : (
+                          <div className="text-center py-12">
+                              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                  <Mic className="w-8 h-8 text-purple-600" />
+                              </div>
+                              <h3 className="text-xl font-bold mb-2">Ready to practice?</h3>
+                              <p className="text-neutral-500 mb-8 max-w-md mx-auto">
+                                  We'll scan your resume to predict likely technical and behavioral questions.
+                              </p>
+                              <Button onClick={handleInterviewPrep} variant="primary">Generate Questions</Button>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Job Match Modal */}
+      {showJobMatch && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95">
+                  <div className="p-6 border-b flex justify-between items-center">
+                      <h3 className="text-xl font-bold flex items-center gap-2">
+                          <Target className="w-5 h-5 text-red-600" /> Job Match Analysis
+                      </h3>
+                      <button onClick={() => setShowJobMatch(false)} className="p-2 hover:bg-neutral-100 rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-8">
+                      {!jobMatchResult ? (
+                          <div className="space-y-6">
+                              <div className="bg-neutral-50 p-4 rounded-xl border border-neutral-100 text-sm text-neutral-600">
+                                  <p>Paste a job description below to see how well your resume matches and identify missing keywords.</p>
+                              </div>
+                              <TextArea 
+                                  label="Job Description"
+                                  value={jobMatchDesc}
+                                  onChange={e => setJobMatchDesc(e.target.value)}
+                                  placeholder="Paste job description here..."
+                                  className="min-h-[200px]"
+                              />
+                              <div className="flex justify-end">
+                                  <Button 
+                                      onClick={handleJobMatch} 
+                                      isLoading={isAnalyzingJob}
+                                      disabled={!jobMatchDesc}
+                                  >
+                                      Analyze Match <Target className="ml-2 w-4 h-4" />
+                                  </Button>
+                              </div>
+                          </div>
+                      ) : (
+                          <div className="space-y-8">
+                               {/* Score */}
+                              <div className="flex items-center gap-6 p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                                  <div className="relative w-24 h-24 flex-shrink-0">
+                                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                                          <path className="text-neutral-200" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                          <path className={`${jobMatchResult.score > 70 ? 'text-green-500' : 'text-orange-500'}`} strokeDasharray={`${jobMatchResult.score}, 100`} d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" fill="none" stroke="currentColor" strokeWidth="3" />
+                                      </svg>
+                                      <div className="absolute inset-0 flex items-center justify-center flex-col">
+                                          <span className="text-2xl font-bold">{jobMatchResult.score}%</span>
+                                          <span className="text-[10px] uppercase font-bold text-neutral-400">Match</span>
+                                      </div>
+                                  </div>
+                                  <div>
+                                      <h4 className="font-bold text-lg mb-1">Match Analysis</h4>
+                                      <p className="text-sm text-neutral-600">{jobMatchResult.advice}</p>
+                                  </div>
+                              </div>
+
+                              <div>
+                                  <h4 className="font-bold flex items-center gap-2 mb-3 text-red-700">
+                                      <AlertCircle className="w-5 h-5" /> Missing Keywords
+                                  </h4>
+                                  <div className="flex flex-wrap gap-2">
+                                      {jobMatchResult.missingKeywords.map((k, i) => (
+                                          <span key={i} className="px-3 py-1.5 bg-red-50 text-red-800 text-sm rounded-full border border-red-100 font-medium">
+                                              {k}
+                                          </span>
+                                      ))}
+                                      {jobMatchResult.missingKeywords.length === 0 && (
+                                          <span className="text-sm text-green-600">No major keywords missing! Great job.</span>
+                                      )}
+                                  </div>
+                              </div>
+                              
+                              <div className="flex justify-center pt-4">
+                                  <Button variant="secondary" onClick={() => setJobMatchResult(null)}>Analyze Another Job</Button>
+                              </div>
+                          </div>
+                      )}
+                  </div>
               </div>
           </div>
       )}
