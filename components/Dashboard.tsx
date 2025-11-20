@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare, Sparkles, PenTool } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
 import { supabase } from '../services/supabase';
@@ -10,7 +10,7 @@ import { Messaging } from './Messaging';
 import { Notifications } from './Notifications';
 
 interface DashboardProps {
-  onCreate: () => void;
+  onCreate: (mode: 'ai' | 'manual') => void;
   onEdit: (resume: ResumeData) => void;
   onHome: () => void;
   userId: string;
@@ -21,6 +21,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   const [showSettings, setShowSettings] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
   const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
@@ -90,7 +91,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
             <h1 className="text-3xl font-bold mb-2">My Resumes</h1>
             <p className="text-neutral-500">Manage and edit your saved resumes.</p>
           </div>
-          <Button onClick={onCreate} icon={<Plus className="w-5 h-5" />}>
+          <Button onClick={() => setShowCreateModal(true)} icon={<Plus className="w-5 h-5" />}>
             Create New
           </Button>
         </div>
@@ -104,7 +105,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
             <p className="text-neutral-500 mb-8 max-w-md mx-auto">
               Start building your professional resume today with our AI-powered tools.
             </p>
-            <Button onClick={onCreate} variant="primary">
+            <Button onClick={() => setShowCreateModal(true)} variant="primary">
               Create Your First Resume
             </Button>
           </div>
@@ -112,7 +113,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Create New Card */}
             <div 
-              onClick={onCreate}
+              onClick={() => setShowCreateModal(true)}
               className="group flex flex-col items-center justify-center h-[280px] bg-white border-2 border-dashed border-neutral-200 rounded-3xl hover:border-neutral-900 hover:bg-neutral-50 transition-all cursor-pointer"
             >
               <div className="w-14 h-14 bg-neutral-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -171,6 +172,49 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           </div>
         )}
       </main>
+
+      {/* Create Mode Selection Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/20 backdrop-blur-sm animate-in fade-in duration-200">
+           <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
+               <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center">
+                  <h2 className="text-2xl font-bold">How would you like to start?</h2>
+                  <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-neutral-100 rounded-full">
+                    <X className="w-5 h-5 text-neutral-500" />
+                  </button>
+               </div>
+               <div className="p-6 md:p-8 grid md:grid-cols-2 gap-6">
+                   {/* AI Option */}
+                   <button 
+                      onClick={() => onCreate('ai')}
+                      className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
+                   >
+                      <div className="w-12 h-12 bg-neutral-900 text-white rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                          <Sparkles className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-lg font-bold mb-2">AI Assistant</h3>
+                      <p className="text-sm text-neutral-500 leading-relaxed">
+                          Guided experience. Our AI will help you write a professional summary, enhance your descriptions, and suggest skills.
+                      </p>
+                   </button>
+
+                   {/* Manual Option */}
+                   <button 
+                      onClick={() => onCreate('manual')}
+                      className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
+                   >
+                      <div className="w-12 h-12 bg-white text-neutral-900 border-2 border-neutral-200 rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                          <PenTool className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-lg font-bold mb-2">Start from Scratch</h3>
+                      <p className="text-sm text-neutral-500 leading-relaxed">
+                          Blank canvas. Perfect if you already have a resume content ready to copy-paste or prefer total control.
+                      </p>
+                   </button>
+               </div>
+           </div>
+        </div>
+      )}
 
       {/* Messages Modal */}
       {showMessages && (

@@ -8,6 +8,7 @@ import { Onboarding } from './components/Onboarding';
 import { Discover } from './components/Discover';
 import { ResumeData, UserRole } from './types';
 import { supabase, getUserProfile } from './services/supabase';
+import { createEmptyResume } from './services/storageService';
 import { Session } from '@supabase/supabase-js';
 import { Loader2 } from 'lucide-react';
 
@@ -68,9 +69,15 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleCreateNew = () => {
-    setCurrentResume(undefined);
-    setView('onboarding');
+  const handleCreateNew = (mode: 'ai' | 'manual') => {
+    if (mode === 'ai') {
+        setCurrentResume(undefined);
+        setView('onboarding');
+    } else {
+        const newResume = createEmptyResume();
+        setCurrentResume(newResume);
+        setView('builder');
+    }
   };
 
   const handleEdit = (resume: ResumeData) => {
