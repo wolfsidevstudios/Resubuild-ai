@@ -18,7 +18,11 @@ import {
   Lightbulb,
   TrendingUp,
   Target,
-  Zap
+  Zap,
+  MessageSquare,
+  PenTool,
+  Search,
+  Bot
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -476,16 +480,208 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
         </div>
       </section>
 
-      {/* NEW SECTION: Expert Tips */}
-      <section id="tips" className="py-24 bg-white relative overflow-hidden">
+      {/* New Feature Deep Dive Section */}
+      <section className="py-24 bg-white overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 space-y-32">
+              
+              {/* Feature 1: Resupilot AI */}
+              <ScrollReveal>
+                <div className="flex flex-col lg:flex-row items-center gap-16">
+                    <div className="flex-1 space-y-6 lg:pr-8">
+                         <div className="w-14 h-14 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 mb-2">
+                            <Bot className="w-8 h-8" />
+                         </div>
+                         <h3 className="text-4xl font-bold leading-tight">Chat with your resume.<br/>Meet Resupilot AI.</h3>
+                         <p className="text-xl text-neutral-500 leading-relaxed">
+                             Resubuild isn't just a form filler. It's a conversation. Use our AI agent to write, edit, and refine your resume naturally.
+                         </p>
+                         <div className="space-y-3 text-neutral-700 font-medium">
+                             <div className="flex items-center gap-3">
+                                 <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                                 <span>"Make my summary more punchy"</span>
+                             </div>
+                             <div className="flex items-center gap-3">
+                                 <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                                 <span>"Add Figma to my skill set"</span>
+                             </div>
+                             <div className="flex items-center gap-3">
+                                 <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                                 <span>"Generate a cover letter for this job"</span>
+                             </div>
+                         </div>
+                    </div>
+                    <div className="flex-1 w-full">
+                        <div className="relative bg-neutral-50 rounded-3xl p-8 border border-neutral-100 shadow-2xl shadow-neutral-900/5 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                             <div className="absolute -top-4 -right-4 w-20 h-20 bg-blue-100 rounded-full blur-2xl opacity-50"></div>
+                             <div className="space-y-4">
+                                 <div className="flex gap-4 items-start">
+                                     <div className="w-8 h-8 rounded-full bg-neutral-900 flex-shrink-0"></div>
+                                     <div className="bg-neutral-900 text-white px-5 py-3 rounded-2xl rounded-tl-none text-sm">
+                                         Can you rewrite my experience at TechCorp to sound more impressive?
+                                     </div>
+                                 </div>
+                                 <div className="flex gap-4 items-start flex-row-reverse">
+                                     <div className="w-8 h-8 rounded-full bg-blue-100 flex-shrink-0 flex items-center justify-center"><Bot className="w-4 h-4 text-blue-600" /></div>
+                                     <div className="bg-white border border-neutral-200 px-5 py-3 rounded-2xl rounded-tr-none text-sm text-neutral-700 shadow-sm">
+                                         I've updated the bullet points to focus on your leadership in the API migration project.
+                                     </div>
+                                 </div>
+                                 <div className="flex gap-4 items-start flex-row-reverse animate-pulse">
+                                      <div className="bg-white border border-neutral-200 px-5 py-3 rounded-2xl rounded-tr-none text-sm text-neutral-400 shadow-sm">
+                                         ...
+                                     </div>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+              </ScrollReveal>
+
+              {/* Feature 2: Smart Audit */}
+              <ScrollReveal>
+                <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+                    <div className="flex-1 space-y-6 lg:pl-8">
+                         <div className="w-14 h-14 bg-yellow-50 rounded-2xl flex items-center justify-center text-yellow-600 mb-2">
+                            <Target className="w-8 h-8" />
+                         </div>
+                         <h3 className="text-4xl font-bold leading-tight">Beat the ATS Bots with<br/>Smart Scoring.</h3>
+                         <p className="text-xl text-neutral-500 leading-relaxed">
+                             Don't guess if your resume is good enough. Our AI Audit scans your document against 50+ checkpoints used by hiring systems.
+                         </p>
+                         <Button variant="outline" onClick={() => handleAction('signup')}>
+                             Audit My Resume Free <ArrowRight className="ml-2 w-4 h-4" />
+                         </Button>
+                    </div>
+                    <div className="flex-1 w-full flex justify-center">
+                        <div className="relative w-[300px] h-[300px]">
+                            <div className="absolute inset-0 bg-yellow-50/50 rounded-full animate-pulse"></div>
+                            <div className="absolute inset-4 bg-white rounded-full shadow-xl border border-neutral-100 flex items-center justify-center flex-col">
+                                <div className="text-7xl font-bold text-neutral-900 mb-2">92</div>
+                                <div className="text-sm font-bold uppercase tracking-widest text-neutral-400">Resume Score</div>
+                                <div className="mt-6 flex gap-2">
+                                     <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Quantified Impact</span>
+                                     <span className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full">Action Verbs</span>
+                                </div>
+                            </div>
+                            {/* Floating Checkpoints */}
+                            <div className="absolute top-0 right-0 bg-white p-3 rounded-xl shadow-lg border border-neutral-100 flex items-center gap-2 animate-bounce text-sm font-medium text-neutral-700">
+                                <CheckCircle2 className="w-4 h-4 text-green-500" /> Readable Fonts
+                            </div>
+                             <div className="absolute bottom-10 left-[-20px] bg-white p-3 rounded-xl shadow-lg border border-neutral-100 flex items-center gap-2 animate-bounce delay-75 text-sm font-medium text-neutral-700">
+                                <CheckCircle2 className="w-4 h-4 text-green-500" /> No Typos
+                            </div>
+                        </div>
+                    </div>
+                </div>
+              </ScrollReveal>
+
+              {/* Feature 3: Tailored Content */}
+              <ScrollReveal>
+                <div className="flex flex-col lg:flex-row items-center gap-16">
+                    <div className="flex-1 space-y-6 lg:pr-8">
+                         <div className="w-14 h-14 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600 mb-2">
+                            <PenTool className="w-8 h-8" />
+                         </div>
+                         <h3 className="text-4xl font-bold leading-tight">Perfect Cover Letters<br/>in seconds.</h3>
+                         <p className="text-xl text-neutral-500 leading-relaxed">
+                             Paste a job description, and we'll write a cover letter that connects your unique experience to the company's needs.
+                         </p>
+                    </div>
+                    <div className="flex-1 w-full">
+                        <div className="bg-white rounded-3xl border border-neutral-200 shadow-xl overflow-hidden relative h-[300px]">
+                             <div className="absolute top-0 left-0 w-full h-12 bg-neutral-50 border-b border-neutral-100 flex items-center px-4 gap-2">
+                                 <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                                 <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                                 <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                             </div>
+                             <div className="p-8 pt-16 space-y-4">
+                                 <div className="h-4 bg-neutral-100 w-1/3 rounded-full"></div>
+                                 <div className="space-y-2">
+                                     <div className="h-2 bg-neutral-100 w-full rounded-full"></div>
+                                     <div className="h-2 bg-neutral-100 w-full rounded-full"></div>
+                                     <div className="h-2 bg-neutral-100 w-5/6 rounded-full"></div>
+                                     <div className="h-2 bg-neutral-100 w-full rounded-full"></div>
+                                 </div>
+                                 <div className="p-4 bg-purple-50 rounded-xl border border-purple-100 flex items-start gap-3 mt-4">
+                                     <Sparkles className="w-5 h-5 text-purple-600 flex-shrink-0 mt-1" />
+                                     <div className="space-y-2 w-full">
+                                         <div className="h-2 bg-purple-200 w-full rounded-full"></div>
+                                         <div className="h-2 bg-purple-200 w-4/5 rounded-full"></div>
+                                     </div>
+                                 </div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+              </ScrollReveal>
+
+               {/* Feature 4: Employer Matching */}
+              <ScrollReveal>
+                <div className="flex flex-col lg:flex-row-reverse items-center gap-16">
+                    <div className="flex-1 space-y-6 lg:pl-8">
+                         <div className="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center text-green-600 mb-2">
+                            <Search className="w-8 h-8" />
+                         </div>
+                         <h3 className="text-4xl font-bold leading-tight">Get discovered by<br/>Top Employers.</h3>
+                         <p className="text-xl text-neutral-500 leading-relaxed">
+                             Publish your resume to our Discover network. Employers use our AI Recruiter to find candidates just like you.
+                         </p>
+                         <div className="flex gap-4">
+                             <div className="text-center">
+                                 <div className="text-2xl font-bold text-neutral-900">500+</div>
+                                 <div className="text-xs text-neutral-500 uppercase tracking-wider">Companies</div>
+                             </div>
+                             <div className="w-px bg-neutral-200 h-10"></div>
+                              <div className="text-center">
+                                 <div className="text-2xl font-bold text-neutral-900">24h</div>
+                                 <div className="text-xs text-neutral-500 uppercase tracking-wider">Avg Response</div>
+                             </div>
+                         </div>
+                    </div>
+                    <div className="flex-1 w-full">
+                        <div className="grid grid-cols-2 gap-4">
+                             <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm animate-in fade-in slide-in-from-bottom-4 duration-700">
+                                 <div className="flex items-center gap-3 mb-3">
+                                     <div className="w-8 h-8 bg-neutral-900 rounded-full"></div>
+                                     <div>
+                                         <div className="h-2 w-16 bg-neutral-200 rounded-full mb-1"></div>
+                                         <div className="h-1.5 w-10 bg-neutral-100 rounded-full"></div>
+                                     </div>
+                                 </div>
+                                 <div className="h-8 w-full bg-neutral-50 rounded-lg border border-neutral-100 flex items-center justify-center text-xs text-neutral-400">View Profile</div>
+                             </div>
+                             <div className="bg-white p-4 rounded-2xl border border-neutral-200 shadow-sm mt-8 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
+                                 <div className="flex items-center gap-3 mb-3">
+                                     <div className="w-8 h-8 bg-blue-600 rounded-full"></div>
+                                     <div>
+                                         <div className="h-2 w-16 bg-neutral-200 rounded-full mb-1"></div>
+                                         <div className="h-1.5 w-10 bg-neutral-100 rounded-full"></div>
+                                     </div>
+                                 </div>
+                                 <div className="h-8 w-full bg-neutral-50 rounded-lg border border-neutral-100 flex items-center justify-center text-xs text-neutral-400">View Profile</div>
+                             </div>
+                             <div className="bg-neutral-900 p-4 rounded-2xl shadow-xl col-span-2 transform -translate-y-12 mx-8 text-white text-center">
+                                  <div className="text-sm font-medium mb-1">New Message</div>
+                                  <div className="text-lg font-bold">"We'd love to interview you!"</div>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+              </ScrollReveal>
+
+          </div>
+      </section>
+
+      {/* Expert Tips */}
+      <section id="tips" className="py-24 bg-neutral-50 relative overflow-hidden">
           {/* Decoration */}
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-neutral-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 z-0"></div>
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 z-0"></div>
 
           <div className="max-w-7xl mx-auto px-6 relative z-10">
              <ScrollReveal>
                 <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
                     <div className="max-w-2xl">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-200 text-neutral-700 text-xs font-bold uppercase tracking-widest mb-4">
                             Expert Career Advice
                         </div>
                         <h2 className="text-3xl md:text-4xl font-bold mb-4">Tips for a winning resume</h2>
@@ -520,8 +716,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                      }
                  ].map((tip, i) => (
                      <ScrollReveal key={i} delay={i * 100}>
-                        <div className="bg-neutral-50 p-8 rounded-2xl border border-neutral-100 hover:bg-white hover:shadow-lg transition-all duration-300 group">
-                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 mb-6 shadow-sm group-hover:bg-neutral-900 group-hover:text-white transition-colors">
+                        <div className="bg-white p-8 rounded-2xl border border-neutral-200 hover:shadow-lg transition-all duration-300 group h-full">
+                            <div className="w-12 h-12 bg-neutral-50 rounded-xl flex items-center justify-center text-neutral-900 mb-6 shadow-sm group-hover:bg-neutral-900 group-hover:text-white transition-colors">
                                 {tip.icon}
                             </div>
                             <h3 className="font-bold text-lg mb-3">{tip.title}</h3>
@@ -534,7 +730,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       </section>
 
       {/* Templates Showcase Section */}
-      <section id="templates" className="py-24 bg-neutral-50">
+      <section id="templates" className="py-24 bg-white">
           <div className="max-w-7xl mx-auto px-6">
               <ScrollReveal>
                 <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
@@ -579,7 +775,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                   ].map((t, i) => (
                       <ScrollReveal key={i} delay={i * 100}>
                         <div className="group cursor-pointer" onClick={() => handleAction('signup')}>
-                            <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden aspect-[210/297] mb-5 relative shadow-sm transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-2">
+                            <div className="bg-neutral-50 rounded-2xl border border-neutral-200 overflow-hidden aspect-[210/297] mb-5 relative shadow-sm transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-2">
                                     {/* Render appropriate skeleton */}
                                     <div className="transform scale-[0.4] origin-top-left w-[250%] h-[250%] p-6 pointer-events-none">
                                         <SkeletonResume variant={t.variant as any} />
@@ -608,11 +804,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-white border-t border-neutral-100">
+      <section id="how-it-works" className="py-24 bg-neutral-50 border-t border-neutral-100">
          <div className="max-w-7xl mx-auto px-6">
             <ScrollReveal>
                 <div className="text-center mb-20">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-200 text-neutral-700 text-xs font-bold uppercase tracking-widest mb-4">
                         Simple Process
                     </div>
                     <h2 className="text-3xl md:text-4xl font-bold mb-4">From blank page to hired in 3 steps</h2>
@@ -621,7 +817,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
 
             <div className="grid md:grid-cols-3 gap-8 relative">
                 {/* Connector Line (Desktop) */}
-                <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-neutral-100 -z-10" />
+                <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-neutral-200 -z-10" />
 
                 {[
                     {
