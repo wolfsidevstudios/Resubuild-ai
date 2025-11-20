@@ -209,8 +209,155 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, 
         </LayoutWrapper>
       );
   }
+  
+  // 2. TECH TEMPLATE (Monospace, Code-like)
+  if (templateId === 'tech') {
+      return (
+        <LayoutWrapper className="bg-white p-[20mm] font-mono text-neutral-800">
+             <header className="mb-10 border-b-2 border-dashed border-neutral-300 pb-6">
+                <h1 className="text-4xl font-bold mb-2 lowercase tracking-tighter" style={{color: themeColor}}>
+                    <span className="text-neutral-400">const</span> {personalInfo.fullName.replace(/\s+/g, '_')} <span className="text-neutral-400">=</span>
+                </h1>
+                <p className="text-lg text-neutral-500 mb-4">// {personalInfo.jobTitle}</p>
+                <div className="text-xs flex flex-col gap-1 text-neutral-600 font-medium">
+                    {personalInfo.email && <span><span className="text-blue-500">email:</span> "{personalInfo.email}",</span>}
+                    {personalInfo.phone && <span><span className="text-blue-500">phone:</span> "{personalInfo.phone}",</span>}
+                    {personalInfo.location && <span><span className="text-blue-500">location:</span> "{personalInfo.location}",</span>}
+                    {personalInfo.website && <span><span className="text-blue-500">web:</span> "{personalInfo.website.replace(/^https?:\/\//, '')}"</span>}
+                </div>
+             </header>
 
-  // 2. CREATIVE TEMPLATE (Sidebar Left, Bold Header)
+             {personalInfo.summary && (
+                <section className="mb-8">
+                    <h2 className="text-base font-bold mb-3 flex items-center gap-2 uppercase tracking-widest" style={{color: themeColor}}>
+                        <span className="text-neutral-300">01.</span> Summary
+                    </h2>
+                    <div className="pl-4 border-l-2 border-neutral-100">
+                        <p className="text-sm leading-relaxed text-neutral-600">/* {personalInfo.summary} */</p>
+                    </div>
+                </section>
+             )}
+             
+             {experience.length > 0 && (
+                <section className="mb-8">
+                    <h2 className="text-base font-bold mb-4 flex items-center gap-2 uppercase tracking-widest" style={{color: themeColor}}>
+                        <span className="text-neutral-300">02.</span> Experience
+                    </h2>
+                    <div className="space-y-6 pl-4 border-l-2 border-neutral-100">
+                        {experience.map(exp => (
+                            <div key={exp.id}>
+                                <div className="flex justify-between items-baseline mb-1">
+                                    <h3 className="font-bold text-neutral-900">{exp.position}</h3>
+                                    <span className="text-xs font-medium text-neutral-400 bg-neutral-50 px-2 py-0.5 rounded">
+                                        {exp.startDate} - {exp.current ? 'NOW' : exp.endDate}
+                                    </span>
+                                </div>
+                                <div className="text-sm font-bold text-blue-600 mb-2">@{exp.company}</div>
+                                <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-line">{exp.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+             )}
+             
+             <SkillsSection titleClass="text-base font-bold mb-3 flex items-center gap-2 uppercase tracking-widest pl-4 border-l-2 border-neutral-100" chipClass="bg-neutral-50 border border-neutral-200 text-neutral-700 font-bold" />
+             
+             {education.length > 0 && (
+                <section className="mb-8">
+                    <h2 className="text-base font-bold mb-4 flex items-center gap-2 uppercase tracking-widest" style={{color: themeColor}}>
+                         <span className="text-neutral-300">04.</span> Education
+                    </h2>
+                    <div className="space-y-4 pl-4 border-l-2 border-neutral-100">
+                        {education.map(edu => (
+                             <div key={edu.id}>
+                                <div className="font-bold text-neutral-900">{edu.institution}</div>
+                                <div className="text-sm text-neutral-600">{edu.degree} in {edu.field}</div>
+                                <div className="text-xs text-neutral-400 mt-1">Graduated: {edu.graduationDate}</div>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+             )}
+        </LayoutWrapper>
+      )
+  }
+  
+  // 3. ELEGANT TEMPLATE (Serif, Centered, Sophisticated)
+  if (templateId === 'elegant') {
+      return (
+          <LayoutWrapper className="bg-[#fdfbf7] p-[20mm] text-neutral-800">
+              <header className="text-center mb-12 relative">
+                   <div className="absolute top-1/2 left-0 w-full h-px bg-neutral-200 -z-10"></div>
+                   <div className="inline-block bg-[#fdfbf7] px-8 relative z-10">
+                       <h1 className="text-5xl font-serif text-neutral-900 mb-3" style={{color: themeColor}}>{personalInfo.fullName}</h1>
+                       <p className="text-lg italic text-neutral-500 font-serif">{personalInfo.jobTitle}</p>
+                   </div>
+                   <div className="mt-6 flex justify-center gap-6 text-sm text-neutral-500 font-medium uppercase tracking-widest">
+                        {personalInfo.email && <span>{personalInfo.email}</span>}
+                        {personalInfo.phone && <span>{personalInfo.phone}</span>}
+                        {personalInfo.location && <span>{personalInfo.location}</span>}
+                   </div>
+              </header>
+
+              {personalInfo.summary && (
+                   <section className="mb-10 text-center max-w-2xl mx-auto">
+                       <p className="text-lg leading-relaxed font-serif text-neutral-700">{personalInfo.summary}</p>
+                   </section>
+              )}
+
+              {experience.length > 0 && (
+                   <section className="mb-12">
+                       <h2 className="text-center text-sm font-bold uppercase tracking-[0.2em] mb-8 pb-4 border-b border-neutral-200" style={{color: themeColor}}>Professional Experience</h2>
+                       <div className="space-y-8">
+                           {experience.map(exp => (
+                               <div key={exp.id} className="grid grid-cols-12 gap-4">
+                                   <div className="col-span-3 text-right">
+                                       <div className="text-sm font-bold text-neutral-900">{exp.startDate}</div>
+                                       <div className="text-sm text-neutral-500">{exp.endDate}</div>
+                                   </div>
+                                   <div className="col-span-9 border-l border-neutral-200 pl-6 pb-2">
+                                       <h3 className="text-xl font-serif font-bold text-neutral-900 mb-1">{exp.position}</h3>
+                                       <div className="text-sm font-medium uppercase tracking-wider text-neutral-500 mb-3">{exp.company}</div>
+                                       <p className="text-neutral-700 leading-relaxed font-serif">{exp.description}</p>
+                                   </div>
+                               </div>
+                           ))}
+                       </div>
+                   </section>
+              )}
+
+              <div className="grid grid-cols-2 gap-12">
+                   {education.length > 0 && (
+                       <section>
+                           <h2 className="text-center text-sm font-bold uppercase tracking-[0.2em] mb-6 pb-4 border-b border-neutral-200" style={{color: themeColor}}>Education</h2>
+                           <div className="space-y-6">
+                               {education.map(edu => (
+                                   <div key={edu.id} className="text-center">
+                                       <div className="font-serif font-bold text-lg text-neutral-900">{edu.institution}</div>
+                                       <div className="text-neutral-600 italic">{edu.degree}</div>
+                                       <div className="text-sm text-neutral-400 mt-1">{edu.graduationDate}</div>
+                                   </div>
+                               ))}
+                           </div>
+                       </section>
+                   )}
+                   
+                   {skills.length > 0 && (
+                       <section>
+                           <h2 className="text-center text-sm font-bold uppercase tracking-[0.2em] mb-6 pb-4 border-b border-neutral-200" style={{color: themeColor}}>Expertise</h2>
+                           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2">
+                               {skills.map((skill, i) => (
+                                   <span key={i} className="font-serif italic text-neutral-700">{skill}</span>
+                               ))}
+                           </div>
+                       </section>
+                   )}
+              </div>
+          </LayoutWrapper>
+      )
+  }
+
+  // 4. CREATIVE TEMPLATE (Sidebar Left, Bold Header)
   if (templateId === 'creative') {
       return (
         <LayoutWrapper className="bg-white flex flex-row">
@@ -276,7 +423,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, 
       );
   }
 
-  // 3. MINIMAL TEMPLATE (Centered, Clean, No heavy borders)
+  // 5. MINIMAL TEMPLATE (Centered, Clean, No heavy borders)
   if (templateId === 'minimal') {
     return (
         <LayoutWrapper className="bg-white p-[20mm]">
@@ -311,7 +458,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, 
     );
   }
 
-  // 4. PROFESSIONAL TEMPLATE (Classic Serif Headlines, Horizontal Lines)
+  // 6. PROFESSIONAL TEMPLATE (Classic Serif Headlines, Horizontal Lines)
   if (templateId === 'professional') {
       return (
         <LayoutWrapper className="bg-white p-[20mm]">
@@ -408,7 +555,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, 
       );
   }
 
-  // 5. DEFAULT: MODERN TEMPLATE
+  // 7. DEFAULT: MODERN TEMPLATE
   return (
     <LayoutWrapper className="bg-white p-[15mm] md:p-[20mm]">
       <header className="border-b pb-6 mb-6" style={{borderColor: themeColor === '#000000' ? '#e5e5e5' : themeColor, borderBottomOpacity: 0.3}}>

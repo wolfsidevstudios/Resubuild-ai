@@ -45,7 +45,8 @@ import {
   Feather,
   Mic,
   Target,
-  ListChecks
+  ListChecks,
+  Terminal
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -55,28 +56,32 @@ interface ResumeBuilderProps {
 }
 
 const COLORS = [
-  '#000000', // Black
-  '#2563EB', // Blue
-  '#059669', // Emerald
-  '#7C3AED', // Violet
-  '#DB2777', // Pink
-  '#D97706', // Amber
-  '#DC2626', // Red
-  '#4B5563', // Gray
+  // Monochromes
+  '#000000', '#334155', '#525252', '#737373',
+  // Reds/Oranges
+  '#dc2626', '#ea580c', '#d97706', '#b45309',
+  // Greens/Teals
+  '#16a34a', '#059669', '#0d9488', '#0f766e',
+  // Blues/Indigos
+  '#0284c7', '#2563eb', '#4f46e5', '#1e3a8a',
+  // Violets/Pinks
+  '#7c3aed', '#c026d3', '#db2777', '#e11d48',
 ];
 
 const TEMPLATES = [
     { id: 'modern', name: 'Modern', icon: Layout },
     { id: 'professional', name: 'Professional', icon: FileText },
+    { id: 'elegant', name: 'Elegant', icon: Feather },
     { id: 'creative', name: 'Creative', icon: Palette },
     { id: 'minimal', name: 'Minimal', icon: AlignLeft },
+    { id: 'tech', name: 'Tech', icon: Terminal },
 ];
 
 export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoHome, userId }) => {
   const [data, setData] = useState<ResumeData>(initialData || createEmptyResume());
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [improvingExpId, setImprovingExpId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<string>('personal');
+  const [activeTab, setActiveTab] = useState<string>('design');
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
@@ -510,12 +515,12 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                         <Palette className="w-5 h-5" /> Accent Color
                     </h3>
-                    <div className="flex flex-wrap gap-4">
+                    <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
                         {COLORS.map(color => (
                             <button
                                 key={color}
                                 onClick={() => setData({...data, themeColor: color})}
-                                className={`w-10 h-10 rounded-full shadow-sm border-2 transition-all hover:scale-110 ${data.themeColor === color ? 'border-neutral-900 scale-110' : 'border-transparent'}`}
+                                className={`w-10 h-10 rounded-full shadow-sm border-2 transition-all hover:scale-110 ${data.themeColor === color ? 'border-neutral-900 scale-110 ring-2 ring-neutral-200' : 'border-transparent'}`}
                                 style={{ backgroundColor: color }}
                                 title={color}
                             />
