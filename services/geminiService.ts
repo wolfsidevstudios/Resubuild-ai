@@ -159,6 +159,35 @@ export const generateCoverLetter = async (data: ResumeData, jobDescription: stri
     }
 };
 
+// --- AI Tools Toolbar ---
+
+export const fixGrammarAndSpelling = async (data: ResumeData): Promise<ResumeData> => {
+    const prompt = `
+        Act as a professional editor. Review the following resume JSON data.
+        Correct all grammar and spelling errors in the 'personalInfo.summary', 'experience' descriptions, 'education' details, and 'projects'.
+        Do NOT change the meaning of the content, just fix errors.
+        Do NOT allow markdown in the output values.
+        Return the strictly valid JSON structure with the corrected text.
+        
+        Resume Data:
+        ${JSON.stringify(data)}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        const text = response.text?.trim() || "{}";
+        return JSON.parse(text) as ResumeData;
+    } catch (error) {
+        console.error("Grammar fix failed:", error);
+        throw error;
+    }
+}
+
 // --- Brand / Employer Matching ---
 
 export const findBestCandidates = async (

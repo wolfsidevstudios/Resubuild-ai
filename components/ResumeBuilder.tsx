@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { ResumeData, Experience, Education, Project, CustomSectionItem, ResumeAuditResult } from '../types';
-import { generateResumeSummary, improveJobDescription, suggestSkills, auditResume, generateCoverLetter } from '../services/geminiService';
+import { generateResumeSummary, improveJobDescription, suggestSkills, auditResume, generateCoverLetter, fixGrammarAndSpelling } from '../services/geminiService';
 import { saveResume, createEmptyResume } from '../services/storageService';
 import { publishResume } from '../services/supabase';
 import { ResumePreview } from './ResumePreview';
@@ -31,7 +31,9 @@ import {
   X,
   Copy,
   PenTool,
-  AlertCircle
+  AlertCircle,
+  Wand2,
+  Feather
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -80,6 +82,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [coverLetterCompany, setCoverLetterCompany] = useState('');
   const [generatedCoverLetter, setGeneratedCoverLetter] = useState('');
   const [isWritingLetter, setIsWritingLetter] = useState(false);
+  
+  const [isFixingGrammar, setIsFixingGrammar] = useState(false);
   
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -187,6 +191,26 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
     } catch (error) {
       alert('Failed to suggest skills.');
     }
+  };
+  
+  const handleFixGrammar = async () => {
+      setIsFixingGrammar(true);
+      try {
+          const correctedData = await fixGrammarAndSpelling(data);
+          setData(prev => ({
+              ...prev,
+              personalInfo: { ...prev.personalInfo, summary: correctedData.personalInfo.summary },
+              experience: correctedData.experience,
+              education: correctedData.education,
+              projects: correctedData.projects
+          }));
+          alert("Grammar and spelling checked!");
+      } catch (error) {
+          console.error(error);
+          alert("Could not check grammar at the moment.");
+      } finally {
+          setIsFixingGrammar(false);
+      }
   };
 
   const handleAudit = async () => {
@@ -605,7 +629,31 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
       </div>
 
       {/* Right Panel: Preview */}
-      <ResumePreview data={data} previewRef={previewRef} isATSMode={isATSMode} />
+      <div className="flex-1 bg-neutral-100/50 relative flex justify-center">
+          {/* Floating AI Grammar Bar */}
+          <div className="absolute top-6 z-30 bg-neutral-900 text-white rounded-full shadow-xl flex items-center gap-1 px-3 py-1.5 scale-90 hover:scale-100 transition-transform duration-300 border border-neutral-800 no-print">
+               <button 
+                  onClick={handleFixGrammar} 
+                  disabled={isFixingGrammar}
+                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-800 rounded-full transition-colors text-sm font-medium disabled:opacity-50"
+                >
+                   <Wand2 className={`w-3.5 h-3.5 ${isFixingGrammar ? 'animate-spin' : ''}`} />
+                   {isFixingGrammar ? 'Fixing...' : 'Fix Grammar'}
+               </button>
+               <div className="w-px h-4 bg-neutral-700"></div>
+               <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-800 rounded-full transition-colors text-sm font-medium text-neutral-400 hover:text-white">
+                   <Feather className="w-3.5 h-3.5" />
+                   Polish Tone
+               </button>
+               <div className="w-px h-4 bg-neutral-700"></div>
+                <button className="flex items-center gap-2 px-3 py-1.5 hover:bg-neutral-800 rounded-full transition-colors text-sm font-medium text-neutral-400 hover:text-white">
+                   <Zap className="w-3.5 h-3.5" />
+                   Strong Verbs
+               </button>
+          </div>
+          
+          <ResumePreview data={data} previewRef={previewRef} isATSMode={isATSMode} />
+      </div>
 
       {/* AI Audit Modal */}
       {showAudit && (
