@@ -17,6 +17,7 @@ import { Auth } from './Auth';
 interface LandingPageProps {
   onStart: () => void; // This now means "Enter App" (Dashboard)
   isAuthenticated: boolean;
+  onGoToDiscover?: () => void;
 }
 
 // Helper component to draw the abstract resume lines
@@ -73,7 +74,7 @@ const SkeletonResume: React.FC<{ variant: 'simple' | 'modern' | 'professional' }
   );
 };
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover }) => {
   const [showAuth, setShowAuth] = useState(false);
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signup');
 
@@ -173,6 +174,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           <div className="flex items-center gap-4">
              <div className="hidden md:flex items-center gap-6 mr-4">
                 <button onClick={() => document.getElementById('features')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Features</button>
+                {onGoToDiscover && (
+                    <button onClick={onGoToDiscover} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Discover</button>
+                )}
                 <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">How it Works</button>
             </div>
             {isAuthenticated ? (
@@ -221,6 +225,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
             >
               Build My Resume <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
+            {onGoToDiscover && (
+                <Button 
+                    onClick={onGoToDiscover}
+                    variant="secondary"
+                    className="px-10 py-5 text-lg rounded-full"
+                >
+                    Discover Resumes
+                </Button>
+            )}
           </div>
         </div>
 

@@ -6,15 +6,132 @@ import { MapPin, Mail, Phone, Globe, ExternalLink } from 'lucide-react';
 interface ResumePreviewProps {
   data: ResumeData;
   previewRef: React.RefObject<HTMLDivElement>;
+  isATSMode?: boolean;
 }
 
-export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }) => {
+export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isATSMode = false }) => {
   const { personalInfo, experience, education, skills, projects, customSections, themeColor } = data;
   
   // Helper to apply theme color safely
-  const themeStyle = { color: themeColor };
-  const borderStyle = { borderColor: themeColor };
+  const themeStyle = { color: isATSMode ? '#000000' : themeColor };
+  
+  // ATS Mode creates a very simplified, linear layout with standard fonts
+  if (isATSMode) {
+      return (
+        <div className="flex-1 bg-neutral-200/50 p-4 md:p-8 overflow-auto md:h-screen custom-scrollbar">
+            <div className="max-w-[210mm] mx-auto shadow-none">
+                <div className="bg-white p-4 rounded-t-md border-b border-neutral-200 mb-4 text-sm text-neutral-600 flex items-center justify-between no-print">
+                    <span className="font-bold flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                        ATS Optimized Mode
+                    </span>
+                    <span>Standard Layout • No Icons • Linear Parsing</span>
+                </div>
 
+                <div 
+                  ref={previewRef}
+                  className="bg-white w-full min-h-[297mm] p-[20mm] text-black font-serif print-layout"
+                  style={{ fontFamily: 'Georgia, "Times New Roman", Times, serif', lineHeight: '1.5' }}
+                >
+                    {/* Header */}
+                    <div className="text-center border-b-2 border-black pb-4 mb-6">
+                        <h1 className="text-3xl font-bold uppercase mb-2 tracking-wide">{personalInfo.fullName}</h1>
+                        <div className="text-sm mb-2 font-medium">{personalInfo.location}</div>
+                        <div className="text-sm flex flex-wrap justify-center gap-4">
+                            {personalInfo.email && <span>{personalInfo.email}</span>}
+                            {personalInfo.phone && <span>{personalInfo.phone}</span>}
+                            {personalInfo.website && <span>{personalInfo.website}</span>}
+                        </div>
+                    </div>
+
+                    {/* Summary */}
+                    {personalInfo.summary && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold uppercase border-b border-black mb-3">Professional Summary</h3>
+                            <p className="text-sm text-justify">{personalInfo.summary}</p>
+                        </div>
+                    )}
+
+                    {/* Experience */}
+                    {experience.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold uppercase border-b border-black mb-3">Work Experience</h3>
+                            {experience.map(exp => (
+                                <div key={exp.id} className="mb-4">
+                                    <div className="flex justify-between font-bold text-sm">
+                                        <span>{exp.position}</span>
+                                        <span>{exp.startDate} – {exp.current ? 'Present' : exp.endDate}</span>
+                                    </div>
+                                    <div className="text-sm italic mb-1">{exp.company}</div>
+                                    <p className="text-sm whitespace-pre-line">{exp.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                     {/* Projects */}
+                    {projects.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold uppercase border-b border-black mb-3">Projects</h3>
+                            {projects.map(proj => (
+                                <div key={proj.id} className="mb-3">
+                                    <div className="font-bold text-sm mb-1">
+                                        {proj.name} {proj.link ? `(${proj.link})` : ''}
+                                    </div>
+                                    <p className="text-sm">{proj.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Education */}
+                    {education.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold uppercase border-b border-black mb-3">Education</h3>
+                            {education.map(edu => (
+                                <div key={edu.id} className="mb-2">
+                                    <div className="flex justify-between font-bold text-sm">
+                                        <span>{edu.institution}</span>
+                                        <span>{edu.graduationDate}</span>
+                                    </div>
+                                    <div className="text-sm">{edu.degree} {edu.field && `- ${edu.field}`}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Skills */}
+                    {skills.length > 0 && (
+                        <div className="mb-6">
+                            <h3 className="text-sm font-bold uppercase border-b border-black mb-3">Skills</h3>
+                            <p className="text-sm">{skills.join(', ')}</p>
+                        </div>
+                    )}
+                    
+                    {/* Custom Sections */}
+                    {customSections.map(section => (
+                        <div key={section.id} className="mb-6">
+                            <h3 className="text-sm font-bold uppercase border-b border-black mb-3">{section.title}</h3>
+                            {section.items.map(item => (
+                                <div key={item.id} className="mb-3">
+                                    <div className="flex justify-between font-bold text-sm">
+                                        <span>{item.title}</span>
+                                        {item.date && <span>{item.date}</span>}
+                                    </div>
+                                    {item.subtitle && <div className="text-sm italic">{item.subtitle}</div>}
+                                    {item.description && <p className="text-sm">{item.description}</p>}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+
+                </div>
+            </div>
+        </div>
+      );
+  }
+
+  // STANDARD MODE (Modern Design)
   return (
     <div className="flex-1 bg-neutral-100/50 p-4 md:p-8 overflow-auto md:h-screen custom-scrollbar">
       <div className="max-w-[210mm] mx-auto shadow-2xl print:shadow-none">

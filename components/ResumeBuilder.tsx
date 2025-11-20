@@ -3,6 +3,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ResumeData, Experience, Education, Project, CustomSectionItem } from '../types';
 import { generateResumeSummary, improveJobDescription, suggestSkills } from '../services/geminiService';
 import { saveResume, createEmptyResume } from '../services/storageService';
+import { publishResume } from '../services/supabase';
 import { ResumePreview } from './ResumePreview';
 import { Input, TextArea } from './InputField';
 import { Button } from './Button';
@@ -11,17 +12,19 @@ import {
   Sparkles, 
   Download, 
   User, 
-  Settings2, 
   Trash2,
   Briefcase,
-  FileText,
   FolderGit2,
   Palette,
   PlusCircle,
   Layout,
   GraduationCap,
   Save,
-  ChevronLeft
+  ChevronLeft,
+  Globe,
+  CheckCircle2,
+  FileCheck,
+  Share2
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -49,6 +52,10 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [newSectionName, setNewSectionName] = useState('');
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
+  const [isATSMode, setIsATSMode] = useState(false);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [showPublishSuccess, setShowPublishSuccess] = useState(false);
+  
   const previewRef = useRef<HTMLDivElement>(null);
 
   // Auto-save effect
@@ -157,9 +164,25 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
     }
   };
 
-  // --- Print ---
+  // --- Actions ---
   const handlePrint = () => {
     window.print();
+  };
+
+  const handlePublish = async () => {
+      if (!confirm("Publishing makes your resume visible to everyone on the Discover page. Are you sure?")) return;
+      
+      setIsPublishing(true);
+      try {
+          await publishResume(data, userId);
+          setShowPublishSuccess(true);
+          setTimeout(() => setShowPublishSuccess(false), 4000);
+      } catch (error) {
+          alert("Failed to publish resume. Please try again.");
+          console.error(error);
+      } finally {
+          setIsPublishing(false);
+      }
   };
 
   // --- Skill Helpers ---
@@ -203,17 +226,36 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                    <Save className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                </span>
            </div>
-           <div className="flex items-center justify-between">
+           <div className="flex items-center justify-between gap-4">
              <input 
-                className="text-xl font-bold text-neutral-900 bg-transparent border-b border-transparent hover:border-neutral-200 focus:border-neutral-900 focus:outline-none w-full mr-4"
+                className="text-xl font-bold text-neutral-900 bg-transparent border-b border-transparent hover:border-neutral-200 focus:border-neutral-900 focus:outline-none w-full"
                 value={data.name}
                 onChange={(e) => updateName(e.target.value)}
                 placeholder="Resume Name"
              />
-             <Button onClick={handlePrint} variant="primary" icon={<Download className="w-4 h-4" />}>
-                Export
-             </Button>
+             <div className="flex items-center gap-2">
+                <Button 
+                    onClick={handlePublish} 
+                    variant="secondary" 
+                    className="bg-neutral-100" 
+                    isLoading={isPublishing}
+                    icon={<Globe className="w-4 h-4" />}
+                    title="Publish to Discover page"
+                >
+                    Publish
+                </Button>
+                <Button onClick={handlePrint} variant="primary" icon={<Download className="w-4 h-4" />}>
+                    Export
+                </Button>
+             </div>
            </div>
+           
+           {showPublishSuccess && (
+               <div className="mt-2 p-2 bg-green-50 text-green-600 text-sm rounded-lg flex items-center gap-2 animate-in slide-in-from-top-2">
+                   <CheckCircle2 className="w-4 h-4" />
+                   Published successfully! Your resume is now live on Discover.
+               </div>
+           )}
         </div>
 
         {/* Navigation */}
@@ -298,9 +340,29 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                     </div>
                 </div>
                 
+                <div className="border-t border-neutral-100 pt-6">
+                    <div className="flex items-center justify-between mb-2">
+                        <h3 className="text-lg font-bold flex items-center gap-2">
+                            <FileCheck className="w-5 h-5" /> ATS Friendly Mode
+                        </h3>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={isATSMode} 
+                                onChange={(e) => setIsATSMode(e.target.checked)}
+                                className="sr-only peer" 
+                            />
+                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-neutral-900"></div>
+                        </label>
+                    </div>
+                    <p className="text-sm text-neutral-500 leading-relaxed">
+                        ATS mode strips away complex layouts and formatting to create a 100% machine-readable document optimized for Applicant Tracking Systems.
+                    </p>
+                </div>
+
                 <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
                     <p className="text-sm text-neutral-600 mb-2 font-medium">Tip</p>
-                    <p className="text-sm text-neutral-500">Use a dark accent color for better readability when printed. Standard black is always the safest choice for Applicant Tracking Systems (ATS).</p>
+                    <p className="text-sm text-neutral-500">Use standard black as an accent color for maximum compatibility.</p>
                 </div>
              </div>
           )}
@@ -458,7 +520,7 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
       </div>
 
       {/* Right Panel: Preview */}
-      <ResumePreview data={data} previewRef={previewRef} />
+      <ResumePreview data={data} previewRef={previewRef} isATSMode={isATSMode} />
 
     </div>
   );

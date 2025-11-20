@@ -4,12 +4,13 @@ import { ResumeBuilder } from './components/ResumeBuilder';
 import { LandingPage } from './components/LandingPage';
 import { Dashboard } from './components/Dashboard';
 import { Onboarding } from './components/Onboarding';
+import { Discover } from './components/Discover';
 import { ResumeData } from './types';
 import { supabase } from './services/supabase';
 import { Session } from '@supabase/supabase-js';
 import { Loader2 } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'onboarding' | 'builder';
+type View = 'landing' | 'dashboard' | 'onboarding' | 'builder' | 'discover';
 
 function App() {
   const [view, setView] = useState<View>('landing');
@@ -29,14 +30,14 @@ function App() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      // If logged out, go to landing
-      if (!session) {
+      // If logged out, go to landing unless viewing public page like discover
+      if (!session && view !== 'discover') {
           setView('landing');
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [view]);
 
   const handleCreateNew = () => {
     setCurrentResume(undefined);
@@ -67,7 +68,12 @@ function App() {
         <LandingPage 
             onStart={() => setView('dashboard')} 
             isAuthenticated={!!session}
+            onGoToDiscover={() => setView('discover')}
         />
+      )}
+      
+      {view === 'discover' && (
+          <Discover onHome={() => setView(session ? 'dashboard' : 'landing')} />
       )}
       
       {view === 'dashboard' && session && (
@@ -96,10 +102,11 @@ function App() {
       )}
       
       {/* Fallback if user tries to access protected view without session */}
-      {view !== 'landing' && !session && (
+      {view !== 'landing' && view !== 'discover' && !session && (
           <LandingPage 
             onStart={() => setView('dashboard')} 
             isAuthenticated={false} 
+            onGoToDiscover={() => setView('discover')}
           />
       )}
     </>
