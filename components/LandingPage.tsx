@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
@@ -22,10 +21,12 @@ import {
   MessageSquare,
   PenTool,
   Search,
-  Bot
+  Bot,
+  Play
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
+import { ResupilotDemo } from './ResupilotDemo';
 
 interface LandingPageProps {
   onStart: () => void; // This now means "Enter App" (Dashboard)
@@ -402,33 +403,50 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                 </div>
             </div>
         </div>
+      </section>
 
-        <div className="pt-16 flex items-center justify-center gap-8 text-neutral-400 text-sm font-medium flex-wrap relative z-20 animate-in fade-in duration-1000 delay-500">
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> No credit card needed</span>
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> Free Plan Available</span>
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> Privacy focused</span>
-        </div>
+      {/* NEW: Resupilot Demo Section */}
+      <section className="py-24 bg-neutral-900 relative overflow-hidden text-white">
+          {/* Background Effects */}
+          <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
+              <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-900/30 rounded-full blur-3xl"></div>
+              <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-900/30 rounded-full blur-3xl"></div>
+          </div>
+
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+              <div className="text-center mb-12">
+                   <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20 text-white text-sm font-bold mb-6 backdrop-blur-md">
+                        <Play className="w-4 h-4 fill-current" /> See It In Action
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-bold mb-4 tracking-tight">Don't just build. <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">Vibe Create.</span></h2>
+                    <p className="text-neutral-400 text-lg max-w-2xl mx-auto">
+                        Watch how Resupilot takes a simple natural language prompt and turns it into a perfectly formatted resume in seconds.
+                    </p>
+              </div>
+              
+              {/* The Animated Demo Component */}
+              <ResupilotDemo />
+          </div>
       </section>
 
       {/* Stats Strip (New) */}
-      <section className="bg-neutral-900 py-16 text-white border-y border-neutral-800 relative overflow-hidden">
-         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-neutral-800 to-transparent opacity-30"></div>
+      <section className="bg-white py-16 text-neutral-900 border-y border-neutral-200 relative overflow-hidden">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative z-10">
             <ScrollReveal>
                 <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={15000} suffix="+" duration={2500} /></div>
-                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">Resumes Created</div>
+                <div className="text-sm text-neutral-500 font-medium uppercase tracking-widest">Resumes Created</div>
             </ScrollReveal>
             <ScrollReveal delay={100}>
                 <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={35} suffix="+" duration={2000} /></div>
-                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">Countries</div>
+                <div className="text-sm text-neutral-500 font-medium uppercase tracking-widest">Countries</div>
             </ScrollReveal>
              <ScrollReveal delay={200}>
                 <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={92} suffix="%" duration={2000} /></div>
-                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">Interview Rate</div>
+                <div className="text-sm text-neutral-500 font-medium uppercase tracking-widest">Interview Rate</div>
             </ScrollReveal>
              <ScrollReveal delay={300}>
                 <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={100} suffix="%" duration={1500} /></div>
-                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">ATS Friendly</div>
+                <div className="text-sm text-neutral-500 font-medium uppercase tracking-widest">ATS Friendly</div>
             </ScrollReveal>
         </div>
       </section>

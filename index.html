@@ -34,6 +34,7 @@
               'float': 'float 6s ease-in-out infinite',
               'float-delayed': 'float 6s ease-in-out 3s infinite',
               'fade-in-up': 'fadeInUp 0.8s ease-out forwards',
+              'blink': 'blink 1s step-end infinite',
             },
             keyframes: {
               float: {
@@ -43,6 +44,10 @@
               fadeInUp: {
                 '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              blink: {
+                '0%, 100%': { opacity: '1' },
+                '50%': { opacity: '0' },
               }
             }
           },
