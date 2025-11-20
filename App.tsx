@@ -78,6 +78,10 @@ function App() {
           matchedView = ROUTES[path];
       } else if (path === '/login' || path === '/signup') {
           matchedView = 'landing'; // Handle specific auth routes as landing for now
+      } else {
+          // Check if it's an exact match or if we should show not found
+          // For now, default to landing if root, else not-found
+          if (path === '/') matchedView = 'landing';
       }
 
       // Deep linking logic
@@ -164,37 +168,56 @@ function App() {
 
     // Handle Browser Back/Forward
     const onPopState = () => {
-        // We re-run sync logic. Note: We need current session state here.
-        // Since event listener is added once, we rely on state being up to date or refetching.
-        // For simplicity in this structure, we just reload the appropriate view mapping.
         const path = window.location.pathname;
         const mappedView = ROUTES[path] || 'not-found';
-        
-        // Simple view switch for history navigation, complex guards are handled by effects
         setView(mappedView);
     };
     window.addEventListener('popstate', onPopState);
 
     const initializeApp = async () => {
+        // SAFETY TIMEOUT: If Supabase takes too long (e.g. bad connection/config), 
+        // we fall back to guest mode so the app doesn't hang on the loading screen.
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Auth timeout')), 2500)
+        );
+
         try {
-            const { data: { session }, error } = await supabase.auth.getSession();
+            // Race the auth check against the timeout
+            const { data, error } = await Promise.race([
+                supabase.auth.getSession(),
+                timeoutPromise
+            ]) as any;
+
             if (error) throw error;
+            
+            const session = data?.session;
             
             if (isMounted) {
                 setSession(session);
+                
                 // Determine role first if session exists
                 if (session) {
-                    const profile = await getUserProfile(session.user.id);
-                    const role = profile?.role || 'candidate';
-                    setUserRole(role);
+                    try {
+                        const profile = await getUserProfile(session.user.id);
+                        const role = profile?.role || 'candidate';
+                        setUserRole(role);
+                    } catch (e) {
+                        console.warn("Profile load failed, defaulting to candidate");
+                        setUserRole('candidate');
+                    }
                 }
                 
                 // Then sync view from URL
                 await syncViewFromUrl(session);
             }
         } catch (error) {
-            console.error("Initialization error:", error);
-            navigate('landing', true);
+            console.warn("Initialization fallback (Guest Mode):", error);
+            // Fallback logic: Assume we are a guest
+            if (isMounted) {
+                setSession(null);
+                setUserRole(null);
+                await syncViewFromUrl(null);
+            }
         } finally {
             if (isMounted) setLoading(false);
         }
@@ -212,18 +235,20 @@ function App() {
       
       if (!session) {
           // Logged out
-          if (view !== 'app-assets' && view !== 'discover' && view !== 'guest-resupilot') {
+          // Don't redirect if we are on public pages
+          const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover'];
+          if (!publicViews.includes(view)) {
              navigate('landing');
           }
           setUserRole(null);
       } else if (_event === 'SIGNED_IN') {
           // Just logged in
-          // If we are on landing (default), route to dashboard. 
-          // If we are on a deep link (e.g. refreshed builder), syncViewFromUrl handles it on mount.
-          if (window.location.pathname === '/' || window.location.pathname === '/login') {
+          // Only auto-route if we are on an auth-related page or landing
+          const path = window.location.pathname;
+          if (path === '/' || path === '/login' || path === '/signup') {
              await routeUser(session); 
           } else {
-             // Ensure role is set for the current session even if we stay on page
+             // Just update the role for the background session
              const profile = await getUserProfile(session.user.id);
              setUserRole(profile?.role || 'candidate');
           }
@@ -247,7 +272,6 @@ function App() {
         const newResume = createEmptyResume(templateId);
         setCurrentResume(newResume);
         // For manual create, we're basically in builder mode with a fresh object.
-        // Ideally we save it first to generate an ID for the URL, but for memory-only start:
         navigate('builder');
     }
   };
@@ -277,6 +301,13 @@ function App() {
           <div className="min-h-screen flex flex-col items-center justify-center bg-white">
               <Loader2 className="w-10 h-10 animate-spin text-neutral-900 mb-4" />
               <p className="text-neutral-500 text-sm animate-pulse">Loading Resubuild...</p>
+              {/* Fallback button if it takes unusually long visually */}
+              <button 
+                className="mt-8 text-xs text-neutral-400 underline hover:text-neutral-600"
+                onClick={() => setLoading(false)}
+              >
+                Stuck? Click here to skip
+              </button>
           </div>
       );
   }
