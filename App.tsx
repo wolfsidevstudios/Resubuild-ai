@@ -8,13 +8,14 @@ import { Onboarding } from './components/Onboarding';
 import { Discover } from './components/Discover';
 import { Resupilot } from './components/Resupilot';
 import { Auth } from './components/Auth';
+import { NotFound } from './components/NotFound';
 import { ResumeData, UserRole } from './types';
 import { supabase, getUserProfile } from './services/supabase';
 import { createEmptyResume } from './services/storageService';
 import { Session } from '@supabase/supabase-js';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found';
 
 function App() {
   const [view, setView] = useState<View>('landing');
@@ -128,6 +129,10 @@ function App() {
             onGoToDiscover={() => setView('discover')}
             onGuestTry={handleGuestEntry}
         />
+      )}
+      
+      {view === 'not-found' && (
+          <NotFound onHome={() => session ? routeUser(session) : setView('landing')} />
       )}
       
       {view === 'discover' && (
