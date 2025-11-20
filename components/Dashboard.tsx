@@ -1,11 +1,13 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
 import { supabase } from '../services/supabase';
 import { Button } from './Button';
 import { Input } from './InputField';
+import { Messaging } from './Messaging';
+import { Notifications } from './Notifications';
 
 interface DashboardProps {
   onCreate: () => void;
@@ -17,6 +19,8 @@ interface DashboardProps {
 export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, userId }) => {
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [showSettings, setShowSettings] = useState(false);
+  const [showMessages, setShowMessages] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
@@ -48,9 +52,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   };
 
   return (
-    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans">
+    <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans relative">
       {/* Header */}
-      <nav className="bg-white border-b border-neutral-200 px-6 py-4">
+      <nav className="bg-white border-b border-neutral-200 px-6 py-4 sticky top-0 z-20">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={onHome}>
             <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white">
@@ -58,7 +62,15 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
             </div>
             <span className="font-bold text-xl tracking-tight">Resubuild</span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+             <Button variant="ghost" className="relative" onClick={() => setShowNotifications(!showNotifications)}>
+                 <Bell className="w-4 h-4" />
+                 {/* Dot for unread could go here */}
+             </Button>
+             <Button variant="ghost" onClick={() => setShowMessages(true)}>
+                 <MessageSquare className="w-4 h-4" />
+             </Button>
+             <div className="h-6 w-px bg-neutral-200 mx-2"></div>
              <Button variant="ghost" onClick={() => setShowSettings(true)} icon={<Settings className="w-4 h-4" />}>
                 Settings
              </Button>
@@ -68,6 +80,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           </div>
         </div>
       </nav>
+
+      {/* Notification Dropdown */}
+      {showNotifications && <Notifications userId={userId} onClose={() => setShowNotifications(false)} />}
 
       <main className="max-w-6xl mx-auto px-6 py-12">
         <div className="flex items-center justify-between mb-10">
@@ -156,6 +171,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           </div>
         )}
       </main>
+
+      {/* Messages Modal */}
+      {showMessages && (
+          <Messaging 
+            userId={userId} 
+            onClose={() => setShowMessages(false)} 
+          />
+      )}
 
       {/* Settings Modal */}
       {showSettings && (

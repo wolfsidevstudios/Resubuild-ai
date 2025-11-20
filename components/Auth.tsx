@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 import { Button } from './Button';
 import { Input } from './InputField';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Briefcase, User } from 'lucide-react';
 
 interface AuthProps {
     onSuccess: () => void;
@@ -12,8 +12,10 @@ interface AuthProps {
 
 export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' }) => {
     const [view, setView] = useState<'signin' | 'signup'>(defaultView);
+    const [role, setRole] = useState<'candidate' | 'employer'>('candidate');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [fullName, setFullName] = useState('');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [msg, setMsg] = useState<string | null>(null);
@@ -26,21 +28,26 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
 
         try {
             if (view === 'signup') {
+                // Sign Up with Metadata
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
+                    options: {
+                        data: {
+                            full_name: fullName,
+                            role: role // 'candidate' or 'employer'
+                        }
+                    }
                 });
                 if (error) throw error;
 
-                // If email confirmation is disabled in Supabase settings, 
-                // we get a session immediately. Log them in.
                 if (data.session) {
                     onSuccess();
                 } else {
-                    // Otherwise, prompt for verification
                     setMsg('Account created! Please check your email to verify your account.');
                 }
             } else {
+                // Sign In
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
@@ -50,12 +57,9 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
             }
         } catch (err: any) {
             let errorMessage = err.message || 'An error occurred';
-            
-            // Helper for the specific "Database error" which confuses many users
             if (errorMessage.includes('Database error saving new user')) {
                 errorMessage = 'System Error: The Supabase database trigger failed. Please ensure your database table "public.profiles" exists.';
             }
-            
             setError(errorMessage);
         } finally {
             setLoading(false);
@@ -68,9 +72,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'spotify',
-                options: {
-                    redirectTo: window.location.origin,
-                }
+                options: { redirectTo: window.location.origin }
             });
             if (error) throw error;
         } catch (err: any) {
@@ -85,9 +87,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
-                options: {
-                    redirectTo: window.location.origin,
-                }
+                options: { redirectTo: window.location.origin }
             });
             if (error) throw error;
         } catch (err: any) {
@@ -98,18 +98,49 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
 
     return (
         <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="text-center mb-10">
+            <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-neutral-900 mb-3">
-                    {view === 'signin' ? 'Welcome back' : 'Create account'}
+                    {view === 'signin' ? 'Welcome back' : 'Join Resubuild'}
                 </h2>
                 <p className="text-neutral-500">
                     {view === 'signin' 
-                        ? 'Enter your details to access your workspace.' 
-                        : 'Start building your professional resume for free.'}
+                        ? 'Access your dashboard.' 
+                        : 'Create your professional identity.'}
                 </p>
             </div>
 
+            {view === 'signup' && (
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                    <button 
+                        type="button"
+                        onClick={() => setRole('candidate')}
+                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${role === 'candidate' ? 'border-neutral-900 bg-neutral-50 text-neutral-900' : 'border-neutral-100 hover:border-neutral-200 text-neutral-500'}`}
+                    >
+                        <User className="w-6 h-6 mb-2" />
+                        <span className="font-bold text-sm">Job Seeker</span>
+                    </button>
+                    <button 
+                        type="button"
+                        onClick={() => setRole('employer')}
+                        className={`flex flex-col items-center justify-center p-4 rounded-2xl border-2 transition-all ${role === 'employer' ? 'border-neutral-900 bg-neutral-50 text-neutral-900' : 'border-neutral-100 hover:border-neutral-200 text-neutral-500'}`}
+                    >
+                        <Briefcase className="w-6 h-6 mb-2" />
+                        <span className="font-bold text-sm">Employer</span>
+                    </button>
+                </div>
+            )}
+
             <form onSubmit={handleAuth} className="space-y-5">
+                {view === 'signup' && (
+                     <Input 
+                        label={role === 'employer' ? "Company Name" : "Full Name"}
+                        value={fullName} 
+                        onChange={e => setFullName(e.target.value)} 
+                        placeholder={role === 'employer' ? "Acme Inc." : "John Doe"}
+                        required
+                        className="bg-white"
+                    />
+                )}
                 <Input 
                     label="Email Address" 
                     type="email" 
@@ -149,7 +180,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
                     isLoading={loading}
                     variant="primary"
                 >
-                    {view === 'signin' ? 'Sign In' : 'Sign Up'}
+                    {view === 'signin' ? 'Sign In' : `Sign Up as ${role === 'employer' ? 'Brand' : 'Employee'}`}
                 </Button>
             </form>
 

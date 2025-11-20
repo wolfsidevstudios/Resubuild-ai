@@ -66,3 +66,34 @@ export enum AIActionType {
   IMPROVE_DESCRIPTION = 'IMPROVE_DESCRIPTION',
   SUGGEST_SKILLS = 'SUGGEST_SKILLS'
 }
+
+// New Types for Social/Brand Features
+
+export type UserRole = 'candidate' | 'employer';
+
+export interface UserProfile {
+  id: string;
+  full_name: string;
+  avatar_url?: string;
+  role: UserRole;
+}
+
+export interface Message {
+  id: string;
+  sender_id: string;
+  receiver_id: string;
+  content: string;
+  created_at: string;
+  is_read: boolean;
+  sender_profile?: UserProfile; // Joined data
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  type: 'message' | 'match' | 'system';
+  content: string;
+  related_id?: string; // e.g., sender_id
+  is_read: boolean;
+  created_at: string;
+}

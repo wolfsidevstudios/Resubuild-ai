@@ -2,6 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { ResumeData, Experience } from "../types";
 import { getStoredAPIKey } from "./storageService";
+import { PublishedResume } from "./supabase";
 
 // Helper to get the AI instance dynamically
 const getAI = () => {
@@ -83,4 +84,51 @@ export const suggestSkills = async (jobTitle: string, currentDescription: string
     console.error("Error suggesting skills:", error);
     throw error;
   }
+};
+
+// --- Brand / Employer Matching ---
+
+export const findBestCandidates = async (
+    employerQuery: string, 
+    candidates: PublishedResume[]
+): Promise<{ candidateId: string; reason: string; score: number }[]> => {
+    
+    // We minimize the candidate data payload to save tokens
+    const candidateSummaries = candidates.map(c => ({
+        id: c.user_id,
+        name: c.full_name,
+        title: c.job_title,
+        skills: c.skills,
+        summary: c.resume_data.personalInfo.summary,
+        recent_role: c.resume_data.experience[0]?.position
+    }));
+
+    const prompt = `
+        You are an expert AI Recruiter. 
+        Employer Requirement: "${employerQuery}"
+        
+        Analyze the following list of candidates and identify the best matches.
+        Return a JSON array of objects with properties: 'candidateId', 'reason' (brief 1 sentence explanation), and 'score' (0-100).
+        Only return candidates with a score > 60. If no good matches, return empty array.
+        
+        Candidates:
+        ${JSON.stringify(candidateSummaries)}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json'
+            }
+        });
+        
+        const text = response.text?.trim() || "[]";
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Error matching candidates:", error);
+        return [];
+    }
 };
