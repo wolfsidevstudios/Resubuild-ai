@@ -9,7 +9,12 @@ import {
   CheckCircle2, 
   FileText,
   Star,
-  X
+  X,
+  Palette,
+  AlignLeft,
+  Briefcase,
+  Users,
+  Trophy
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -21,7 +26,66 @@ interface LandingPageProps {
 }
 
 // Helper component to draw the abstract resume lines
-const SkeletonResume: React.FC<{ variant: 'simple' | 'modern' | 'professional' }> = ({ variant }) => {
+const SkeletonResume: React.FC<{ variant: 'simple' | 'modern' | 'professional' | 'creative' | 'minimal' }> = ({ variant }) => {
+  
+  // Creative Layout (Sidebar)
+  if (variant === 'creative') {
+      return (
+        <div className="flex h-full w-full bg-white cursor-default select-none pointer-events-none overflow-hidden">
+            <div className="w-1/3 bg-neutral-800 h-full p-3 flex flex-col gap-3">
+                <div className="w-10 h-10 rounded-full bg-neutral-600 mx-auto"></div>
+                <div className="h-1.5 bg-neutral-600 w-3/4 mx-auto rounded-full"></div>
+                <div className="h-1.5 bg-neutral-600 w-1/2 mx-auto rounded-full"></div>
+                <div className="mt-4 space-y-2">
+                    <div className="h-1 bg-neutral-700 w-full rounded-full"></div>
+                    <div className="h-1 bg-neutral-700 w-5/6 rounded-full"></div>
+                    <div className="h-1 bg-neutral-700 w-4/5 rounded-full"></div>
+                </div>
+            </div>
+            <div className="flex-1 p-3 space-y-3">
+                <div className="h-2 bg-neutral-200 w-1/3 rounded-full mb-2"></div>
+                <div className="space-y-1.5">
+                    <div className="h-1.5 bg-neutral-100 w-full rounded-full"></div>
+                    <div className="h-1.5 bg-neutral-100 w-full rounded-full"></div>
+                    <div className="h-1.5 bg-neutral-100 w-3/4 rounded-full"></div>
+                </div>
+                <div className="h-2 bg-neutral-200 w-1/4 rounded-full mt-4 mb-2"></div>
+                <div className="flex gap-2">
+                     <div className="w-1 h-full bg-neutral-100"></div>
+                     <div className="flex-1 space-y-1">
+                        <div className="h-1.5 bg-neutral-100 w-11/12 rounded-full"></div>
+                        <div className="h-1.5 bg-neutral-100 w-2/3 rounded-full"></div>
+                     </div>
+                </div>
+            </div>
+        </div>
+      );
+  }
+
+  // Minimal Layout (Centered)
+  if (variant === 'minimal') {
+      return (
+        <div className="flex flex-col h-full w-full p-4 bg-white cursor-default select-none pointer-events-none items-center">
+             <div className="w-12 h-12 rounded-full bg-neutral-100 mb-3"></div>
+             <div className="h-3 bg-neutral-800 w-1/2 rounded-full mb-2"></div>
+             <div className="h-1.5 bg-neutral-300 w-1/3 rounded-full mb-6"></div>
+             
+             <div className="w-full space-y-4">
+                 <div className="flex flex-col items-center gap-1">
+                     <div className="h-1.5 bg-neutral-200 w-1/6 rounded-full mb-1"></div>
+                     <div className="h-1 bg-neutral-100 w-3/4 rounded-full"></div>
+                     <div className="h-1 bg-neutral-100 w-5/6 rounded-full"></div>
+                 </div>
+                 <div className="flex flex-col items-center gap-1">
+                     <div className="h-1.5 bg-neutral-200 w-1/6 rounded-full mb-1"></div>
+                     <div className="h-1 bg-neutral-100 w-full rounded-full"></div>
+                     <div className="h-1 bg-neutral-100 w-4/5 rounded-full"></div>
+                 </div>
+             </div>
+        </div>
+      );
+  }
+
   return (
     <div className="flex flex-col h-full w-full p-4 md:p-5 bg-white cursor-default select-none pointer-events-none">
       {/* Header */}
@@ -177,7 +241,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                 {onGoToDiscover && (
                     <button onClick={onGoToDiscover} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Discover</button>
                 )}
-                <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">How it Works</button>
+                <button onClick={() => document.getElementById('templates')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Templates</button>
             </div>
             {isAuthenticated ? (
                 <Button onClick={onStart} variant="primary" className="px-6">
@@ -272,8 +336,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
         </div>
       </section>
 
+      {/* Stats Strip (New) */}
+      <section className="bg-neutral-900 py-12 text-white border-y border-neutral-800">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+            <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">10k+</div>
+                <div className="text-sm text-neutral-400 font-medium">Resumes Created</div>
+            </div>
+            <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">25+</div>
+                <div className="text-sm text-neutral-400 font-medium">Countries</div>
+            </div>
+             <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">92%</div>
+                <div className="text-sm text-neutral-400 font-medium">Interview Rate</div>
+            </div>
+             <div>
+                <div className="text-3xl md:text-4xl font-bold mb-1">100%</div>
+                <div className="text-sm text-neutral-400 font-medium">ATS Friendly</div>
+            </div>
+        </div>
+      </section>
+
       {/* Features Section */}
-      <section id="features" className="py-24 bg-neutral-50 border-t border-neutral-100">
+      <section id="features" className="py-24 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-16 max-w-2xl mx-auto">
             <h2 className="text-3xl font-bold mb-4">Why choose Resubuild?</h2>
@@ -311,11 +397,84 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
         </div>
       </section>
 
+      {/* Templates Showcase Section (New) */}
+      <section id="templates" className="py-24 bg-white">
+          <div className="max-w-7xl mx-auto px-6">
+              <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
+                  <div className="max-w-xl">
+                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
+                          Professionally Designed
+                      </div>
+                      <h2 className="text-3xl md:text-4xl font-bold mb-4">Templates for every career</h2>
+                      <p className="text-neutral-500 text-lg">
+                          Whether you are a creative designer or a financial analyst, we have a layout that highlights your strengths.
+                      </p>
+                  </div>
+                  <Button onClick={() => handleAction('signup')} variant="outline" className="h-12 px-6">
+                      View All Templates
+                  </Button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {[
+                      {
+                          title: "Modern",
+                          desc: "Clean and balanced.",
+                          icon: <Layout className="w-5 h-5" />,
+                          variant: "modern"
+                      },
+                      {
+                          title: "Professional",
+                          desc: "Traditional and serif.",
+                          icon: <FileText className="w-5 h-5" />,
+                          variant: "professional"
+                      },
+                      {
+                          title: "Creative",
+                          desc: "Bold sidebar accent.",
+                          icon: <Palette className="w-5 h-5" />,
+                          variant: "creative"
+                      },
+                      {
+                          title: "Minimal",
+                          desc: "Simple and centered.",
+                          icon: <AlignLeft className="w-5 h-5" />,
+                          variant: "minimal"
+                      }
+                  ].map((t, i) => (
+                      <div key={i} className="group cursor-pointer" onClick={() => handleAction('signup')}>
+                          <div className="bg-neutral-50 rounded-2xl border border-neutral-200 overflow-hidden aspect-[210/297] mb-5 relative shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
+                               {/* Render appropriate skeleton */}
+                               <div className="transform scale-[0.4] origin-top-left w-[250%] h-[250%] p-6">
+                                   <SkeletonResume variant={t.variant as any} />
+                               </div>
+                               {/* Hover Overlay */}
+                               <div className="absolute inset-0 bg-neutral-900/0 group-hover:bg-neutral-900/5 transition-colors flex items-center justify-center">
+                                   <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 bg-white px-4 py-2 rounded-full shadow-lg font-bold text-sm text-neutral-900">
+                                       Use Template
+                                   </div>
+                               </div>
+                          </div>
+                          <div className="flex items-start gap-3">
+                              <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center flex-shrink-0 text-neutral-900">
+                                  {t.icon}
+                              </div>
+                              <div>
+                                  <h3 className="font-bold text-lg">{t.title}</h3>
+                                  <p className="text-neutral-500 text-sm">{t.desc}</p>
+                              </div>
+                          </div>
+                      </div>
+                  ))}
+              </div>
+          </div>
+      </section>
+
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-white">
+      <section id="how-it-works" className="py-24 bg-neutral-50 border-t border-neutral-200">
          <div className="max-w-7xl mx-auto px-6">
             <div className="text-center mb-20">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-neutral-200 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
                     Simple Process
                 </div>
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">From blank page to hired in 3 steps</h2>
@@ -323,14 +482,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
 
             <div className="grid md:grid-cols-3 gap-8 relative">
                 {/* Connector Line (Desktop) */}
-                <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-neutral-100 -z-10" />
+                <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-neutral-200 -z-10" />
 
                 {[
                     {
                         step: "01",
                         title: "Enter Details",
                         desc: "Fill in your experience, education, and skills in our easy-to-use editor.",
-                        icon: <FileText className="w-6 h-6 text-white" />
+                        icon: <Users className="w-6 h-6 text-white" />
                     },
                     {
                         step: "02",
@@ -342,10 +501,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                         step: "03",
                         title: "Download PDF",
                         desc: "Preview your document and download a perfectly formatted PDF instantly.",
-                        icon: <Download className="w-6 h-6 text-white" />
+                        icon: <Trophy className="w-6 h-6 text-white" />
                     }
                 ].map((item, i) => (
-                    <div key={i} className="flex flex-col items-center text-center bg-white">
+                    <div key={i} className="flex flex-col items-center text-center">
                         <div className="w-24 h-24 bg-neutral-900 rounded-3xl flex items-center justify-center shadow-xl shadow-neutral-900/20 mb-8 relative z-10 border-4 border-white">
                             {item.icon}
                             <div className="absolute -top-3 -right-3 w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-900 font-bold text-sm border-2 border-white">
