@@ -1,10 +1,12 @@
-import React, { useState, useRef } from 'react';
-import { ResumeData, Experience, Education, Project } from '../types';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { ResumeData, Experience, Education, Project, CustomSectionItem } from '../types';
 import { generateResumeSummary, improveJobDescription, suggestSkills } from '../services/geminiService';
+import { saveResume, createEmptyResume } from '../services/storageService';
 import { ResumePreview } from './ResumePreview';
 import { Input, TextArea } from './InputField';
 import { Button } from './Button';
-import { ExperienceEditor, EducationEditor } from './SectionEditor';
+import { ExperienceEditor, EducationEditor, ProjectEditor, CustomSectionEditor } from './SectionEditor';
 import { 
   Sparkles, 
   Download, 
@@ -12,67 +14,59 @@ import {
   Settings2, 
   Trash2,
   Briefcase,
-  FileText
+  FileText,
+  FolderGit2,
+  Palette,
+  PlusCircle,
+  Layout,
+  GraduationCap,
+  Save,
+  ChevronLeft
 } from 'lucide-react';
 
-const INITIAL_DATA: ResumeData = {
-  personalInfo: {
-    fullName: 'Alex Taylor',
-    email: 'alex.taylor@example.com',
-    phone: '(555) 123-4567',
-    location: 'San Francisco, CA',
-    website: 'linkedin.com/in/alextaylor',
-    jobTitle: 'Product Designer',
-    summary: 'Creative Product Designer with 5+ years of experience in building user-centric digital products. Proven track record of improving user engagement and streamlining design processes. Adept at collaborating with cross-functional teams to deliver high-quality solutions.',
-  },
-  experience: [
-    {
-      id: '1',
-      company: 'TechFlow Inc.',
-      position: 'Senior Product Designer',
-      startDate: 'Jan 2021',
-      endDate: '',
-      current: true,
-      description: '• Led the redesign of the core mobile application, resulting in a 25% increase in daily active users.\n• Collaborated with engineering and product teams to define product strategy and roadmap.\n• Mentored junior designers and established a new design system used across 3 products.'
-    },
-    {
-      id: '2',
-      company: 'Creative Solutions',
-      position: 'UI/UX Designer',
-      startDate: 'Jun 2018',
-      endDate: 'Dec 2020',
-      current: false,
-      description: '• Designed intuitive interfaces for web and mobile applications for fintech clients.\n• Conducted user research and usability testing to iterate on design prototypes.\n• Worked closely with developers to ensure accurate implementation of designs.'
-    },
-  ],
-  education: [
-    {
-      id: '1',
-      institution: 'University of Design',
-      degree: 'Bachelor of Arts',
-      field: 'Interaction Design',
-      graduationDate: 'May 2018'
-    }
-  ],
-  projects: [],
-  skills: ['Figma', 'Sketch', 'Adobe XD', 'Prototyping', 'User Research', 'HTML/CSS', 'Agile Methodology', 'Design Systems']
-};
-
 interface ResumeBuilderProps {
+    initialData?: ResumeData;
     onGoHome: () => void;
 }
 
-export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
-  const [data, setData] = useState<ResumeData>(INITIAL_DATA);
+const COLORS = [
+  '#000000', // Black
+  '#2563EB', // Blue
+  '#059669', // Emerald
+  '#7C3AED', // Violet
+  '#DB2777', // Pink
+  '#D97706', // Amber
+  '#DC2626', // Red
+  '#4B5563', // Gray
+];
+
+export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoHome }) => {
+  const [data, setData] = useState<ResumeData>(initialData || createEmptyResume());
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [improvingExpId, setImprovingExpId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'personal' | 'experience' | 'education' | 'skills'>('personal');
+  const [activeTab, setActiveTab] = useState<string>('personal');
+  const [isAddingSection, setIsAddingSection] = useState(false);
+  const [newSectionName, setNewSectionName] = useState('');
+  const [lastSaved, setLastSaved] = useState<Date>(new Date());
   const previewRef = useRef<HTMLDivElement>(null);
+
+  // Auto-save effect
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+        saveResume(data);
+        setLastSaved(new Date());
+    }, 2000);
+    return () => clearTimeout(timeout);
+  }, [data]);
 
   // --- State Updates ---
   const updatePersonalInfo = (field: keyof typeof data.personalInfo, value: string) => {
     setData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, [field]: value } }));
   };
+  
+  const updateName = (name: string) => {
+      setData(prev => ({ ...prev, name }));
+  }
 
   const updateExperience = (newExperience: Experience[]) => {
     setData(prev => ({ ...prev, experience: newExperience }));
@@ -80,6 +74,37 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
 
   const updateEducation = (newEducation: Education[]) => {
     setData(prev => ({ ...prev, education: newEducation }));
+  };
+
+  const updateProjects = (newProjects: Project[]) => {
+    setData(prev => ({ ...prev, projects: newProjects }));
+  };
+  
+  const updateCustomSection = (sectionId: string, items: CustomSectionItem[]) => {
+    setData(prev => ({
+      ...prev,
+      customSections: prev.customSections.map(s => s.id === sectionId ? { ...s, items } : s)
+    }));
+  };
+
+  const addCustomSection = () => {
+    if (!newSectionName.trim()) return;
+    const newSection = {
+      id: crypto.randomUUID(),
+      title: newSectionName,
+      items: []
+    };
+    setData(prev => ({ ...prev, customSections: [...prev.customSections, newSection] }));
+    setNewSectionName('');
+    setIsAddingSection(false);
+    setActiveTab(newSection.id);
+  };
+
+  const removeCustomSection = (id: string) => {
+    if (confirm('Are you sure you want to delete this entire section?')) {
+        setData(prev => ({ ...prev, customSections: prev.customSections.filter(s => s.id !== id) }));
+        setActiveTab('personal');
+    }
   };
 
   // --- AI Handlers ---
@@ -90,7 +115,7 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
       const summary = await generateResumeSummary(data);
       updatePersonalInfo('summary', summary);
     } catch (error) {
-      alert('Failed to generate summary. Please check your API key or try again.');
+      alert('Failed to generate summary. Please check your connection.');
     } finally {
       setIsGeneratingSummary(false);
     }
@@ -118,7 +143,6 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
       return;
     }
     
-    // Use the most recent experience description for context, or summary
     const context = data.experience[0]?.description || data.personalInfo.summary;
     
     try {
@@ -152,6 +176,16 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
     setData(prev => ({ ...prev, skills: prev.skills.filter(s => s !== skill) }));
   };
 
+  // Navigation Tabs
+  const tabs = [
+    { id: 'design', label: 'Design', icon: Palette },
+    { id: 'personal', label: 'Personal', icon: User },
+    { id: 'experience', label: 'Experience', icon: Briefcase },
+    { id: 'education', label: 'Education', icon: GraduationCap },
+    { id: 'projects', label: 'Projects', icon: FolderGit2 },
+    { id: 'skills', label: 'Skills', icon: Sparkles },
+  ];
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-neutral-50 overflow-hidden animate-in fade-in duration-500">
       
@@ -159,30 +193,35 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
       <div className="w-full md:w-[550px] lg:w-[600px] flex flex-col bg-white border-r border-neutral-200 shadow-xl z-10 no-print">
         
         {/* Top Bar */}
-        <div className="p-6 border-b border-neutral-100 flex items-center justify-between bg-white">
-          <div className="flex items-center gap-3 cursor-pointer group" onClick={onGoHome}>
-            <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center text-white group-hover:scale-105 transition-transform">
-               <FileText className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight group-hover:text-neutral-700 transition-colors">Resubuild</h1>
-          </div>
-          <Button onClick={handlePrint} variant="primary" icon={<Download className="w-4 h-4" />}>
-            Export PDF
-          </Button>
+        <div className="p-4 border-b border-neutral-100 bg-white">
+           <div className="flex items-center justify-between mb-4">
+               <button onClick={onGoHome} className="flex items-center text-sm text-neutral-500 hover:text-neutral-900 transition-colors">
+                   <ChevronLeft className="w-4 h-4 mr-1" /> Back to Dashboard
+               </button>
+               <span className="text-xs text-neutral-400 flex items-center gap-1">
+                   <Save className="w-3 h-3" /> Saved {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+               </span>
+           </div>
+           <div className="flex items-center justify-between">
+             <input 
+                className="text-xl font-bold text-neutral-900 bg-transparent border-b border-transparent hover:border-neutral-200 focus:border-neutral-900 focus:outline-none w-full mr-4"
+                value={data.name}
+                onChange={(e) => updateName(e.target.value)}
+                placeholder="Resume Name"
+             />
+             <Button onClick={handlePrint} variant="primary" icon={<Download className="w-4 h-4" />}>
+                Export
+             </Button>
+           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-neutral-100 overflow-x-auto hide-scrollbar">
-          {[
-            { id: 'personal', label: 'Personal', icon: User },
-            { id: 'experience', label: 'Experience', icon: Briefcase },
-            { id: 'education', label: 'Education', icon: Settings2 },
-            { id: 'skills', label: 'Skills', icon: Sparkles },
-          ].map(tab => (
+        {/* Navigation */}
+        <div className="flex border-b border-neutral-100 overflow-x-auto hide-scrollbar bg-white sticky top-0 z-20">
+          {tabs.map(tab => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-6 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 px-5 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
                 activeTab === tab.id 
                   ? 'border-neutral-900 text-neutral-900' 
                   : 'border-transparent text-neutral-500 hover:text-neutral-700'
@@ -192,11 +231,79 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
               {tab.label}
             </button>
           ))}
+          
+          {/* Dynamic Custom Tabs */}
+          {data.customSections.map(section => (
+             <button
+              key={section.id}
+              onClick={() => setActiveTab(section.id)}
+              className={`flex items-center gap-2 px-5 py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+                activeTab === section.id 
+                  ? 'border-neutral-900 text-neutral-900' 
+                  : 'border-transparent text-neutral-500 hover:text-neutral-700'
+              }`}
+            >
+              <Layout className="w-4 h-4" />
+              {section.title}
+            </button>
+          ))}
+
+          {/* Add Section Button */}
+          <div className="flex items-center px-4 border-l border-neutral-100">
+             {isAddingSection ? (
+                 <div className="flex items-center gap-2 animate-in fade-in slide-in-from-left-2">
+                    <input 
+                        autoFocus
+                        className="w-24 px-2 py-1 text-sm border rounded border-neutral-300 focus:outline-none focus:border-neutral-900"
+                        placeholder="Section Name"
+                        value={newSectionName}
+                        onChange={e => setNewSectionName(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && addCustomSection()}
+                    />
+                    <button onClick={addCustomSection} className="p-1 hover:bg-neutral-100 rounded"><PlusCircle className="w-4 h-4 text-green-600" /></button>
+                    <button onClick={() => setIsAddingSection(false)} className="p-1 hover:bg-neutral-100 rounded"><Trash2 className="w-4 h-4 text-neutral-400" /></button>
+                 </div>
+             ) : (
+                <button 
+                    onClick={() => setIsAddingSection(true)}
+                    className="text-xs font-bold uppercase tracking-wider text-neutral-500 hover:text-neutral-900 flex items-center gap-1 px-2 py-1 rounded hover:bg-neutral-100 transition-colors"
+                >
+                    <PlusCircle className="w-3.5 h-3.5" /> Add Section
+                </button>
+             )}
+          </div>
         </div>
 
         {/* Scrollable Form Area */}
-        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto p-6 custom-scrollbar bg-white">
           
+          {/* Design Tab */}
+          {activeTab === 'design' && (
+             <div className="space-y-8 animate-in fade-in duration-300">
+                <div>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <Palette className="w-5 h-5" /> Accent Color
+                    </h3>
+                    <div className="flex flex-wrap gap-4">
+                        {COLORS.map(color => (
+                            <button
+                                key={color}
+                                onClick={() => setData({...data, themeColor: color})}
+                                className={`w-10 h-10 rounded-full shadow-sm border-2 transition-all hover:scale-110 ${data.themeColor === color ? 'border-neutral-900 scale-110' : 'border-transparent'}`}
+                                style={{ backgroundColor: color }}
+                                title={color}
+                            />
+                        ))}
+                    </div>
+                </div>
+                
+                <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+                    <p className="text-sm text-neutral-600 mb-2 font-medium">Tip</p>
+                    <p className="text-sm text-neutral-500">Use a dark accent color for better readability when printed. Standard black is always the safest choice for Applicant Tracking Systems (ATS).</p>
+                </div>
+             </div>
+          )}
+
           {activeTab === 'personal' && (
             <div className="space-y-6 animate-in fade-in duration-300">
               <div className="grid grid-cols-2 gap-5">
@@ -279,6 +386,15 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
               />
             </div>
           )}
+          
+          {activeTab === 'projects' && (
+            <div className="animate-in fade-in duration-300">
+              <ProjectEditor
+                items={data.projects} 
+                onChange={updateProjects}
+              />
+            </div>
+          )}
 
           {activeTab === 'skills' && (
             <div className="space-y-6 animate-in fade-in duration-300">
@@ -324,6 +440,18 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ onGoHome }) => {
               </div>
             </div>
           )}
+
+          {/* Custom Section Editors */}
+          {data.customSections.map(section => activeTab === section.id && (
+              <div key={section.id} className="animate-in fade-in duration-300">
+                  <CustomSectionEditor 
+                     title={section.title}
+                     items={section.items}
+                     onChange={(items) => updateCustomSection(section.id, items)}
+                     onDeleteSection={() => removeCustomSection(section.id)}
+                  />
+              </div>
+          ))}
 
         </div>
       </div>

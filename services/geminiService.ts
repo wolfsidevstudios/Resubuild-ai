@@ -1,7 +1,19 @@
+
 import { GoogleGenAI } from "@google/genai";
 import { ResumeData, Experience } from "../types";
+import { getStoredAPIKey } from "./storageService";
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Helper to get the AI instance dynamically
+const getAI = () => {
+  // Prioritize user's stored key, fallback to env if available
+  const apiKey = getStoredAPIKey() || process.env.API_KEY;
+  
+  if (!apiKey) {
+    throw new Error("API Key is missing. Please add your Gemini API Key in Settings.");
+  }
+  
+  return new GoogleGenAI({ apiKey });
+};
 
 export const generateResumeSummary = async (data: ResumeData): Promise<string> => {
   const prompt = `
@@ -15,6 +27,7 @@ export const generateResumeSummary = async (data: ResumeData): Promise<string> =
   `;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
@@ -37,6 +50,7 @@ export const improveJobDescription = async (description: string, jobTitle: strin
   `;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,
@@ -58,6 +72,7 @@ export const suggestSkills = async (jobTitle: string, currentDescription: string
   `;
 
   try {
+    const ai = getAI();
     const response = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
       contents: prompt,

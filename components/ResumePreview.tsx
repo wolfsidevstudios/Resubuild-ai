@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { ResumeData } from '../types';
 import { MapPin, Mail, Phone, Globe, ExternalLink } from 'lucide-react';
@@ -8,7 +9,11 @@ interface ResumePreviewProps {
 }
 
 export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }) => {
-  const { personalInfo, experience, education, skills, projects } = data;
+  const { personalInfo, experience, education, skills, projects, customSections, themeColor } = data;
+  
+  // Helper to apply theme color safely
+  const themeStyle = { color: themeColor };
+  const borderStyle = { borderColor: themeColor };
 
   return (
     <div className="flex-1 bg-neutral-100/50 p-4 md:p-8 overflow-auto md:h-screen custom-scrollbar">
@@ -21,32 +26,32 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }
         >
           
           {/* Header */}
-          <header className="border-b pb-6 mb-6 border-neutral-200">
-            <h1 className="text-4xl font-bold tracking-tight text-neutral-900 uppercase mb-2">{personalInfo.fullName || "Your Name"}</h1>
+          <header className="border-b pb-6 mb-6" style={{borderColor: themeColor === '#000000' ? '#e5e5e5' : themeColor, borderBottomOpacity: 0.3}}>
+            <h1 className="text-4xl font-bold tracking-tight uppercase mb-2" style={themeStyle}>{personalInfo.fullName || "Your Name"}</h1>
             <p className="text-xl text-neutral-500 font-medium mb-4">{personalInfo.jobTitle || "Target Job Title"}</p>
             
             <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm text-neutral-600">
               {personalInfo.email && (
                 <div className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5" />
+                  <Mail className="w-3.5 h-3.5" style={themeStyle} />
                   <span>{personalInfo.email}</span>
                 </div>
               )}
               {personalInfo.phone && (
                 <div className="flex items-center gap-1.5">
-                  <Phone className="w-3.5 h-3.5" />
+                  <Phone className="w-3.5 h-3.5" style={themeStyle} />
                   <span>{personalInfo.phone}</span>
                 </div>
               )}
               {personalInfo.location && (
                 <div className="flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5" />
+                  <MapPin className="w-3.5 h-3.5" style={themeStyle} />
                   <span>{personalInfo.location}</span>
                 </div>
               )}
               {personalInfo.website && (
                 <div className="flex items-center gap-1.5">
-                  <Globe className="w-3.5 h-3.5" />
+                  <Globe className="w-3.5 h-3.5" style={themeStyle} />
                   <span>{personalInfo.website.replace(/^https?:\/\//, '')}</span>
                 </div>
               )}
@@ -56,7 +61,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }
           {/* Summary */}
           {personalInfo.summary && (
             <section className="mb-8">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-3">Profile</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest mb-3" style={themeStyle}>Profile</h2>
               <p className="text-sm leading-relaxed text-neutral-800 text-justify">
                 {personalInfo.summary}
               </p>
@@ -66,7 +71,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }
           {/* Experience */}
           {experience.length > 0 && (
             <section className="mb-8">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-4">Experience</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest mb-4" style={themeStyle}>Experience</h2>
               <div className="space-y-6">
                 {experience.map(exp => (
                   <div key={exp.id}>
@@ -89,7 +94,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }
           {/* Education */}
           {education.length > 0 && (
             <section className="mb-8">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-4">Education</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest mb-4" style={themeStyle}>Education</h2>
               <div className="space-y-4">
                 {education.map(edu => (
                   <div key={edu.id}>
@@ -109,7 +114,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }
            {/* Projects */}
            {projects.length > 0 && (
             <section className="mb-8">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-4">Projects</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest mb-4" style={themeStyle}>Projects</h2>
               <div className="space-y-4">
                 {projects.map(proj => (
                   <div key={proj.id}>
@@ -128,10 +133,29 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef }
             </section>
           )}
 
+          {/* Custom Sections */}
+          {customSections.map(section => (
+            <section key={section.id} className="mb-8">
+              <h2 className="text-sm font-bold uppercase tracking-widest mb-4" style={themeStyle}>{section.title}</h2>
+              <div className="space-y-4">
+                {section.items.map(item => (
+                  <div key={item.id}>
+                    <div className="flex justify-between items-baseline mb-1">
+                      <h3 className="font-bold text-neutral-900">{item.title}</h3>
+                      {item.date && <span className="text-xs font-medium text-neutral-500 whitespace-nowrap">{item.date}</span>}
+                    </div>
+                    {item.subtitle && <div className="text-sm font-medium text-neutral-600 mb-1">{item.subtitle}</div>}
+                    {item.description && <p className="text-sm text-neutral-700 leading-relaxed">{item.description}</p>}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+
           {/* Skills */}
           {skills.length > 0 && (
             <section>
-              <h2 className="text-sm font-bold uppercase tracking-widest text-neutral-400 mb-3">Skills</h2>
+              <h2 className="text-sm font-bold uppercase tracking-widest mb-3" style={themeStyle}>Skills</h2>
               <div className="flex flex-wrap gap-2">
                 {skills.map((skill, idx) => (
                   <span key={idx} className="bg-neutral-100 text-neutral-800 text-xs font-medium px-2.5 py-1 rounded-md border border-neutral-200">

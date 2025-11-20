@@ -1,3 +1,4 @@
+
 export interface PersonalInfo {
   fullName: string;
   email: string;
@@ -33,12 +34,31 @@ export interface Project {
   link: string;
 }
 
+export interface CustomSectionItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  date: string;
+  description: string;
+}
+
+export interface CustomSection {
+  id: string;
+  title: string;
+  items: CustomSectionItem[];
+}
+
 export interface ResumeData {
+  id: string;
+  name: string; // For the dashboard title
+  lastUpdated: number;
   personalInfo: PersonalInfo;
   experience: Experience[];
   education: Education[];
   projects: Project[];
   skills: string[];
+  customSections: CustomSection[];
+  themeColor: string;
 }
 
 export enum AIActionType {
