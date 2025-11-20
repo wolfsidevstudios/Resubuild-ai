@@ -40,31 +40,60 @@ function App() {
           return;
       }
 
-      const profile = await getUserProfile(currentSession.user.id);
-      const role = profile?.role || 'candidate';
-      setUserRole(role);
+      try {
+        const profile = await getUserProfile(currentSession.user.id);
+        // Default to candidate if profile fetch fails (network/permissions)
+        const role = profile?.role || 'candidate';
+        setUserRole(role);
 
-      if (role === 'employer') {
-          setView('employer-dashboard');
-      } else {
-          setView('dashboard');
+        if (role === 'employer') {
+            setView('employer-dashboard');
+        } else {
+            setView('dashboard');
+        }
+      } catch (error) {
+        console.error("Error routing user:", error);
+        setView('dashboard'); // Fallback
       }
   };
 
   useEffect(() => {
-    // Initial Session Check
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      if (session) {
-          await routeUser(session);
-      }
-      setLoading(false);
-    });
+    let isMounted = true;
+
+    // Safety Timeout: Force loading to false after 6 seconds to prevent infinite stuck screens
+    const safetyTimer = setTimeout(() => {
+        if (isMounted && loading) {
+            console.warn("Loading timed out, forcing render.");
+            setLoading(false);
+        }
+    }, 6000);
+
+    const initializeApp = async () => {
+        try {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) throw error;
+            
+            if (isMounted) {
+                setSession(session);
+                if (session) {
+                    await routeUser(session);
+                }
+            }
+        } catch (error) {
+            console.error("Initialization error:", error);
+        } finally {
+            if (isMounted) setLoading(false);
+        }
+    };
+
+    initializeApp();
 
     // Listen for Auth Changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
+      
       setSession(session);
       // If logging out
       if (!session) {
@@ -74,15 +103,22 @@ function App() {
           }
           setUserRole(null);
       } else if (_event === 'SIGNED_IN') {
-          setLoading(true);
+          // Only trigger loading if we aren't already on a dashboard
+          if (view === 'landing' || view === 'onboarding') {
+             setLoading(true);
+          }
           await routeUser(session);
           setLoading(false);
           setShowAuthModal(false); // Close modal if open
       }
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
+    return () => {
+        isMounted = false;
+        clearTimeout(safetyTimer);
+        subscription.unsubscribe();
+    };
+  }, []); // Empty dependency array ensures this runs once on mount
 
   const handleCreateNew = (mode: 'ai' | 'manual', templateId: string = 'modern') => {
     if (mode === 'ai') {
@@ -118,8 +154,9 @@ function App() {
 
   if (loading) {
       return (
-          <div className="min-h-screen flex items-center justify-center bg-white">
-              <Loader2 className="w-8 h-8 animate-spin text-neutral-900" />
+          <div className="min-h-screen flex flex-col items-center justify-center bg-white">
+              <Loader2 className="w-10 h-10 animate-spin text-neutral-900 mb-4" />
+              <p className="text-neutral-500 text-sm animate-pulse">Loading Resubuild...</p>
           </div>
       );
   }
