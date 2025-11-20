@@ -206,7 +206,7 @@ export const findBestCandidates = async (
     }
 };
 
-// --- Resupilot (Vibe Create) ---
+// --- Resupilot (Vibe Create & Edit) ---
 
 export const generateResumeFromPrompt = async (userPrompt: string): Promise<ResumeData> => {
     const prompt = `
@@ -269,6 +269,54 @@ export const generateResumeFromPrompt = async (userPrompt: string): Promise<Resu
 
     } catch (error) {
         console.error("Resupilot generation failed:", error);
+        throw error;
+    }
+};
+
+export const updateResumeWithAI = async (currentData: ResumeData, instruction: string): Promise<ResumeData> => {
+    const prompt = `
+        You are Resupilot, an expert AI resume editor.
+        Current Resume JSON: ${JSON.stringify(currentData)}
+        
+        User Instruction: "${instruction}"
+        
+        Task: Update the resume JSON based strictly on the user's instruction. 
+        - If they ask to add a skill, add it to the skills array.
+        - If they ask to change the summary, rewrite the summary field.
+        - If they ask to add a job, add a new entry to the experience array with generated IDs.
+        - Maintain all other data exactly as is.
+        
+        Return ONLY the fully valid, updated JSON object.
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json'
+            }
+        });
+
+        const text = response.text?.trim() || "{}";
+        const updatedData = JSON.parse(text);
+        
+        // Ensure IDs exist if AI added new items without them
+        if (updatedData.experience) {
+            updatedData.experience = updatedData.experience.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
+        }
+        if (updatedData.education) {
+            updatedData.education = updatedData.education.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
+        }
+        if (updatedData.projects) {
+            updatedData.projects = updatedData.projects.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
+        }
+
+        return updatedData as ResumeData;
+
+    } catch (error) {
+        console.error("Resupilot update failed:", error);
         throw error;
     }
 };

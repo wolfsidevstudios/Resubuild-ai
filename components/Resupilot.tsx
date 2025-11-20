@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, ArrowUp, X, Save, Send, Bot, User } from 'lucide-react';
-import { generateResumeFromPrompt } from '../services/geminiService';
+import { Sparkles, ArrowUp, X, Save, Send, Bot, User, Loader2 } from 'lucide-react';
+import { generateResumeFromPrompt, updateResumeWithAI } from '../services/geminiService';
 import { saveResume } from '../services/storageService';
 import { ResumeData } from '../types';
 import { ResumePreview } from './ResumePreview';
@@ -23,6 +23,7 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
         { role: 'ai', content: "I've created a first draft based on your request. What would you like to tweak? You can say things like 'Make the summary more punchy' or 'Add Figma to my skills'." }
     ]);
     const [chatInput, setChatInput] = useState('');
+    const [isUpdating, setIsUpdating] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
 
@@ -49,20 +50,21 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
         const userMsg = chatInput;
         setChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
         setChatInput('');
+        setIsUpdating(true);
         
-        // Simulate AI processing for now (In a real app, we would call an 'updateResume' AI endpoint)
-        // For this demo, we'll add a placeholder response or re-run generation if the user asks for a total rewrite
-        setTimeout(async () => {
-             setChatHistory(prev => [...prev, { role: 'ai', content: "I'm refining the resume based on that feedback... (Note: In this demo version, conversational editing uses the initial generation logic. Try asking for a completely new role to see changes!)" }]);
+        try {
+             // Call the new service function to perform the edit
+             const updatedData = await updateResumeWithAI(currentResume, userMsg);
              
-             // Re-generate contextually for demo purposes
-             try {
-                 const newData = await generateResumeFromPrompt(`${prompt}. Feedback: ${userMsg}`);
-                 setCurrentResume(newData);
-             } catch(e) {
-                 console.error(e);
-             }
-        }, 1000);
+             setCurrentResume(updatedData);
+             setChatHistory(prev => [...prev, { role: 'ai', content: "I've updated your resume based on your request. How does it look now?" }]);
+             
+        } catch(e) {
+             console.error(e);
+             setChatHistory(prev => [...prev, { role: 'ai', content: "Sorry, I ran into an issue updating the resume. Please try phrasing your request differently." }]);
+        } finally {
+            setIsUpdating(false);
+        }
     };
 
     useEffect(() => {
@@ -170,6 +172,16 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
                                 </div>
                             </div>
                         ))}
+                        {isUpdating && (
+                             <div className="flex gap-3">
+                                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
+                                    <Bot className="w-4 h-4" />
+                                </div>
+                                <div className="bg-white border border-neutral-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2 text-sm text-neutral-500">
+                                    <Loader2 className="w-4 h-4 animate-spin" /> Updating resume...
+                                </div>
+                            </div>
+                        )}
                         <div ref={messagesEndRef} />
                     </div>
                     
@@ -178,10 +190,15 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
                             <input 
                                 value={chatInput}
                                 onChange={(e) => setChatInput(e.target.value)}
-                                placeholder="Ask for changes..."
-                                className="w-full pl-4 pr-12 py-3 bg-neutral-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                                placeholder="Ask for changes (e.g. 'Rewrite summary')..."
+                                className="w-full pl-4 pr-12 py-3 bg-neutral-100 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 disabled:opacity-50"
+                                disabled={isUpdating}
                             />
-                            <button type="submit" className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors">
+                            <button 
+                                type="submit" 
+                                disabled={!chatInput.trim() || isUpdating}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors disabled:opacity-50"
+                            >
                                 <ArrowUp className="w-4 h-4" />
                             </button>
                         </form>
