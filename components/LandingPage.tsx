@@ -234,7 +234,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                           <p className="text-xl font-medium text-neutral-200 mb-4">"I landed my dream job at Spotify in 2 weeks. The AI audit is a game changer."</p>
                           <div className="flex items-center justify-center gap-3">
                                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">SJ</div>
-                               <div className="text-left">
+                                <div className="text-left">
                                    <div className="text-sm font-bold text-white">Sarah Jenkins</div>
                                    <div className="text-xs text-neutral-400">Product Designer</div>
                                </div>
@@ -318,6 +318,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                 </Button>
             )}
           </div>
+
+          {/* Product Hunt Badge */}
+          <div className="flex justify-center -mt-6 pb-12 animate-fade-in-up" style={{ animationDelay: '300ms' }}>
+              <a 
+                href="https://www.producthunt.com/products/resubuild-ai?embed=true&utm_source=badge-featured&utm_medium=badge&utm_source=badge-resubuild-ai" 
+                target="_blank" 
+                rel="noreferrer"
+                className="block rounded-full overflow-hidden shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all"
+              >
+                  <img 
+                    src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1040610&theme=dark&t=1763675720966" 
+                    alt="Resubuild ai - Craft your perfect resume with Resubuild. | Product Hunt" 
+                    style={{ width: '250px', height: '54px' }} 
+                    width="250" 
+                    height="54" 
+                  />
+              </a>
+          </div>
+
         </div>
 
         {/* Visual Resume Stack */}

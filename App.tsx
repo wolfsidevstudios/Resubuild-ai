@@ -12,11 +12,23 @@ import { NotFound } from './components/NotFound';
 import { AppAssets } from './components/AppAssets';
 import { ResumeData, UserRole } from './types';
 import { supabase, getUserProfile } from './services/supabase';
-import { createEmptyResume } from './services/storageService';
+import { createEmptyResume, getResumeById } from './services/storageService';
 import { Session } from '@supabase/supabase-js';
 import { Loader2, X } from 'lucide-react';
 
 type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets';
+
+// Map views to URL paths
+const ROUTES: Record<string, View> = {
+  '/': 'landing',
+  '/dashboard': 'dashboard',
+  '/employer': 'employer-dashboard',
+  '/onboarding': 'onboarding',
+  '/builder': 'builder',
+  '/discover': 'discover',
+  '/create': 'guest-resupilot',
+  '/media-kit': 'app-assets',
+};
 
 function App() {
   const [view, setView] = useState<View>('landing');
@@ -29,12 +41,90 @@ function App() {
   const [guestPrompt, setGuestPrompt] = useState<string>('');
   const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Helper to route user based on role
-  const routeUser = async (currentSession: Session | null) => {
+  // --- ROUTING HELPERS ---
+
+  const navigate = (newView: View, replace: boolean = false, params: Record<string, string> = {}) => {
+    // Find path for view
+    let path = Object.keys(ROUTES).find(key => ROUTES[key] === newView) || '/';
+    
+    // Append params (e.g. builder?id=123)
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value) searchParams.append(key, value);
+    });
+    
+    const queryString = searchParams.toString();
+    if (queryString) {
+        path += `?${queryString}`;
+    }
+
+    if (replace) {
+        window.history.replaceState({}, '', path);
+    } else {
+        window.history.pushState({}, '', path);
+    }
+    
+    setView(newView);
+    window.scrollTo(0, 0);
+  };
+
+  const syncViewFromUrl = async (currentSession: Session | null) => {
+      const path = window.location.pathname;
+      const searchParams = new URLSearchParams(window.location.search);
+      
+      // Find view matching current path (simple matching)
+      let matchedView: View = 'not-found';
+      if (ROUTES[path]) {
+          matchedView = ROUTES[path];
+      } else if (path === '/login' || path === '/signup') {
+          matchedView = 'landing'; // Handle specific auth routes as landing for now
+      }
+
+      // Deep linking logic
+      if (matchedView === 'builder') {
+          const resumeId = searchParams.get('id');
+          if (resumeId) {
+             // Attempt to load resume
+             const resume = getResumeById(resumeId, currentSession?.user.id);
+             if (resume) {
+                 setCurrentResume(resume);
+             } else {
+                 // Resume not found or no access
+                 navigate(currentSession ? 'dashboard' : 'landing', true);
+                 return;
+             }
+          } else if (!currentSession) {
+               navigate('landing', true);
+               return;
+          }
+      }
+
+      // Auth Guard
+      const protectedRoutes: View[] = ['dashboard', 'employer-dashboard', 'onboarding', 'builder'];
+      if (protectedRoutes.includes(matchedView) && !currentSession) {
+          // Redirect to landing if trying to access protected route without session
+          navigate('landing', true);
+          return;
+      }
+
+      // Role Guard
+      if (matchedView === 'dashboard' && userRole === 'employer') {
+           navigate('employer-dashboard', true);
+           return;
+      }
+      if (matchedView === 'employer-dashboard' && userRole === 'candidate') {
+           navigate('dashboard', true);
+           return;
+      }
+
+      setView(matchedView);
+  };
+
+  // Helper to route user based on role (called on login)
+  const routeUser = async (currentSession: Session | null, targetView?: View) => {
       if (!currentSession) {
-          // If we were in guest mode or assets page, don't force landing page immediately if intention is specific
-          if (view !== 'guest-resupilot' && view !== 'app-assets') {
-             setView('landing');
+          if (view !== 'guest-resupilot' && view !== 'app-assets' && view !== 'discover') {
+             navigate('landing');
           }
           setUserRole(null);
           return;
@@ -42,31 +132,48 @@ function App() {
 
       try {
         const profile = await getUserProfile(currentSession.user.id);
-        // Default to candidate if profile fetch fails (network/permissions)
         const role = profile?.role || 'candidate';
         setUserRole(role);
 
+        // If a specific target is requested (e.g. from URL), try to go there
+        if (targetView) {
+             navigate(targetView);
+             return;
+        }
+
+        // Otherwise default routing based on role, BUT respect current URL if it's valid
+        const currentPathView = ROUTES[window.location.pathname];
+        if (currentPathView === 'builder' || currentPathView === 'onboarding') {
+            // Stay on current view
+            return;
+        }
+        
         if (role === 'employer') {
-            setView('employer-dashboard');
+            navigate('employer-dashboard');
         } else {
-            setView('dashboard');
+            navigate('dashboard');
         }
       } catch (error) {
         console.error("Error routing user:", error);
-        setView('dashboard'); // Fallback
+        navigate('dashboard');
       }
   };
 
   useEffect(() => {
     let isMounted = true;
 
-    // Safety Timeout: Force loading to false after 6 seconds to prevent infinite stuck screens
-    const safetyTimer = setTimeout(() => {
-        if (isMounted && loading) {
-            console.warn("Loading timed out, forcing render.");
-            setLoading(false);
-        }
-    }, 6000);
+    // Handle Browser Back/Forward
+    const onPopState = () => {
+        // We re-run sync logic. Note: We need current session state here.
+        // Since event listener is added once, we rely on state being up to date or refetching.
+        // For simplicity in this structure, we just reload the appropriate view mapping.
+        const path = window.location.pathname;
+        const mappedView = ROUTES[path] || 'not-found';
+        
+        // Simple view switch for history navigation, complex guards are handled by effects
+        setView(mappedView);
+    };
+    window.addEventListener('popstate', onPopState);
 
     const initializeApp = async () => {
         try {
@@ -75,12 +182,19 @@ function App() {
             
             if (isMounted) {
                 setSession(session);
+                // Determine role first if session exists
                 if (session) {
-                    await routeUser(session);
+                    const profile = await getUserProfile(session.user.id);
+                    const role = profile?.role || 'candidate';
+                    setUserRole(role);
                 }
+                
+                // Then sync view from URL
+                await syncViewFromUrl(session);
             }
         } catch (error) {
             console.error("Initialization error:", error);
+            navigate('landing', true);
         } finally {
             if (isMounted) setLoading(false);
         }
@@ -95,56 +209,62 @@ function App() {
       if (!isMounted) return;
       
       setSession(session);
-      // If logging out
+      
       if (!session) {
-          // Keep on assets page if that's where we are
-          if (view !== 'app-assets') {
-            setView('landing');
+          // Logged out
+          if (view !== 'app-assets' && view !== 'discover' && view !== 'guest-resupilot') {
+             navigate('landing');
           }
           setUserRole(null);
       } else if (_event === 'SIGNED_IN') {
-          // Only trigger loading if we aren't already on a dashboard
-          if (view === 'landing' || view === 'onboarding') {
-             setLoading(true);
+          // Just logged in
+          // If we are on landing (default), route to dashboard. 
+          // If we are on a deep link (e.g. refreshed builder), syncViewFromUrl handles it on mount.
+          if (window.location.pathname === '/' || window.location.pathname === '/login') {
+             await routeUser(session); 
+          } else {
+             // Ensure role is set for the current session even if we stay on page
+             const profile = await getUserProfile(session.user.id);
+             setUserRole(profile?.role || 'candidate');
           }
-          await routeUser(session);
-          setLoading(false);
-          setShowAuthModal(false); // Close modal if open
+          
+          setShowAuthModal(false);
       }
     });
 
     return () => {
         isMounted = false;
-        clearTimeout(safetyTimer);
+        window.removeEventListener('popstate', onPopState);
         subscription.unsubscribe();
     };
-  }, []); // Empty dependency array ensures this runs once on mount
+  }, []); 
 
   const handleCreateNew = (mode: 'ai' | 'manual', templateId: string = 'modern') => {
     if (mode === 'ai') {
         setCurrentResume(undefined);
-        setView('onboarding');
+        navigate('onboarding');
     } else {
-        // For manual, we use the selected template
         const newResume = createEmptyResume(templateId);
         setCurrentResume(newResume);
-        setView('builder');
+        // For manual create, we're basically in builder mode with a fresh object.
+        // Ideally we save it first to generate an ID for the URL, but for memory-only start:
+        navigate('builder');
     }
   };
 
   const handleEdit = (resume: ResumeData) => {
     setCurrentResume(resume);
-    setView('builder');
+    navigate('builder', false, { id: resume.id });
   };
   
   const handleOnboardingComplete = (data: ResumeData) => {
       setCurrentResume(data);
-      setView('builder');
+      navigate('builder', false, { id: data.id });
   }
 
   const handleGuestEntry = (prompt: string) => {
       setGuestPrompt(prompt);
-      setView('guest-resupilot');
+      navigate('guest-resupilot');
   };
 
   const handleGuestSaveAttempt = (resume: ResumeData) => {
@@ -167,22 +287,22 @@ function App() {
         <LandingPage 
             onStart={() => routeUser(session)} 
             isAuthenticated={!!session}
-            onGoToDiscover={() => setView('discover')}
+            onGoToDiscover={() => navigate('discover')}
             onGuestTry={handleGuestEntry}
-            onGoToAssets={() => setView('app-assets')}
+            onGoToAssets={() => navigate('app-assets')}
         />
       )}
       
       {view === 'not-found' && (
-          <NotFound onHome={() => session ? routeUser(session) : setView('landing')} />
+          <NotFound onHome={() => session ? routeUser(session) : navigate('landing')} />
       )}
       
       {view === 'app-assets' && (
-          <AppAssets onHome={() => setView('landing')} />
+          <AppAssets onHome={() => navigate('landing')} />
       )}
       
       {view === 'discover' && (
-          <Discover onHome={() => routeUser(session)} />
+          <Discover onHome={() => session ? routeUser(session) : navigate('landing')} />
       )}
       
       {/* CANDIDATE ROUTES */}
@@ -190,7 +310,7 @@ function App() {
         <Dashboard 
             onCreate={handleCreateNew} 
             onEdit={handleEdit}
-            onHome={() => setView('landing')}
+            onHome={() => navigate('landing')}
             userId={session.user.id}
         />
       )}
@@ -198,7 +318,7 @@ function App() {
       {view === 'onboarding' && session && (
          <Onboarding 
             onComplete={handleOnboardingComplete}
-            onCancel={() => setView('dashboard')}
+            onCancel={() => navigate('dashboard')}
             userId={session.user.id}
          />
       )}
@@ -206,7 +326,7 @@ function App() {
       {view === 'builder' && session && (
         <ResumeBuilder 
             initialData={currentResume} 
-            onGoHome={() => setView('dashboard')} 
+            onGoHome={() => navigate('dashboard')} 
             userId={session.user.id}
         />
       )}
@@ -217,7 +337,7 @@ function App() {
             userId="guest" 
             isGuest={true}
             initialPrompt={guestPrompt}
-            onExit={() => setView('landing')} 
+            onExit={() => navigate('landing')} 
             onSave={handleGuestSaveAttempt} 
           />
       )}
@@ -226,7 +346,7 @@ function App() {
       {view === 'employer-dashboard' && session && userRole === 'employer' && (
           <EmployerDashboard 
               userId={session.user.id}
-              onHome={() => setView('landing')}
+              onHome={() => navigate('landing')}
           />
       )}
 
