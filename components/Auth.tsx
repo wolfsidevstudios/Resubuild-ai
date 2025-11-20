@@ -1,8 +1,9 @@
+
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 import { Button } from './Button';
 import { Input } from './InputField';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 interface AuthProps {
     onSuccess: () => void;
@@ -62,26 +63,27 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
     };
 
     return (
-        <div className="w-full max-w-md mx-auto bg-white rounded-2xl shadow-xl border border-neutral-200 p-8 animate-in fade-in zoom-in-95 duration-300">
-            <div className="text-center mb-8">
-                <h2 className="text-2xl font-bold text-neutral-900 mb-2">
-                    {view === 'signin' ? 'Welcome back' : 'Create your account'}
+        <div className="w-full max-w-sm mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="text-center mb-10">
+                <h2 className="text-3xl font-bold text-neutral-900 mb-3">
+                    {view === 'signin' ? 'Welcome back' : 'Create account'}
                 </h2>
-                <p className="text-neutral-500 text-sm">
+                <p className="text-neutral-500">
                     {view === 'signin' 
-                        ? 'Enter your details to access your resumes.' 
+                        ? 'Enter your details to access your workspace.' 
                         : 'Start building your professional resume for free.'}
                 </p>
             </div>
 
-            <form onSubmit={handleAuth} className="space-y-4">
+            <form onSubmit={handleAuth} className="space-y-5">
                 <Input 
                     label="Email Address" 
                     type="email" 
                     value={email} 
                     onChange={e => setEmail(e.target.value)} 
-                    placeholder="you@example.com" 
+                    placeholder="name@company.com" 
                     required
+                    className="bg-white"
                 />
                 <Input 
                     label="Password" 
@@ -91,24 +93,25 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
                     placeholder="••••••••" 
                     required
                     minLength={6}
+                    className="bg-white"
                 />
 
                 {error && (
-                    <div className="p-3 rounded-lg bg-red-50 text-red-600 text-sm flex items-start gap-2">
+                    <div className="p-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-start gap-2 border border-red-100">
                         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> 
                         <span>{error}</span>
                     </div>
                 )}
                 
                 {msg && (
-                    <div className="p-3 rounded-lg bg-green-50 text-green-600 text-sm flex items-center gap-2">
+                    <div className="p-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2 border border-green-100">
                         <CheckCircle2 className="w-4 h-4" /> {msg}
                     </div>
                 )}
 
                 <Button 
                     type="submit" 
-                    className="w-full" 
+                    className="w-full py-3 text-base" 
                     isLoading={loading}
                     variant="primary"
                 >
@@ -116,18 +119,18 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
                 </Button>
             </form>
 
-            <div className="mt-6 text-center">
+            <div className="mt-8 text-center">
                 <p className="text-sm text-neutral-600">
-                    {view === 'signin' ? "Don't have an account? " : "Already have an account? "}
+                    {view === 'signin' ? "New to Resubuild? " : "Already have an account? "}
                     <button 
                         onClick={() => {
                             setView(view === 'signin' ? 'signup' : 'signin');
                             setError(null);
                             setMsg(null);
                         }}
-                        className="font-semibold text-neutral-900 hover:underline focus:outline-none"
+                        className="font-bold text-neutral-900 hover:underline focus:outline-none ml-1"
                     >
-                        {view === 'signin' ? 'Sign up' : 'Sign in'}
+                        {view === 'signin' ? 'Create an account' : 'Sign in'}
                     </button>
                 </p>
             </div>

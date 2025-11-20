@@ -9,7 +9,7 @@ import {
   CheckCircle2, 
   FileText,
   Star,
-  User
+  X
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -83,11 +83,84 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       } else {
           setAuthView(view);
           setShowAuth(true);
+          document.body.style.overflow = 'hidden'; // Prevent scrolling
       }
+  };
+
+  const closeAuth = () => {
+      setShowAuth(false);
+      document.body.style.overflow = 'auto'; // Restore scrolling
   };
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white">
+      
+      {/* Full Screen Split Auth Overlay */}
+      {showAuth && (
+          <div className="fixed inset-0 z-[100] bg-white flex animate-in fade-in duration-300">
+              
+              {/* Left Side: Visual Branding (Desktop Only) */}
+              <div className="hidden lg:flex w-1/2 bg-neutral-900 relative items-center justify-center overflow-hidden">
+                  <div className="absolute top-8 left-8 flex items-center gap-2 text-white opacity-80">
+                       <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-neutral-900">
+                         <FileText className="w-4 h-4" />
+                       </div>
+                       <span className="font-bold text-lg">Resubuild</span>
+                  </div>
+
+                  {/* Abstract Decoration */}
+                  <div className="absolute inset-0 opacity-10">
+                      <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-neutral-700 via-neutral-900 to-neutral-900"></div>
+                  </div>
+
+                  <div className="relative z-10 flex flex-col items-center justify-center">
+                      {/* Animated Resume Preview */}
+                      <div className="animate-float">
+                          <div className="w-[260px] h-[370px] bg-white rounded-xl shadow-2xl rotate-[-3deg] overflow-hidden border border-white/10">
+                              <SkeletonResume variant="professional" />
+                              {/* Floating Badge */}
+                              <div className="absolute -right-3 top-12 bg-neutral-800 text-white text-[10px] font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1 border border-white/10">
+                                  <Sparkles className="w-2.5 h-2.5" />
+                                  <span>AI Optimized</span>
+                              </div>
+                          </div>
+                      </div>
+
+                      <div className="mt-12 max-w-md text-center px-6">
+                          <p className="text-xl font-medium text-neutral-200 mb-4">"The AI suggestions are frighteningly good. It helped me rewrite my entire experience section in minutes."</p>
+                          <div className="flex items-center justify-center gap-3">
+                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">MC</div>
+                               <div className="text-left">
+                                   <div className="text-sm font-bold text-white">Marcus Chen</div>
+                                   <div className="text-xs text-neutral-400">Senior UX Designer</div>
+                               </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+
+              {/* Right Side: Auth Form */}
+              <div className="w-full lg:w-1/2 relative flex items-center justify-center p-6 md:p-12 bg-white">
+                   <button 
+                      onClick={closeAuth}
+                      className="absolute top-6 right-6 md:top-8 md:right-8 p-2 rounded-full text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900 transition-colors z-10"
+                    >
+                        <X className="w-6 h-6" />
+                    </button>
+                   
+                   <div className="w-full max-w-md">
+                        <div className="lg:hidden flex items-center justify-center mb-8">
+                             <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white shadow-lg">
+                                <FileText className="w-5 h-5" />
+                             </div>
+                        </div>
+                        <Auth onSuccess={() => { closeAuth(); onStart(); }} defaultView={authView} />
+                   </div>
+              </div>
+          </div>
+      )}
+
+
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -122,21 +195,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           </div>
         </div>
       </nav>
-
-      {/* Auth Modal */}
-      {showAuth && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md animate-in fade-in duration-200">
-              <div className="relative w-full max-w-md">
-                   <button 
-                      onClick={() => setShowAuth(false)}
-                      className="absolute -top-12 right-0 text-white/80 hover:text-white font-medium"
-                    >
-                        Close
-                    </button>
-                   <Auth onSuccess={() => { setShowAuth(false); onStart(); }} defaultView={authView} />
-              </div>
-          </div>
-      )}
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden bg-gradient-to-b from-white via-neutral-50/30 to-white">
