@@ -58,7 +58,13 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
                 if (btnDiv) {
                     window.google.accounts.id.renderButton(
                         btnDiv,
-                        { theme: "outline", size: "large", width: "100%", text: view === 'signin' ? "signin_with" : "signup_with" }
+                        { 
+                            theme: "outline", 
+                            size: "large", 
+                            width: "100%", 
+                            shape: "pill",
+                            text: view === 'signin' ? "signin_with" : "signup_with" 
+                        }
                     );
                 }
             }
