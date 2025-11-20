@@ -51,6 +51,7 @@ export interface CustomSection {
 export interface ResumeData {
   id: string;
   name: string; // For the dashboard title
+  templateId: string; // 'modern' | 'professional' | 'creative' | 'minimal'
   lastUpdated: number;
   personalInfo: PersonalInfo;
   experience: Experience[];

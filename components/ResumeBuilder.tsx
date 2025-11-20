@@ -24,7 +24,9 @@ import {
   Globe,
   CheckCircle2,
   FileCheck,
-  Share2
+  Grid,
+  FileText,
+  AlignLeft
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -42,6 +44,13 @@ const COLORS = [
   '#D97706', // Amber
   '#DC2626', // Red
   '#4B5563', // Gray
+];
+
+const TEMPLATES = [
+    { id: 'modern', name: 'Modern', icon: Layout },
+    { id: 'professional', name: 'Professional', icon: FileText },
+    { id: 'creative', name: 'Creative', icon: Palette },
+    { id: 'minimal', name: 'Minimal', icon: AlignLeft },
 ];
 
 export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoHome, userId }) => {
@@ -323,7 +332,28 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
           {/* Design Tab */}
           {activeTab === 'design' && (
              <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Template Selection */}
                 <div>
+                    <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                        <Layout className="w-5 h-5" /> Template
+                    </h3>
+                    <div className="grid grid-cols-2 gap-4">
+                        {TEMPLATES.map(template => (
+                            <button
+                                key={template.id}
+                                onClick={() => setData({...data, templateId: template.id})}
+                                className={`flex items-center gap-3 p-3 rounded-xl border-2 transition-all text-left ${data.templateId === template.id ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-100 hover:border-neutral-200'}`}
+                            >
+                                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${data.templateId === template.id ? 'bg-neutral-900 text-white' : 'bg-white border border-neutral-200'}`}>
+                                    <template.icon className="w-5 h-5" />
+                                </div>
+                                <span className="font-bold text-sm">{template.name}</span>
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
+                <div className="border-t border-neutral-100 pt-6">
                     <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                         <Palette className="w-5 h-5" /> Accent Color
                     </h3>
@@ -358,11 +388,6 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                     <p className="text-sm text-neutral-500 leading-relaxed">
                         ATS mode strips away complex layouts and formatting to create a 100% machine-readable document optimized for Applicant Tracking Systems.
                     </p>
-                </div>
-
-                <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
-                    <p className="text-sm text-neutral-600 mb-2 font-medium">Tip</p>
-                    <p className="text-sm text-neutral-500">Use standard black as an accent color for maximum compatibility.</p>
                 </div>
              </div>
           )}

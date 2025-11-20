@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare, Sparkles, PenTool } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare, Sparkles, PenTool, Layout, Grid, AlignLeft, Palette } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
 import { supabase } from '../services/supabase';
@@ -10,18 +10,29 @@ import { Messaging } from './Messaging';
 import { Notifications } from './Notifications';
 
 interface DashboardProps {
-  onCreate: (mode: 'ai' | 'manual') => void;
+  onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
   onEdit: (resume: ResumeData) => void;
   onHome: () => void;
   userId: string;
 }
+
+const TEMPLATES = [
+    { id: 'modern', name: 'Modern', icon: Layout, desc: 'Clean, balanced, perfect for most roles.' },
+    { id: 'professional', name: 'Professional', icon: FileText, desc: 'Traditional serif layout for corporate roles.' },
+    { id: 'creative', name: 'Creative', icon: Palette, desc: 'Bold sidebar with accent colors for designers.' },
+    { id: 'minimal', name: 'Minimal', icon: AlignLeft, desc: 'Simple, centered, whitespace-heavy.' },
+];
 
 export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, userId }) => {
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  
+  // Creation Flow State
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createStep, setCreateStep] = useState<'method' | 'templates'>('method');
+  
   const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
@@ -51,6 +62,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
       await supabase.auth.signOut();
       onHome();
   };
+  
+  const openCreateModal = () => {
+      setCreateStep('method');
+      setShowCreateModal(true);
+  }
 
   return (
     <div className="min-h-screen bg-neutral-50 text-neutral-900 font-sans relative">
@@ -91,7 +107,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
             <h1 className="text-3xl font-bold mb-2">My Resumes</h1>
             <p className="text-neutral-500">Manage and edit your saved resumes.</p>
           </div>
-          <Button onClick={() => setShowCreateModal(true)} icon={<Plus className="w-5 h-5" />}>
+          <Button onClick={openCreateModal} icon={<Plus className="w-5 h-5" />}>
             Create New
           </Button>
         </div>
@@ -105,7 +121,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
             <p className="text-neutral-500 mb-8 max-w-md mx-auto">
               Start building your professional resume today with our AI-powered tools.
             </p>
-            <Button onClick={() => setShowCreateModal(true)} variant="primary">
+            <Button onClick={openCreateModal} variant="primary">
               Create Your First Resume
             </Button>
           </div>
@@ -113,7 +129,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {/* Create New Card */}
             <div 
-              onClick={() => setShowCreateModal(true)}
+              onClick={openCreateModal}
               className="group flex flex-col items-center justify-center h-[280px] bg-white border-2 border-dashed border-neutral-200 rounded-3xl hover:border-neutral-900 hover:bg-neutral-50 transition-all cursor-pointer"
             >
               <div className="w-14 h-14 bg-neutral-100 rounded-full flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
@@ -138,6 +154,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                          <div className="h-1 bg-neutral-300 w-full rounded-full"></div>
                          <div className="h-1 bg-neutral-300 w-5/6 rounded-full"></div>
                     </div>
+                  </div>
+                  {/* Template Badge */}
+                  <div className="absolute top-3 left-3">
+                      <span className="text-[10px] font-bold uppercase tracking-wider bg-white px-2 py-1 rounded shadow-sm border border-neutral-100 text-neutral-500">
+                          {resume.templateId || 'Modern'}
+                      </span>
                   </div>
                   <div className="absolute top-3 right-3">
                       <button 
@@ -178,40 +200,70 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/20 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
                <div className="p-6 md:p-8 border-b border-neutral-100 flex justify-between items-center">
-                  <h2 className="text-2xl font-bold">How would you like to start?</h2>
+                  <div className="flex items-center gap-2">
+                      {createStep === 'templates' && (
+                          <button onClick={() => setCreateStep('method')} className="text-neutral-400 hover:text-neutral-900 mr-2">
+                              <ArrowRight className="w-5 h-5 rotate-180" />
+                          </button>
+                      )}
+                      <h2 className="text-2xl font-bold">
+                          {createStep === 'method' ? 'How would you like to start?' : 'Choose a template'}
+                      </h2>
+                  </div>
                   <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-neutral-100 rounded-full">
                     <X className="w-5 h-5 text-neutral-500" />
                   </button>
                </div>
-               <div className="p-6 md:p-8 grid md:grid-cols-2 gap-6">
-                   {/* AI Option */}
-                   <button 
-                      onClick={() => onCreate('ai')}
-                      className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
-                   >
-                      <div className="w-12 h-12 bg-neutral-900 text-white rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
-                          <Sparkles className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-lg font-bold mb-2">AI Assistant</h3>
-                      <p className="text-sm text-neutral-500 leading-relaxed">
-                          Guided experience. Our AI will help you write a professional summary, enhance your descriptions, and suggest skills.
-                      </p>
-                   </button>
 
-                   {/* Manual Option */}
-                   <button 
-                      onClick={() => onCreate('manual')}
-                      className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
-                   >
-                      <div className="w-12 h-12 bg-white text-neutral-900 border-2 border-neutral-200 rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                          <PenTool className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-lg font-bold mb-2">Start from Scratch</h3>
-                      <p className="text-sm text-neutral-500 leading-relaxed">
-                          Blank canvas. Perfect if you already have a resume content ready to copy-paste or prefer total control.
-                      </p>
-                   </button>
-               </div>
+               {createStep === 'method' ? (
+                   <div className="p-6 md:p-8 grid md:grid-cols-2 gap-6">
+                       {/* AI Option */}
+                       <button 
+                          onClick={() => onCreate('ai')}
+                          className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
+                       >
+                          <div className="w-12 h-12 bg-neutral-900 text-white rounded-xl flex items-center justify-center mb-4 shadow-lg group-hover:scale-110 transition-transform">
+                              <Sparkles className="w-6 h-6" />
+                          </div>
+                          <h3 className="text-lg font-bold mb-2">AI Assistant</h3>
+                          <p className="text-sm text-neutral-500 leading-relaxed">
+                              Guided experience. Our AI will help you write a professional summary, enhance your descriptions, and suggest skills.
+                          </p>
+                       </button>
+    
+                       {/* Manual Option */}
+                       <button 
+                          onClick={() => setCreateStep('templates')}
+                          className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
+                       >
+                          <div className="w-12 h-12 bg-white text-neutral-900 border-2 border-neutral-200 rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
+                              <Grid className="w-6 h-6" />
+                          </div>
+                          <h3 className="text-lg font-bold mb-2">Pick a Template</h3>
+                          <p className="text-sm text-neutral-500 leading-relaxed">
+                              Choose from our gallery of professional layouts and start building your resume from scratch.
+                          </p>
+                       </button>
+                   </div>
+               ) : (
+                   <div className="p-6 md:p-8 grid grid-cols-2 gap-4">
+                       {TEMPLATES.map(t => (
+                           <button
+                                key={t.id}
+                                onClick={() => onCreate('manual', t.id)}
+                                className="flex items-start gap-4 p-4 rounded-xl border border-neutral-200 hover:border-neutral-900 hover:shadow-md transition-all text-left group"
+                           >
+                               <div className="w-12 h-12 bg-neutral-50 rounded-lg flex items-center justify-center flex-shrink-0 group-hover:bg-neutral-900 group-hover:text-white transition-colors">
+                                   <t.icon className="w-6 h-6" />
+                               </div>
+                               <div>
+                                   <h3 className="font-bold text-neutral-900">{t.name}</h3>
+                                   <p className="text-xs text-neutral-500 mt-1 leading-tight">{t.desc}</p>
+                               </div>
+                           </button>
+                       ))}
+                   </div>
+               )}
            </div>
         </div>
       )}

@@ -47,9 +47,10 @@ export const deleteResume = (id: string, userId?: string): void => {
   localStorage.setItem(getStorageKey(userId), JSON.stringify(filtered));
 };
 
-export const createEmptyResume = (): ResumeData => ({
+export const createEmptyResume = (templateId: string = 'modern'): ResumeData => ({
   id: crypto.randomUUID(),
   name: 'Untitled Resume',
+  templateId,
   lastUpdated: Date.now(),
   personalInfo: {
     fullName: '',

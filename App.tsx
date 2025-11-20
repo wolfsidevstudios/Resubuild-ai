@@ -69,12 +69,13 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleCreateNew = (mode: 'ai' | 'manual') => {
+  const handleCreateNew = (mode: 'ai' | 'manual', templateId: string = 'modern') => {
     if (mode === 'ai') {
         setCurrentResume(undefined);
         setView('onboarding');
     } else {
-        const newResume = createEmptyResume();
+        // For manual, we use the selected template
+        const newResume = createEmptyResume(templateId);
         setCurrentResume(newResume);
         setView('builder');
     }
