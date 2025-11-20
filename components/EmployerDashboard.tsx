@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Search, MessageSquare, LogOut, Sparkles, User, ChevronRight, Send } from 'lucide-react';
 import { supabase, fetchPublishedResumes, PublishedResume, getUserProfile } from '../services/supabase';
@@ -87,9 +86,11 @@ export const EmployerDashboard: React.FC<EmployerDashboardProps> = ({ userId, on
             {/* Sidebar */}
             <aside className="w-full md:w-64 bg-white border-r border-neutral-200 flex flex-col z-10">
                 <div className="p-6 border-b border-neutral-100 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white">
-                        <Briefcase className="w-5 h-5" />
-                    </div>
+                    <img 
+                        src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" 
+                        alt="Resubuild Logo" 
+                        className="w-10 h-10 rounded-xl object-cover"
+                    />
                     <div>
                         <h1 className="font-bold text-lg leading-tight">Resubuild</h1>
                         <span className="text-xs text-neutral-500 font-medium">For Employers</span>

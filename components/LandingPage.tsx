@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
@@ -253,9 +252,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
               {/* Left Side: Visual Branding (Desktop Only) */}
               <div className="hidden lg:flex w-1/2 bg-neutral-900 relative items-center justify-center overflow-hidden">
                   <div className="absolute top-8 left-8 flex items-center gap-2 text-white opacity-80">
-                       <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-neutral-900">
-                         <FileText className="w-4 h-4" />
-                       </div>
+                       <img 
+                          src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" 
+                          alt="Resubuild Logo" 
+                          className="w-8 h-8 rounded-lg object-cover"
+                       />
                        <span className="font-bold text-lg">Resubuild</span>
                   </div>
 
@@ -301,9 +302,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                    
                    <div className="w-full max-w-md">
                         <div className="lg:hidden flex items-center justify-center mb-8">
-                             <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white shadow-lg">
-                                <FileText className="w-5 h-5" />
-                             </div>
+                             <img 
+                                src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" 
+                                alt="Resubuild Logo" 
+                                className="w-12 h-12 rounded-xl object-cover shadow-lg"
+                             />
                         </div>
                         <Auth onSuccess={() => { closeAuth(); onStart(); }} defaultView={authView} />
                    </div>
@@ -316,9 +319,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
-            <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-neutral-900/20 transition-transform hover:scale-105">
-              <FileText className="w-5 h-5" />
-            </div>
+            <img 
+                src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" 
+                alt="Resubuild Logo" 
+                className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-neutral-900/20 transition-transform hover:scale-105"
+            />
             <span className="font-bold text-xl tracking-tight">Resubuild</span>
           </div>
           <div className="flex items-center gap-4">
@@ -570,9 +575,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       <footer className="py-12 bg-white border-t border-neutral-100 text-center">
         <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-6">
           <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity cursor-default">
-            <div className="w-6 h-6 bg-neutral-900 rounded-lg flex items-center justify-center text-white">
-              <FileText className="w-3 h-3" />
-            </div>
+            <img 
+                src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" 
+                alt="Resubuild Logo" 
+                className="w-6 h-6 rounded-lg object-cover"
+            />
             <span className="font-bold tracking-tight">Resubuild</span>
           </div>
           <div className="flex gap-8 text-sm text-neutral-500">

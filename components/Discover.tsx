@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState, useRef } from 'react';
 import { fetchPublishedResumes, PublishedResume } from '../services/supabase';
 import { ResumePreview } from './ResumePreview';
@@ -43,9 +42,11 @@ export const Discover: React.FC<DiscoverProps> = ({ onHome }) => {
             <nav className="bg-white border-b border-neutral-200 px-6 py-4 sticky top-0 z-20">
                 <div className="max-w-7xl mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-3 cursor-pointer" onClick={onHome}>
-                        <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white">
-                        <FileText className="w-5 h-5" />
-                        </div>
+                        <img 
+                            src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" 
+                            alt="Resubuild Logo" 
+                            className="w-10 h-10 rounded-xl object-cover"
+                        />
                         <span className="font-bold text-xl tracking-tight">Resubuild <span className="text-neutral-400 font-normal">Discover</span></span>
                     </div>
                     <div className="relative w-full max-w-md mx-8 hidden md:block">
