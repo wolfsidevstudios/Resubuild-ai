@@ -5,7 +5,7 @@ const API_KEY_STORAGE_KEY = 'gemini_api_key';
 
 // Helper to get the key based on user ID
 const getStorageKey = (userId?: string) => {
-    return userId ? `resubuild_resumes_${userId}` : 'resubuild_resumes';
+    return userId ? `resubuild_resumes_${userId}` : 'resubuild_resumes_guest';
 };
 
 export const getResumes = (userId?: string): ResumeData[] => {

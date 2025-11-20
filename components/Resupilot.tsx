@@ -12,11 +12,13 @@ interface ResupilotProps {
     userId: string;
     onExit: () => void;
     onSave: (resume: ResumeData) => void;
+    isGuest?: boolean;
+    initialPrompt?: string;
 }
 
-export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) => {
+export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave, isGuest = false, initialPrompt = '' }) => {
     const [view, setView] = useState<'home' | 'workspace'>('home');
-    const [prompt, setPrompt] = useState('');
+    const [prompt, setPrompt] = useState(initialPrompt);
     const [isGenerating, setIsGenerating] = useState(false);
     const [currentResume, setCurrentResume] = useState<ResumeData | null>(null);
     const [chatHistory, setChatHistory] = useState<{role: 'ai' | 'user', content: string}[]>([
@@ -27,20 +29,31 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const previewRef = useRef<HTMLDivElement>(null);
 
-    const handleInitialSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!prompt.trim()) return;
+    // Auto-start if prompt is provided via prop
+    useEffect(() => {
+        if (initialPrompt && view === 'home' && !isGenerating && !currentResume) {
+            handleInitialGenerate(initialPrompt);
+        }
+    }, [initialPrompt]);
 
+    const handleInitialGenerate = async (promptText: string) => {
         setIsGenerating(true);
         try {
-            const data = await generateResumeFromPrompt(prompt);
+            const data = await generateResumeFromPrompt(promptText);
             setCurrentResume(data);
             setView('workspace');
         } catch (error) {
             alert("Failed to generate resume. Please check your API key.");
+            console.error(error);
         } finally {
             setIsGenerating(false);
         }
+    };
+
+    const handleInitialSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!prompt.trim()) return;
+        await handleInitialGenerate(prompt);
     };
 
     const handleChatSubmit = async (e: React.FormEvent) => {
@@ -53,9 +66,7 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
         setIsUpdating(true);
         
         try {
-             // Call the new service function to perform the edit
              const updatedData = await updateResumeWithAI(currentResume, userMsg);
-             
              setCurrentResume(updatedData);
              setChatHistory(prev => [...prev, { role: 'ai', content: "I've updated your resume based on your request. How does it look now?" }]);
              
@@ -73,8 +84,13 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
 
     const handleSaveAndExit = () => {
         if (currentResume) {
-            saveResume(currentResume, userId);
-            onSave(currentResume);
+            if (isGuest) {
+                // For guests, we trigger the onSave callback which should open the auth modal
+                onSave(currentResume);
+            } else {
+                saveResume(currentResume, userId);
+                onSave(currentResume);
+            }
         }
     };
 
@@ -151,10 +167,13 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave }) 
                 <div className="flex items-center gap-2">
                     <Sparkles className="w-5 h-5 text-blue-600" />
                     <span className="font-bold text-lg">Resupilot Workspace</span>
+                    {isGuest && <span className="text-xs px-2 py-0.5 bg-neutral-100 rounded-full text-neutral-500">Guest Mode</span>}
                 </div>
                 <div className="flex items-center gap-3">
                     <Button variant="secondary" onClick={onExit}>Discard</Button>
-                    <Button onClick={handleSaveAndExit} icon={<Save className="w-4 h-4" />}>Save to Dashboard</Button>
+                    <Button onClick={handleSaveAndExit} icon={<Save className="w-4 h-4" />}>
+                        {isGuest ? 'Save Account' : 'Save to Dashboard'}
+                    </Button>
                 </div>
             </div>
 

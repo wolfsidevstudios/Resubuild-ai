@@ -6,13 +6,15 @@ import { Dashboard } from './components/Dashboard';
 import { EmployerDashboard } from './components/EmployerDashboard';
 import { Onboarding } from './components/Onboarding';
 import { Discover } from './components/Discover';
+import { Resupilot } from './components/Resupilot';
+import { Auth } from './components/Auth';
 import { ResumeData, UserRole } from './types';
 import { supabase, getUserProfile } from './services/supabase';
 import { createEmptyResume } from './services/storageService';
 import { Session } from '@supabase/supabase-js';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot';
 
 function App() {
   const [view, setView] = useState<View>('landing');
@@ -20,11 +22,18 @@ function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Guest Mode State
+  const [guestPrompt, setGuestPrompt] = useState<string>('');
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   // Helper to route user based on role
   const routeUser = async (currentSession: Session | null) => {
       if (!currentSession) {
-          setView('landing');
+          // If we were in guest mode, don't force landing page, wait for user action
+          if (view !== 'guest-resupilot') {
+             setView('landing');
+          }
           setUserRole(null);
           return;
       }
@@ -63,6 +72,7 @@ function App() {
           setLoading(true);
           await routeUser(session);
           setLoading(false);
+          setShowAuthModal(false); // Close modal if open
       }
     });
 
@@ -91,6 +101,16 @@ function App() {
       setView('builder');
   }
 
+  const handleGuestEntry = (prompt: string) => {
+      setGuestPrompt(prompt);
+      setView('guest-resupilot');
+  };
+
+  const handleGuestSaveAttempt = (resume: ResumeData) => {
+      setCurrentResume(resume);
+      setShowAuthModal(true);
+  };
+
   if (loading) {
       return (
           <div className="min-h-screen flex items-center justify-center bg-white">
@@ -106,6 +126,7 @@ function App() {
             onStart={() => routeUser(session)} 
             isAuthenticated={!!session}
             onGoToDiscover={() => setView('discover')}
+            onGuestTry={handleGuestEntry}
         />
       )}
       
@@ -139,6 +160,17 @@ function App() {
         />
       )}
 
+      {/* GUEST MODE */}
+      {view === 'guest-resupilot' && !session && (
+          <Resupilot 
+            userId="guest" 
+            isGuest={true}
+            initialPrompt={guestPrompt}
+            onExit={() => setView('landing')} 
+            onSave={handleGuestSaveAttempt} 
+          />
+      )}
+
       {/* EMPLOYER ROUTES */}
       {view === 'employer-dashboard' && session && userRole === 'employer' && (
           <EmployerDashboard 
@@ -146,14 +178,24 @@ function App() {
               onHome={() => setView('landing')}
           />
       )}
-      
-      {/* Fallback */}
-      {view !== 'landing' && view !== 'discover' && !session && (
-          <LandingPage 
-            onStart={() => {}} 
-            isAuthenticated={false} 
-            onGoToDiscover={() => setView('discover')}
-          />
+
+      {/* Auth Modal for Guest Save or General Login */}
+      {showAuthModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/50 backdrop-blur-sm">
+              <div className="bg-white w-full max-w-md rounded-3xl p-6 relative animate-in zoom-in-95">
+                  <button 
+                    onClick={() => setShowAuthModal(false)}
+                    className="absolute top-4 right-4 p-2 hover:bg-neutral-100 rounded-full"
+                  >
+                      <X className="w-5 h-5 text-neutral-500" />
+                  </button>
+                  <div className="mb-6 text-center">
+                      <h2 className="text-2xl font-bold mb-2">Save your Resume</h2>
+                      <p className="text-neutral-500">Create a free account to save your progress and download the PDF.</p>
+                  </div>
+                  <Auth onSuccess={() => setShowAuthModal(false)} defaultView="signup" />
+              </div>
+          </div>
       )}
     </>
   );
