@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
@@ -34,6 +35,7 @@ interface LandingPageProps {
   isAuthenticated: boolean;
   onGoToDiscover?: () => void;
   onGuestTry?: (prompt: string) => void;
+  onGoToAssets?: () => void;
 }
 
 // --- Helper Components for Animations ---
@@ -215,7 +217,7 @@ const SkeletonResume: React.FC<{ variant: 'simple' | 'modern' | 'professional' |
   );
 };
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover, onGuestTry }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover, onGuestTry, onGoToAssets }) => {
   const [showAuth, setShowAuth] = useState(false);
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signup');
   const [playgroundPrompt, setPlaygroundPrompt] = useState('');
@@ -281,7 +283,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                       <div className="mt-12 max-w-md text-center px-6">
                           <p className="text-xl font-medium text-neutral-200 mb-4">"The AI suggestions are frighteningly good. It helped me rewrite my entire experience section in minutes."</p>
                           <div className="flex items-center justify-center gap-3">
-                               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">MC</div>
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-sm font-bold text-white shadow-lg">MC</div>
                                <div className="text-left">
                                    <div className="text-sm font-bold text-white">Marcus Chen</div>
                                    <div className="text-xs text-neutral-400">Senior UX Designer</div>
@@ -502,13 +504,73 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
         </div>
       </section>
 
-      {/* Features Section */}
+      {/* Feature Deep Dive */}
+      <section className="py-24 bg-white overflow-hidden">
+          <div className="max-w-7xl mx-auto px-6 space-y-24">
+              {/* Feature 1: Resupilot */}
+              <div className="flex flex-col md:flex-row items-center gap-12 md:gap-24">
+                  <div className="flex-1 space-y-6">
+                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-sm font-bold">
+                            <Sparkles className="w-4 h-4" /> Resupilot AI
+                       </div>
+                       <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Just chat. <br/>We'll build.</h2>
+                       <p className="text-xl text-neutral-500 leading-relaxed">
+                           No more fiddling with formatting. Just tell Resupilot what you need—"Add a skill", "Rewrite my summary", "Make it professional"—and watch it happen instantly.
+                       </p>
+                  </div>
+                  <div className="flex-1 w-full">
+                       <div className="relative aspect-square md:aspect-[4/3] bg-neutral-50 rounded-3xl overflow-hidden border border-neutral-100 shadow-2xl shadow-blue-100">
+                           {/* Abstract Chat UI */}
+                           <div className="absolute bottom-0 w-full p-6 bg-white border-t border-neutral-100">
+                               <div className="h-12 bg-neutral-100 rounded-full flex items-center px-4 text-neutral-400 text-sm">Add React to my skills...</div>
+                           </div>
+                           <div className="p-6 space-y-4">
+                               <div className="flex gap-3">
+                                   <div className="w-8 h-8 bg-blue-100 rounded-full"></div>
+                                   <div className="bg-white border border-neutral-100 p-3 rounded-2xl rounded-tl-none text-sm text-neutral-600 shadow-sm">How does your resume look now?</div>
+                               </div>
+                               <div className="flex gap-3 flex-row-reverse">
+                                   <div className="w-8 h-8 bg-neutral-900 rounded-full"></div>
+                                   <div className="bg-neutral-900 text-white p-3 rounded-2xl rounded-tr-none text-sm shadow-sm">Perfect, thanks!</div>
+                               </div>
+                           </div>
+                       </div>
+                  </div>
+              </div>
+
+              {/* Feature 2: Audit (Reversed) */}
+               <div className="flex flex-col md:flex-row-reverse items-center gap-12 md:gap-24">
+                  <div className="flex-1 space-y-6">
+                       <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-600 text-sm font-bold">
+                            <Target className="w-4 h-4" /> Smart Audit
+                       </div>
+                       <h2 className="text-4xl md:text-5xl font-bold tracking-tight">Beat the ATS <br/>before you apply.</h2>
+                       <p className="text-xl text-neutral-500 leading-relaxed">
+                           Get a real-time score on your resume. Our AI scans for keywords, formatting issues, and quantifiable results to ensure you get past the bots.
+                       </p>
+                  </div>
+                  <div className="flex-1 w-full flex justify-center">
+                       <div className="relative w-64 h-64 flex items-center justify-center bg-white rounded-full shadow-2xl border-8 border-neutral-50">
+                           <div className="text-center">
+                               <div className="text-6xl font-bold text-neutral-900">92</div>
+                               <div className="text-green-500 font-bold uppercase tracking-wider text-sm mt-1">Excellent</div>
+                           </div>
+                           {/* Orbiting elements */}
+                           <div className="absolute top-0 right-0 bg-green-100 text-green-700 px-4 py-2 rounded-full text-xs font-bold shadow-sm animate-bounce">Keywords Found</div>
+                           <div className="absolute bottom-10 left-0 bg-neutral-900 text-white px-4 py-2 rounded-full text-xs font-bold shadow-sm animate-pulse">Format Clean</div>
+                       </div>
+                  </div>
+              </div>
+          </div>
+      </section>
+
+      {/* Features Grid */}
       <section id="features" className="py-24 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-6">
           <ScrollReveal>
             <div className="text-center mb-16 max-w-2xl mx-auto">
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">Why choose Resubuild?</h2>
-                <p className="text-neutral-500 text-lg">Everything you need to create a professional resume in minutes, designed for modern recruiters.</p>
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Everything you need.</h2>
+                <p className="text-neutral-500 text-lg">Powerful tools designed for the modern job seeker.</p>
             </div>
           </ScrollReveal>
 
@@ -531,6 +593,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                 title: "One-Click PDF",
                 desc: "Export your resume as a polished, ATS-friendly PDF document ready for application submissions.",
                 delay: 200
+              },
+               {
+                icon: <PenTool className="w-8 h-8" />,
+                title: "Cover Letter Gen",
+                desc: "Paste the job description and let our AI write a tailored cover letter that matches your resume's tone.",
+                delay: 300
+              },
+               {
+                icon: <Search className="w-8 h-8" />,
+                title: "Talent Discovery",
+                desc: "Publish your profile to our exclusive talent pool where verified employers can find and message you.",
+                delay: 400
+              },
+               {
+                icon: <MessageSquare className="w-8 h-8" />,
+                title: "Direct Messaging",
+                desc: "Chat directly with recruiters and employers who are interested in your profile.",
+                delay: 500
               }
             ].map((feature, idx) => (
               <ScrollReveal key={idx} delay={feature.delay}>
@@ -586,6 +666,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
               <a href="#" className="hover:text-neutral-900 transition-colors">Privacy</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Terms</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Contact</a>
+              {onGoToAssets && (
+                  <button onClick={onGoToAssets} className="hover:text-neutral-900 transition-colors">Media Kit</button>
+              )}
           </div>
           <p className="text-neutral-400 text-sm">
             © {new Date().getFullYear()} Resubuild. Built for the modern professional.

@@ -9,13 +9,14 @@ import { Discover } from './components/Discover';
 import { Resupilot } from './components/Resupilot';
 import { Auth } from './components/Auth';
 import { NotFound } from './components/NotFound';
+import { AppAssets } from './components/AppAssets';
 import { ResumeData, UserRole } from './types';
 import { supabase, getUserProfile } from './services/supabase';
 import { createEmptyResume } from './services/storageService';
 import { Session } from '@supabase/supabase-js';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets';
 
 function App() {
   const [view, setView] = useState<View>('landing');
@@ -31,8 +32,8 @@ function App() {
   // Helper to route user based on role
   const routeUser = async (currentSession: Session | null) => {
       if (!currentSession) {
-          // If we were in guest mode, don't force landing page, wait for user action
-          if (view !== 'guest-resupilot') {
+          // If we were in guest mode or assets page, don't force landing page immediately if intention is specific
+          if (view !== 'guest-resupilot' && view !== 'app-assets') {
              setView('landing');
           }
           setUserRole(null);
@@ -67,7 +68,10 @@ function App() {
       setSession(session);
       // If logging out
       if (!session) {
-          setView('landing');
+          // Keep on assets page if that's where we are
+          if (view !== 'app-assets') {
+            setView('landing');
+          }
           setUserRole(null);
       } else if (_event === 'SIGNED_IN') {
           setLoading(true);
@@ -128,11 +132,16 @@ function App() {
             isAuthenticated={!!session}
             onGoToDiscover={() => setView('discover')}
             onGuestTry={handleGuestEntry}
+            onGoToAssets={() => setView('app-assets')}
         />
       )}
       
       {view === 'not-found' && (
           <NotFound onHome={() => session ? routeUser(session) : setView('landing')} />
+      )}
+      
+      {view === 'app-assets' && (
+          <AppAssets onHome={() => setView('landing')} />
       )}
       
       {view === 'discover' && (
