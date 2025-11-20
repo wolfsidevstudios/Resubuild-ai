@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   ArrowRight, 
   Sparkles, 
@@ -14,7 +14,11 @@ import {
   AlignLeft,
   Briefcase,
   Users,
-  Trophy
+  Trophy,
+  Lightbulb,
+  TrendingUp,
+  Target,
+  Zap
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -24,6 +28,72 @@ interface LandingPageProps {
   isAuthenticated: boolean;
   onGoToDiscover?: () => void;
 }
+
+// --- Helper Components for Animations ---
+
+const CountUp: React.FC<{ end: number; suffix?: string; duration?: number }> = ({ end, suffix = '', duration = 2000 }) => {
+    const [count, setCount] = useState(0);
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                setIsVisible(true);
+            }
+        }, { threshold: 0.5 });
+        
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
+
+    useEffect(() => {
+        if (!isVisible) return;
+        let startTime: number;
+        let animationFrame: number;
+
+        const step = (timestamp: number) => {
+            if (!startTime) startTime = timestamp;
+            const progress = Math.min((timestamp - startTime) / duration, 1);
+            setCount(Math.floor(progress * end));
+            if (progress < 1) {
+                animationFrame = requestAnimationFrame(step);
+            }
+        };
+
+        animationFrame = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(animationFrame);
+    }, [isVisible, end, duration]);
+
+    return <span ref={ref}>{count}{suffix}</span>;
+};
+
+const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({ children, className = "", delay = 0 }) => {
+    const [isVisible, setIsVisible] = useState(false);
+    const ref = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting) {
+                setIsVisible(true);
+                observer.disconnect(); // Only animate once
+            }
+        }, { threshold: 0.15 }); // Trigger when 15% visible
+        
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, []);
+
+    return (
+        <div 
+            ref={ref} 
+            className={`transition-all duration-1000 transform ${isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-12'} ${className}`}
+            style={{ transitionDelay: `${delay}ms` }}
+        >
+            {children}
+        </div>
+    );
+};
 
 // Helper component to draw the abstract resume lines
 const SkeletonResume: React.FC<{ variant: 'simple' | 'modern' | 'professional' | 'creative' | 'minimal' }> = ({ variant }) => {
@@ -230,7 +300,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
-            <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-neutral-900/20">
+            <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-neutral-900/20 transition-transform hover:scale-105">
               <FileText className="w-5 h-5" />
             </div>
             <span className="font-bold text-xl tracking-tight">Resubuild</span>
@@ -241,10 +311,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                 {onGoToDiscover && (
                     <button onClick={onGoToDiscover} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Discover</button>
                 )}
-                <button onClick={() => document.getElementById('templates')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Templates</button>
+                <button onClick={() => document.getElementById('tips')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Expert Tips</button>
             </div>
             {isAuthenticated ? (
-                <Button onClick={onStart} variant="primary" className="px-6">
+                <Button onClick={onStart} variant="primary" className="px-6 shadow-lg shadow-neutral-900/10 hover:shadow-neutral-900/20">
                     Dashboard <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
             ) : (
@@ -255,7 +325,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                     >
                         Log In
                     </button>
-                    <Button onClick={() => handleAction('signup')} variant="primary" className="px-6">
+                    <Button onClick={() => handleAction('signup')} variant="primary" className="px-6 shadow-lg shadow-neutral-900/10 hover:shadow-neutral-900/20">
                         Start Building
                     </Button>
                 </div>
@@ -266,13 +336,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden bg-gradient-to-b from-white via-neutral-50/30 to-white">
-        <div className="max-w-5xl mx-auto text-center space-y-8 animate-in fade-in slide-in-from-bottom-8 duration-700 relative z-20">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-neutral-200 text-neutral-600 text-sm font-medium mb-4 shadow-sm hover:shadow-md transition-shadow cursor-default">
+        <div className="max-w-5xl mx-auto text-center space-y-8 animate-fade-in-up relative z-20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-neutral-200 text-neutral-600 text-sm font-medium mb-4 shadow-sm hover:shadow-md transition-all cursor-default animate-in slide-in-from-top-4 duration-700">
             <Sparkles className="w-4 h-4 text-neutral-900" />
             <span>Powered by Gemini 2.5 AI</span>
           </div>
           
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] text-neutral-900">
+          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] text-neutral-900 drop-shadow-sm">
             Craft your perfect resume <br className="hidden md:block" />
             <span className="text-neutral-400">with Resubuild.</span>
           </h1>
@@ -285,7 +355,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 pb-12">
             <Button 
               onClick={() => handleAction('signup')} 
-              className="px-10 py-5 text-lg rounded-full shadow-xl shadow-neutral-900/20 hover:shadow-neutral-900/30 hover:-translate-y-1 transition-all"
+              className="px-10 py-5 text-lg rounded-full shadow-xl shadow-neutral-900/20 hover:shadow-neutral-900/30 hover:-translate-y-1 transition-all duration-300"
             >
               Build My Resume <ArrowRight className="ml-2 w-5 h-5" />
             </Button>
@@ -293,7 +363,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                 <Button 
                     onClick={onGoToDiscover}
                     variant="secondary"
-                    className="px-10 py-5 text-lg rounded-full"
+                    className="px-10 py-5 text-lg rounded-full hover:-translate-y-1 transition-transform"
                 >
                     Discover Resumes
                 </Button>
@@ -308,17 +378,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-neutral-100 via-neutral-50 to-transparent rounded-full blur-3xl -z-10 opacity-60"></div>
 
             {/* Left Card - Simple Variant */}
-            <div className="absolute top-8 md:top-10 left-1/2 w-[200px] md:w-[280px] aspect-[210/297] bg-white rounded-2xl shadow-2xl shadow-neutral-900/5 border border-neutral-200/80 transform -translate-x-[125%] md:-translate-x-[115%] rotate-[-6deg] origin-bottom-right z-10 transition-transform duration-700 ease-out animate-in fade-in slide-in-from-bottom-12 fill-mode-backwards delay-150">
+            <div className="absolute top-8 md:top-10 left-1/2 w-[200px] md:w-[280px] aspect-[210/297] bg-white rounded-2xl shadow-2xl shadow-neutral-900/5 border border-neutral-200/80 transform -translate-x-[125%] md:-translate-x-[115%] rotate-[-6deg] origin-bottom-right z-10 transition-transform duration-1000 ease-out animate-in fade-in slide-in-from-bottom-12 fill-mode-backwards delay-150">
                 <SkeletonResume variant="simple" />
             </div>
 
             {/* Right Card - Modern Variant */}
-            <div className="absolute top-8 md:top-10 left-1/2 w-[200px] md:w-[280px] aspect-[210/297] bg-white rounded-2xl shadow-2xl shadow-neutral-900/5 border border-neutral-200/80 transform -translate-x-[25%] md:translate-x-[15%] rotate-[6deg] origin-bottom-left z-10 transition-transform duration-700 ease-out animate-in fade-in slide-in-from-bottom-12 fill-mode-backwards delay-300">
+            <div className="absolute top-8 md:top-10 left-1/2 w-[200px] md:w-[280px] aspect-[210/297] bg-white rounded-2xl shadow-2xl shadow-neutral-900/5 border border-neutral-200/80 transform -translate-x-[25%] md:translate-x-[15%] rotate-[6deg] origin-bottom-left z-10 transition-transform duration-1000 ease-out animate-in fade-in slide-in-from-bottom-12 fill-mode-backwards delay-300">
                 <SkeletonResume variant="modern" />
             </div>
 
             {/* Center Card - Professional Variant (Main) */}
-            <div className="absolute top-0 left-1/2 w-[220px] md:w-[300px] aspect-[210/297] bg-white rounded-2xl shadow-2xl shadow-neutral-900/15 border border-neutral-200 transform -translate-x-1/2 z-20 transition-transform duration-700 ease-out animate-in fade-in slide-in-from-bottom-16 fill-mode-backwards">
+            <div className="absolute top-0 left-1/2 w-[220px] md:w-[300px] aspect-[210/297] bg-white rounded-2xl shadow-2xl shadow-neutral-900/15 border border-neutral-200 transform -translate-x-1/2 z-20 transition-transform duration-1000 ease-out animate-in fade-in slide-in-from-bottom-16 fill-mode-backwards">
                 <SkeletonResume variant="professional" />
                 
                 {/* Floating Badge on Center Card */}
@@ -329,7 +399,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
             </div>
         </div>
 
-        <div className="pt-16 flex items-center justify-center gap-8 text-neutral-400 text-sm font-medium flex-wrap relative z-20">
+        <div className="pt-16 flex items-center justify-center gap-8 text-neutral-400 text-sm font-medium flex-wrap relative z-20 animate-in fade-in duration-1000 delay-500">
             <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> No credit card needed</span>
             <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> Free Plan Available</span>
             <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> Privacy focused</span>
@@ -337,83 +407,148 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       </section>
 
       {/* Stats Strip (New) */}
-      <section className="bg-neutral-900 py-12 text-white border-y border-neutral-800">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-            <div>
-                <div className="text-3xl md:text-4xl font-bold mb-1">10k+</div>
-                <div className="text-sm text-neutral-400 font-medium">Resumes Created</div>
-            </div>
-            <div>
-                <div className="text-3xl md:text-4xl font-bold mb-1">25+</div>
-                <div className="text-sm text-neutral-400 font-medium">Countries</div>
-            </div>
-             <div>
-                <div className="text-3xl md:text-4xl font-bold mb-1">92%</div>
-                <div className="text-sm text-neutral-400 font-medium">Interview Rate</div>
-            </div>
-             <div>
-                <div className="text-3xl md:text-4xl font-bold mb-1">100%</div>
-                <div className="text-sm text-neutral-400 font-medium">ATS Friendly</div>
-            </div>
+      <section className="bg-neutral-900 py-16 text-white border-y border-neutral-800 relative overflow-hidden">
+         <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_var(--tw-gradient-stops))] from-neutral-800 to-transparent opacity-30"></div>
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8 text-center relative z-10">
+            <ScrollReveal>
+                <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={15000} suffix="+" duration={2500} /></div>
+                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">Resumes Created</div>
+            </ScrollReveal>
+            <ScrollReveal delay={100}>
+                <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={35} suffix="+" duration={2000} /></div>
+                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">Countries</div>
+            </ScrollReveal>
+             <ScrollReveal delay={200}>
+                <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={92} suffix="%" duration={2000} /></div>
+                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">Interview Rate</div>
+            </ScrollReveal>
+             <ScrollReveal delay={300}>
+                <div className="text-4xl md:text-5xl font-bold mb-2 tracking-tight"><CountUp end={100} suffix="%" duration={1500} /></div>
+                <div className="text-sm text-neutral-400 font-medium uppercase tracking-widest">ATS Friendly</div>
+            </ScrollReveal>
         </div>
       </section>
 
       {/* Features Section */}
       <section id="features" className="py-24 bg-neutral-50">
         <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16 max-w-2xl mx-auto">
-            <h2 className="text-3xl font-bold mb-4">Why choose Resubuild?</h2>
-            <p className="text-neutral-500 text-lg">Everything you need to create a professional resume in minutes, designed for modern recruiters.</p>
-          </div>
+          <ScrollReveal>
+            <div className="text-center mb-16 max-w-2xl mx-auto">
+                <h2 className="text-3xl md:text-4xl font-bold mb-4">Why choose Resubuild?</h2>
+                <p className="text-neutral-500 text-lg">Everything you need to create a professional resume in minutes, designed for modern recruiters.</p>
+            </div>
+          </ScrollReveal>
+
           <div className="grid md:grid-cols-3 gap-10">
             {[
               {
                 icon: <Wand2 className="w-8 h-8" />,
                 title: "AI-Powered Writing",
-                desc: "Leverage Gemini 2.5 to rewrite bullet points and generate compelling professional summaries instantly."
+                desc: "Leverage Gemini 2.5 to rewrite bullet points and generate compelling professional summaries instantly.",
+                delay: 0
               },
               {
                 icon: <Layout className="w-8 h-8" />,
                 title: "Real-Time Preview",
-                desc: "See changes as you type with our split-screen editor. Visual feedback helps you craft the perfect layout."
+                desc: "See changes as you type with our split-screen editor. Visual feedback helps you craft the perfect layout.",
+                delay: 100
               },
               {
                 icon: <Download className="w-8 h-8" />,
                 title: "One-Click PDF",
-                desc: "Export your resume as a polished, ATS-friendly PDF document ready for application submissions."
+                desc: "Export your resume as a polished, ATS-friendly PDF document ready for application submissions.",
+                delay: 200
               }
             ].map((feature, idx) => (
-              <div key={idx} className="bg-white p-10 rounded-3xl border border-neutral-200/60 hover:border-neutral-300 hover:shadow-xl hover:shadow-neutral-200/50 transition-all duration-300 group">
-                <div className="w-16 h-16 bg-neutral-50 rounded-2xl flex items-center justify-center mb-8 text-neutral-900 border border-neutral-100 group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
+              <ScrollReveal key={idx} delay={feature.delay}>
+                <div className="bg-white p-10 rounded-3xl border border-neutral-200/60 hover:border-neutral-300 hover:shadow-xl hover:shadow-neutral-200/50 transition-all duration-300 group h-full">
+                    <div className="w-16 h-16 bg-neutral-50 rounded-2xl flex items-center justify-center mb-8 text-neutral-900 border border-neutral-100 group-hover:scale-110 transition-transform duration-300 group-hover:bg-neutral-900 group-hover:text-white">
+                    {feature.icon}
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4 text-neutral-900">{feature.title}</h3>
+                    <p className="text-neutral-500 leading-relaxed text-lg">
+                    {feature.desc}
+                    </p>
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-neutral-900">{feature.title}</h3>
-                <p className="text-neutral-500 leading-relaxed text-lg">
-                  {feature.desc}
-                </p>
-              </div>
+              </ScrollReveal>
             ))}
           </div>
         </div>
       </section>
 
-      {/* Templates Showcase Section (New) */}
-      <section id="templates" className="py-24 bg-white">
+      {/* NEW SECTION: Expert Tips */}
+      <section id="tips" className="py-24 bg-white relative overflow-hidden">
+          {/* Decoration */}
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-neutral-50 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 z-0"></div>
+
+          <div className="max-w-7xl mx-auto px-6 relative z-10">
+             <ScrollReveal>
+                <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
+                    <div className="max-w-2xl">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
+                            Expert Career Advice
+                        </div>
+                        <h2 className="text-3xl md:text-4xl font-bold mb-4">Tips for a winning resume</h2>
+                        <p className="text-neutral-500 text-lg">
+                            Our templates are designed to pass the robots, but your content needs to impress the humans. Here is how to stand out.
+                        </p>
+                    </div>
+                </div>
+             </ScrollReveal>
+
+             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+                 {[
+                     {
+                         title: "Quantify Impact",
+                         text: "Don't just list duties. Use numbers. 'Increased sales by 20%' beats 'Managed sales'.",
+                         icon: <TrendingUp className="w-6 h-6" />
+                     },
+                     {
+                         title: "Action Verbs",
+                         text: "Start bullet points with strong verbs like 'Spearheaded', 'Executed', or 'Developed'.",
+                         icon: <Zap className="w-6 h-6" />
+                     },
+                     {
+                         title: "Tailor Content",
+                         text: "Customize your skills section for every job application to match their keywords.",
+                         icon: <Target className="w-6 h-6" />
+                     },
+                     {
+                         title: "Keep it Recent",
+                         text: "Focus on your last 10-15 years of experience. Summarize older roles briefly.",
+                         icon: <Lightbulb className="w-6 h-6" />
+                     }
+                 ].map((tip, i) => (
+                     <ScrollReveal key={i} delay={i * 100}>
+                        <div className="bg-neutral-50 p-8 rounded-2xl border border-neutral-100 hover:bg-white hover:shadow-lg transition-all duration-300 group">
+                            <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-neutral-900 mb-6 shadow-sm group-hover:bg-neutral-900 group-hover:text-white transition-colors">
+                                {tip.icon}
+                            </div>
+                            <h3 className="font-bold text-lg mb-3">{tip.title}</h3>
+                            <p className="text-neutral-500 text-sm leading-relaxed">{tip.text}</p>
+                        </div>
+                     </ScrollReveal>
+                 ))}
+             </div>
+          </div>
+      </section>
+
+      {/* Templates Showcase Section */}
+      <section id="templates" className="py-24 bg-neutral-50">
           <div className="max-w-7xl mx-auto px-6">
-              <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
-                  <div className="max-w-xl">
-                      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
-                          Professionally Designed
-                      </div>
-                      <h2 className="text-3xl md:text-4xl font-bold mb-4">Templates for every career</h2>
-                      <p className="text-neutral-500 text-lg">
-                          Whether you are a creative designer or a financial analyst, we have a layout that highlights your strengths.
-                      </p>
-                  </div>
-                  <Button onClick={() => handleAction('signup')} variant="outline" className="h-12 px-6">
-                      View All Templates
-                  </Button>
-              </div>
+              <ScrollReveal>
+                <div className="flex flex-col md:flex-row items-end justify-between mb-16 gap-6">
+                    <div className="max-w-xl">
+                        <h2 className="text-3xl md:text-4xl font-bold mb-4">Templates for every career</h2>
+                        <p className="text-neutral-500 text-lg">
+                            Whether you are a creative designer or a financial analyst, we have a layout that highlights your strengths.
+                        </p>
+                    </div>
+                    <Button onClick={() => handleAction('signup')} variant="outline" className="h-12 px-6 hover:bg-neutral-900 hover:text-white hover:border-neutral-900 transition-colors">
+                        View All Templates
+                    </Button>
+                </div>
+              </ScrollReveal>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
                   {[
@@ -442,47 +577,51 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                           variant: "minimal"
                       }
                   ].map((t, i) => (
-                      <div key={i} className="group cursor-pointer" onClick={() => handleAction('signup')}>
-                          <div className="bg-neutral-50 rounded-2xl border border-neutral-200 overflow-hidden aspect-[210/297] mb-5 relative shadow-sm transition-all duration-300 group-hover:shadow-xl group-hover:-translate-y-1">
-                               {/* Render appropriate skeleton */}
-                               <div className="transform scale-[0.4] origin-top-left w-[250%] h-[250%] p-6">
-                                   <SkeletonResume variant={t.variant as any} />
-                               </div>
-                               {/* Hover Overlay */}
-                               <div className="absolute inset-0 bg-neutral-900/0 group-hover:bg-neutral-900/5 transition-colors flex items-center justify-center">
-                                   <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 bg-white px-4 py-2 rounded-full shadow-lg font-bold text-sm text-neutral-900">
-                                       Use Template
-                                   </div>
-                               </div>
-                          </div>
-                          <div className="flex items-start gap-3">
-                              <div className="w-10 h-10 rounded-full bg-neutral-100 flex items-center justify-center flex-shrink-0 text-neutral-900">
-                                  {t.icon}
-                              </div>
-                              <div>
-                                  <h3 className="font-bold text-lg">{t.title}</h3>
-                                  <p className="text-neutral-500 text-sm">{t.desc}</p>
-                              </div>
-                          </div>
-                      </div>
+                      <ScrollReveal key={i} delay={i * 100}>
+                        <div className="group cursor-pointer" onClick={() => handleAction('signup')}>
+                            <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden aspect-[210/297] mb-5 relative shadow-sm transition-all duration-300 group-hover:shadow-2xl group-hover:-translate-y-2">
+                                    {/* Render appropriate skeleton */}
+                                    <div className="transform scale-[0.4] origin-top-left w-[250%] h-[250%] p-6 pointer-events-none">
+                                        <SkeletonResume variant={t.variant as any} />
+                                    </div>
+                                    {/* Hover Overlay */}
+                                    <div className="absolute inset-0 bg-neutral-900/0 group-hover:bg-neutral-900/5 transition-colors flex items-center justify-center">
+                                        <div className="opacity-0 group-hover:opacity-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 bg-white px-6 py-3 rounded-full shadow-xl font-bold text-sm text-neutral-900 flex items-center gap-2">
+                                            <Sparkles className="w-3 h-3" /> Use Template
+                                        </div>
+                                    </div>
+                            </div>
+                            <div className="flex items-start gap-3 px-2">
+                                <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center flex-shrink-0 text-neutral-900 border border-neutral-100 shadow-sm">
+                                    {t.icon}
+                                </div>
+                                <div>
+                                    <h3 className="font-bold text-lg">{t.title}</h3>
+                                    <p className="text-neutral-500 text-sm">{t.desc}</p>
+                                </div>
+                            </div>
+                        </div>
+                      </ScrollReveal>
                   ))}
               </div>
           </div>
       </section>
 
       {/* How It Works */}
-      <section id="how-it-works" className="py-24 bg-neutral-50 border-t border-neutral-200">
+      <section id="how-it-works" className="py-24 bg-white border-t border-neutral-100">
          <div className="max-w-7xl mx-auto px-6">
-            <div className="text-center mb-20">
-                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white border border-neutral-200 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
-                    Simple Process
+            <ScrollReveal>
+                <div className="text-center mb-20">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-bold uppercase tracking-widest mb-4">
+                        Simple Process
+                    </div>
+                    <h2 className="text-3xl md:text-4xl font-bold mb-4">From blank page to hired in 3 steps</h2>
                 </div>
-                <h2 className="text-3xl md:text-4xl font-bold mb-4">From blank page to hired in 3 steps</h2>
-            </div>
+            </ScrollReveal>
 
             <div className="grid md:grid-cols-3 gap-8 relative">
                 {/* Connector Line (Desktop) */}
-                <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-neutral-200 -z-10" />
+                <div className="hidden md:block absolute top-12 left-1/6 right-1/6 h-0.5 bg-neutral-100 -z-10" />
 
                 {[
                     {
@@ -504,16 +643,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                         icon: <Trophy className="w-6 h-6 text-white" />
                     }
                 ].map((item, i) => (
-                    <div key={i} className="flex flex-col items-center text-center">
-                        <div className="w-24 h-24 bg-neutral-900 rounded-3xl flex items-center justify-center shadow-xl shadow-neutral-900/20 mb-8 relative z-10 border-4 border-white">
-                            {item.icon}
-                            <div className="absolute -top-3 -right-3 w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-900 font-bold text-sm border-2 border-white">
-                                {item.step}
+                    <ScrollReveal key={i} delay={i * 150}>
+                        <div className="flex flex-col items-center text-center group">
+                            <div className="w-24 h-24 bg-neutral-900 rounded-3xl flex items-center justify-center shadow-xl shadow-neutral-900/20 mb-8 relative z-10 border-4 border-white transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3">
+                                {item.icon}
+                                <div className="absolute -top-3 -right-3 w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-900 font-bold text-sm border-2 border-white">
+                                    {item.step}
+                                </div>
                             </div>
+                            <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                            <p className="text-neutral-500 max-w-xs mx-auto">{item.desc}</p>
                         </div>
-                        <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                        <p className="text-neutral-500 max-w-xs mx-auto">{item.desc}</p>
-                    </div>
+                    </ScrollReveal>
                 ))}
             </div>
          </div>
@@ -528,18 +669,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
         </div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10">
-            <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
-                <div>
-                    <h2 className="text-3xl md:text-4xl font-bold mb-4">Loved by professionals</h2>
-                    <p className="text-neutral-400 text-lg max-w-xl">See what job seekers are saying about how Resubuild helped them in their career journey.</p>
-                </div>
-                <div className="flex gap-2">
-                    <div className="flex text-yellow-400">
-                        {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 fill-current" />)}
+            <ScrollReveal>
+                <div className="flex flex-col md:flex-row justify-between items-end mb-16 gap-6">
+                    <div>
+                        <h2 className="text-3xl md:text-4xl font-bold mb-4">Loved by professionals</h2>
+                        <p className="text-neutral-400 text-lg max-w-xl">See what job seekers are saying about how Resubuild helped them in their career journey.</p>
                     </div>
-                    <span className="text-neutral-400 font-medium">5.0/5 Rating</span>
+                    <div className="flex gap-2 bg-white/5 px-4 py-2 rounded-full backdrop-blur-sm border border-white/10">
+                        <div className="flex text-yellow-400">
+                            {[1,2,3,4,5].map(i => <Star key={i} className="w-5 h-5 fill-current" />)}
+                        </div>
+                        <span className="text-neutral-200 font-medium ml-2">5.0/5 Rating</span>
+                    </div>
                 </div>
-            </div>
+            </ScrollReveal>
 
             <div className="grid md:grid-cols-3 gap-6">
                 {[
@@ -559,18 +702,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                         role: "Marketing Specialist"
                     }
                 ].map((review, i) => (
-                    <div key={i} className="bg-neutral-800/50 backdrop-blur-sm p-8 rounded-3xl border border-neutral-700/50 hover:bg-neutral-800 transition-colors">
-                        <div className="mb-6 text-neutral-300 leading-relaxed italic">"{review.quote}"</div>
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neutral-600 to-neutral-700 flex items-center justify-center font-bold text-sm">
-                                {review.author.charAt(0)}
+                    <ScrollReveal key={i} delay={i * 100}>
+                        <div className="bg-neutral-800/50 backdrop-blur-sm p-8 rounded-3xl border border-neutral-700/50 hover:bg-neutral-800 hover:border-neutral-600 transition-all duration-300 hover:-translate-y-1">
+                            <div className="mb-6 text-neutral-300 leading-relaxed italic relative">
+                                <span className="absolute -top-4 -left-2 text-6xl text-neutral-700 opacity-30 font-serif">"</span>
+                                {review.quote}
                             </div>
-                            <div>
-                                <div className="font-bold">{review.author}</div>
-                                <div className="text-sm text-neutral-500">{review.role}</div>
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-neutral-600 to-neutral-700 flex items-center justify-center font-bold text-sm shadow-lg">
+                                    {review.author.charAt(0)}
+                                </div>
+                                <div>
+                                    <div className="font-bold">{review.author}</div>
+                                    <div className="text-sm text-neutral-500">{review.role}</div>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    </ScrollReveal>
                 ))}
             </div>
         </div>
@@ -579,9 +727,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       {/* FAQ Section */}
       <section className="py-24 bg-neutral-50">
           <div className="max-w-3xl mx-auto px-6">
-            <div className="text-center mb-16">
-                <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
-            </div>
+            <ScrollReveal>
+                <div className="text-center mb-16">
+                    <h2 className="text-3xl font-bold mb-4">Frequently Asked Questions</h2>
+                </div>
+            </ScrollReveal>
             
             <div className="space-y-4">
                 {[
@@ -602,14 +752,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                         a: "Absolutely. We use standard text-based PDF generation that is easily readable by Applicant Tracking Systems (ATS) used by most companies."
                     }
                 ].map((faq, i) => (
-                    <div key={i} className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-sm transition-shadow">
-                        <h3 className="font-bold text-lg text-neutral-900 mb-2 flex items-start gap-3">
-                            <span className="text-neutral-300">0{i+1}.</span> {faq.q}
-                        </h3>
-                        <p className="text-neutral-600 leading-relaxed pl-10">
-                            {faq.a}
-                        </p>
-                    </div>
+                    <ScrollReveal key={i} delay={i * 50}>
+                        <div className="bg-white border border-neutral-200 rounded-2xl p-6 hover:shadow-md transition-all duration-300 cursor-default">
+                            <h3 className="font-bold text-lg text-neutral-900 mb-2 flex items-start gap-3">
+                                <span className="text-neutral-300 font-mono">0{i+1}</span> {faq.q}
+                            </h3>
+                            <p className="text-neutral-600 leading-relaxed pl-9">
+                                {faq.a}
+                            </p>
+                        </div>
+                    </ScrollReveal>
                 ))}
             </div>
           </div>
@@ -617,37 +769,39 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
 
       {/* CTA Banner */}
       <section className="py-24 bg-white px-6">
-         <div className="max-w-5xl mx-auto bg-neutral-900 rounded-[2.5rem] p-12 md:p-24 text-center text-white shadow-2xl shadow-neutral-900/20 overflow-hidden relative">
+         <div className="max-w-5xl mx-auto bg-neutral-900 rounded-[2.5rem] p-12 md:p-24 text-center text-white shadow-2xl shadow-neutral-900/20 overflow-hidden relative group">
             {/* Decorative blobs */}
-            <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2" />
-            <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2" />
+            <div className="absolute top-0 left-0 w-64 h-64 bg-white/5 rounded-full blur-3xl -translate-x-1/2 -translate-y-1/2 transition-transform duration-700 group-hover:scale-150" />
+            <div className="absolute bottom-0 right-0 w-64 h-64 bg-white/5 rounded-full blur-3xl translate-x-1/2 translate-y-1/2 transition-transform duration-700 group-hover:scale-150" />
             
-            <div className="relative z-10">
-                <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Ready to launch your career?</h2>
-                <p className="text-neutral-400 text-xl mb-10 max-w-2xl mx-auto">Join thousands of professionals who have built their resumes with Resubuild.</p>
-                <Button 
-                  onClick={() => handleAction('signup')} 
-                  className="bg-white text-neutral-900 hover:bg-neutral-200 hover:text-neutral-900 px-10 py-4 h-auto text-lg rounded-full font-bold border-0"
-                >
-                  Build Resume Now
-                </Button>
-            </div>
+            <ScrollReveal>
+                <div className="relative z-10">
+                    <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Ready to launch your career?</h2>
+                    <p className="text-neutral-400 text-xl mb-10 max-w-2xl mx-auto">Join thousands of professionals who have built their resumes with Resubuild.</p>
+                    <Button 
+                    onClick={() => handleAction('signup')} 
+                    className="bg-white text-neutral-900 hover:bg-neutral-200 hover:text-neutral-900 px-10 py-4 h-auto text-lg rounded-full font-bold border-0 shadow-lg hover:shadow-xl hover:-translate-y-1 transition-all"
+                    >
+                    Build Resume Now
+                    </Button>
+                </div>
+            </ScrollReveal>
          </div>
       </section>
 
       {/* Footer */}
       <footer className="py-12 bg-white border-t border-neutral-100 text-center">
         <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-6">
-          <div className="flex items-center gap-2 opacity-50">
+          <div className="flex items-center gap-2 opacity-50 hover:opacity-100 transition-opacity cursor-default">
             <div className="w-6 h-6 bg-neutral-900 rounded-lg flex items-center justify-center text-white">
               <FileText className="w-3 h-3" />
             </div>
             <span className="font-bold tracking-tight">Resubuild</span>
           </div>
           <div className="flex gap-8 text-sm text-neutral-500">
-              <a href="#" className="hover:text-neutral-900">Privacy</a>
-              <a href="#" className="hover:text-neutral-900">Terms</a>
-              <a href="#" className="hover:text-neutral-900">Contact</a>
+              <a href="#" className="hover:text-neutral-900 transition-colors">Privacy</a>
+              <a href="#" className="hover:text-neutral-900 transition-colors">Terms</a>
+              <a href="#" className="hover:text-neutral-900 transition-colors">Contact</a>
           </div>
           <p className="text-neutral-400 text-sm">
             © {new Date().getFullYear()} Resubuild. Built for the modern professional.
