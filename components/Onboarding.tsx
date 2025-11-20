@@ -10,11 +10,12 @@ import { ArrowRight, ArrowLeft, CheckCircle2, Sparkles, User, Briefcase, Graduat
 interface OnboardingProps {
   onComplete: (data: ResumeData) => void;
   onCancel: () => void;
+  userId: string;
 }
 
 type Step = 'apikey' | 'personal' | 'education' | 'experience' | 'skills' | 'processing';
 
-export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onCancel }) => {
+export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onCancel, userId }) => {
   const [step, setStep] = useState<Step>('apikey');
   const [data, setData] = useState<ResumeData>(createEmptyResume());
   const [loadingMsg, setLoadingMsg] = useState('');
@@ -24,8 +25,6 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onCancel }) 
   useEffect(() => {
       if (hasAPIKey()) {
           setApiKey(getStoredAPIKey() || '');
-          // Optional: Skip if key exists? 
-          // For now, we let them verify/change it or just click next.
       }
   }, []);
 
@@ -122,7 +121,7 @@ export const Onboarding: React.FC<OnboardingProps> = ({ onComplete, onCancel }) 
           skills: finalSkills
       };
 
-      saveResume(finalResume);
+      saveResume(finalResume, userId);
       
       // Small delay to show completion
       setLoadingMsg('Ready!');

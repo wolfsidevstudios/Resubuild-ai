@@ -27,6 +27,7 @@ import {
 interface ResumeBuilderProps {
     initialData?: ResumeData;
     onGoHome: () => void;
+    userId: string;
 }
 
 const COLORS = [
@@ -40,7 +41,7 @@ const COLORS = [
   '#4B5563', // Gray
 ];
 
-export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoHome }) => {
+export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoHome, userId }) => {
   const [data, setData] = useState<ResumeData>(initialData || createEmptyResume());
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [improvingExpId, setImprovingExpId] = useState<string | null>(null);
@@ -53,11 +54,11 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   // Auto-save effect
   useEffect(() => {
     const timeout = setTimeout(() => {
-        saveResume(data);
+        saveResume(data, userId);
         setLastSaved(new Date());
     }, 2000);
     return () => clearTimeout(timeout);
-  }, [data]);
+  }, [data, userId]);
 
   // --- State Updates ---
   const updatePersonalInfo = (field: keyof typeof data.personalInfo, value: string) => {

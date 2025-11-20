@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState } from 'react';
 import { 
   ArrowRight, 
   Sparkles, 
@@ -8,11 +9,14 @@ import {
   CheckCircle2, 
   FileText,
   Star,
+  User
 } from 'lucide-react';
 import { Button } from './Button';
+import { Auth } from './Auth';
 
 interface LandingPageProps {
-  onStart: () => void;
+  onStart: () => void; // This now means "Enter App" (Dashboard)
+  isAuthenticated: boolean;
 }
 
 // Helper component to draw the abstract resume lines
@@ -69,13 +73,25 @@ const SkeletonResume: React.FC<{ variant: 'simple' | 'modern' | 'professional' }
   );
 };
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated }) => {
+  const [showAuth, setShowAuth] = useState(false);
+  const [authView, setAuthView] = useState<'signin' | 'signup'>('signup');
+
+  const handleAction = (view: 'signin' | 'signup') => {
+      if (isAuthenticated) {
+          onStart();
+      } else {
+          setAuthView(view);
+          setShowAuth(true);
+      }
+  };
+
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 backdrop-blur-md border-b border-neutral-100">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-3 cursor-pointer" onClick={onStart}>
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
             <div className="w-10 h-10 bg-neutral-900 rounded-xl flex items-center justify-center text-white shadow-lg shadow-neutral-900/20">
               <FileText className="w-5 h-5" />
             </div>
@@ -85,14 +101,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
              <div className="hidden md:flex items-center gap-6 mr-4">
                 <button onClick={() => document.getElementById('features')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Features</button>
                 <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">How it Works</button>
-                <button onClick={() => document.getElementById('testimonials')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Reviews</button>
             </div>
-            <Button onClick={onStart} variant="primary" className="px-6">
-              Start Building
-            </Button>
+            {isAuthenticated ? (
+                <Button onClick={onStart} variant="primary" className="px-6">
+                    Dashboard <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+            ) : (
+                <div className="flex items-center gap-3">
+                     <button 
+                        onClick={() => handleAction('signin')}
+                        className="text-sm font-bold text-neutral-900 hover:text-neutral-600 transition-colors px-3 py-2"
+                    >
+                        Log In
+                    </button>
+                    <Button onClick={() => handleAction('signup')} variant="primary" className="px-6">
+                        Start Building
+                    </Button>
+                </div>
+            )}
           </div>
         </div>
       </nav>
+
+      {/* Auth Modal */}
+      {showAuth && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md animate-in fade-in duration-200">
+              <div className="relative w-full max-w-md">
+                   <button 
+                      onClick={() => setShowAuth(false)}
+                      className="absolute -top-12 right-0 text-white/80 hover:text-white font-medium"
+                    >
+                        Close
+                    </button>
+                   <Auth onSuccess={() => { setShowAuth(false); onStart(); }} defaultView={authView} />
+              </div>
+          </div>
+      )}
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden bg-gradient-to-b from-white via-neutral-50/30 to-white">
@@ -114,7 +158,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 pb-12">
             <Button 
-              onClick={onStart} 
+              onClick={() => handleAction('signup')} 
               className="px-10 py-5 text-lg rounded-full shadow-xl shadow-neutral-900/20 hover:shadow-neutral-900/30 hover:-translate-y-1 transition-all"
             >
               Build My Resume <ArrowRight className="ml-2 w-5 h-5" />
@@ -151,8 +195,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
         </div>
 
         <div className="pt-16 flex items-center justify-center gap-8 text-neutral-400 text-sm font-medium flex-wrap relative z-20">
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> No sign-up required</span>
-            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> 100% Free</span>
+            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> No credit card needed</span>
+            <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> Free Plan Available</span>
             <span className="flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-neutral-900" /> Privacy focused</span>
         </div>
       </section>
@@ -313,11 +357,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 {[
                     {
                         q: "Is Resubuild really free?",
-                        a: "Yes, Resubuild is completely free to use. You can build, edit, and download your resume without any hidden fees or credit card requirements."
+                        a: "Yes, Resubuild is free to use. Create an account to save your resumes and access them from any device."
                     },
                     {
-                        q: "Do you save my data?",
-                        a: "We value your privacy. Your resume data is stored locally in your browser session while you edit. We do not store your personal information on our servers."
+                        q: "How is my data stored?",
+                        a: "We use secure authentication. Your resume data is currently stored securely on your device, linked to your account."
                     },
                     {
                         q: "Can I import my existing resume?",
@@ -352,7 +396,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart }) => {
                 <h2 className="text-4xl md:text-5xl font-bold mb-6 tracking-tight">Ready to launch your career?</h2>
                 <p className="text-neutral-400 text-xl mb-10 max-w-2xl mx-auto">Join thousands of professionals who have built their resumes with Resubuild.</p>
                 <Button 
-                  onClick={onStart} 
+                  onClick={() => handleAction('signup')} 
                   className="bg-white text-neutral-900 hover:bg-neutral-200 hover:text-neutral-900 px-10 py-4 h-auto text-lg rounded-full font-bold border-0"
                 >
                   Build Resume Now

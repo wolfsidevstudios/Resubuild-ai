@@ -1,12 +1,16 @@
 
 import { ResumeData } from '../types';
 
-const STORAGE_KEY = 'resubuild_resumes';
 const API_KEY_STORAGE_KEY = 'gemini_api_key';
 
-export const getResumes = (): ResumeData[] => {
+// Helper to get the key based on user ID
+const getStorageKey = (userId?: string) => {
+    return userId ? `resubuild_resumes_${userId}` : 'resubuild_resumes';
+};
+
+export const getResumes = (userId?: string): ResumeData[] => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
+    const stored = localStorage.getItem(getStorageKey(userId));
     return stored ? JSON.parse(stored) : [];
   } catch (e) {
     console.error("Failed to load resumes", e);
@@ -14,13 +18,13 @@ export const getResumes = (): ResumeData[] => {
   }
 };
 
-export const getResumeById = (id: string): ResumeData | undefined => {
-  const resumes = getResumes();
+export const getResumeById = (id: string, userId?: string): ResumeData | undefined => {
+  const resumes = getResumes(userId);
   return resumes.find(r => r.id === id);
 };
 
-export const saveResume = (resume: ResumeData): void => {
-  const resumes = getResumes();
+export const saveResume = (resume: ResumeData, userId?: string): void => {
+  const resumes = getResumes(userId);
   const index = resumes.findIndex(r => r.id === resume.id);
   
   const updatedResume = {
@@ -34,13 +38,13 @@ export const saveResume = (resume: ResumeData): void => {
     resumes.push(updatedResume);
   }
 
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(resumes));
+  localStorage.setItem(getStorageKey(userId), JSON.stringify(resumes));
 };
 
-export const deleteResume = (id: string): void => {
-  const resumes = getResumes();
+export const deleteResume = (id: string, userId?: string): void => {
+  const resumes = getResumes(userId);
   const filtered = resumes.filter(r => r.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
+  localStorage.setItem(getStorageKey(userId), JSON.stringify(filtered));
 };
 
 export const createEmptyResume = (): ResumeData => ({

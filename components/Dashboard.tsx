@@ -1,8 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
+import { supabase } from '../services/supabase';
 import { Button } from './Button';
 import { Input } from './InputField';
 
@@ -10,22 +11,24 @@ interface DashboardProps {
   onCreate: () => void;
   onEdit: (resume: ResumeData) => void;
   onHome: () => void;
+  userId: string;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome }) => {
+export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, userId }) => {
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [showSettings, setShowSettings] = useState(false);
   const [apiKey, setApiKey] = useState('');
 
   useEffect(() => {
-    setResumes(getResumes().sort((a, b) => b.lastUpdated - a.lastUpdated));
+    // Load resumes for this specific user
+    setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
     setApiKey(getStoredAPIKey() || '');
-  }, []);
+  }, [userId]);
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (confirm('Are you sure you want to delete this resume?')) {
-      deleteResume(id);
+      deleteResume(id, userId);
       setResumes(prev => prev.filter(r => r.id !== id));
     }
   };
@@ -37,6 +40,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome }
       removeAPIKey();
     }
     setShowSettings(false);
+  };
+
+  const handleSignOut = async () => {
+      await supabase.auth.signOut();
+      onHome();
   };
 
   return (
@@ -54,7 +62,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome }
              <Button variant="ghost" onClick={() => setShowSettings(true)} icon={<Settings className="w-4 h-4" />}>
                 Settings
              </Button>
-             <Button variant="ghost" onClick={onHome}>Back to Home</Button>
+             <Button variant="ghost" onClick={handleSignOut} icon={<LogOut className="w-4 h-4" />}>
+                Sign Out
+             </Button>
           </div>
         </div>
       </nav>
