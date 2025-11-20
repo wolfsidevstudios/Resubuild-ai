@@ -25,12 +25,20 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
 
         try {
             if (view === 'signup') {
-                const { error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                 });
                 if (error) throw error;
-                setMsg('Account created! Please check your email to verify your account.');
+
+                // If email confirmation is disabled in Supabase settings, 
+                // we get a session immediately. Log them in.
+                if (data.session) {
+                    onSuccess();
+                } else {
+                    // Otherwise, prompt for verification
+                    setMsg('Account created! Please check your email to verify your account.');
+                }
             } else {
                 const { error } = await supabase.auth.signInWithPassword({
                     email,
