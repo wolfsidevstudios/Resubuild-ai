@@ -108,6 +108,32 @@ export const getUserProfile = async (userId: string): Promise<UserProfile | null
     return null;
 };
 
+export const getOrCreateUserProfile = async (user: User): Promise<UserProfile | null> => {
+    try {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+        
+        if (docSnap.exists()) {
+            return { id: docSnap.id, ...docSnap.data() } as UserProfile;
+        } else {
+            // Create default profile if missing (self-healing for legacy/direct login users)
+            const newProfile: UserProfile = {
+                id: user.uid,
+                full_name: user.displayName || "User",
+                role: 'candidate',
+                avatar_url: user.photoURL || undefined,
+                terms_accepted: false,
+                account_status: 'active'
+            };
+            await setDoc(userRef, newProfile);
+            return newProfile;
+        }
+    } catch (error) {
+        console.error("Error fetching/creating user profile:", error);
+        return null;
+    }
+};
+
 export const createUserProfile = async (user: User, role: 'candidate' | 'employer' = 'candidate', fullName?: string) => {
     try {
         const userRef = doc(db, "users", user.uid);

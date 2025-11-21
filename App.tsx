@@ -17,7 +17,7 @@ import { TermsPage, PrivacyPage } from './components/LegalPages';
 import { TermsModal } from './components/TermsModal';
 import { SuspendedView } from './components/SuspendedView';
 import { ResumeData, UserRole, UserProfile } from './types';
-import { auth, getUserProfile } from './services/firebase';
+import { auth, getOrCreateUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
 import { Loader2, X } from 'lucide-react';
@@ -154,7 +154,8 @@ function App() {
       }
 
       try {
-        const profile = await getUserProfile(currentUser.uid);
+        // Use getOrCreateUserProfile to ensure profile exists, otherwise TermsModal won't show for new/legacy users
+        const profile = await getOrCreateUserProfile(currentUser);
         setUserProfile(profile);
         const role = profile?.role || 'candidate';
         setUserRole(role);
@@ -212,7 +213,8 @@ function App() {
         
         if (user) {
              try {
-                 const profile = await getUserProfile(user.uid);
+                 // Use getOrCreateUserProfile to ensure we have a profile doc for the Terms check
+                 const profile = await getOrCreateUserProfile(user);
                  setUserProfile(profile);
                  const role = profile?.role || 'candidate';
                  setUserRole(role);
@@ -415,7 +417,7 @@ function App() {
           </div>
       )}
 
-      {/* Terms Acceptance Modal - Mandatory */}
+      {/* Terms Acceptance Modal - Mandatory. Ensure userProfile is loaded first */}
       {user && userProfile && !userProfile.terms_accepted && view !== 'suspended' && view !== 'terms' && view !== 'privacy' && (
           <TermsModal 
               userId={user.uid} 
