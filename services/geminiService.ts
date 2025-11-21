@@ -820,22 +820,48 @@ export const generateResumeFromPrompt = async (userPrompt: string, model: 'gemin
     }
 };
 
-export const updateResumeWithAI = async (currentData: ResumeData, instruction: string, model: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'): Promise<ResumeData> => {
+// NEW: INTELLIGENT CHAT ROUTER
+export const chatWithResupilot = async (
+    userMessage: string,
+    currentResume: ResumeData,
+    model: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'
+): Promise<{
+    text: string;
+    action: 'update_resume' | 'suggest_jobs' | 'none';
+    updatedResume?: ResumeData;
+    searchQuery?: { query: string, location: string };
+}> => {
     const prompt = `
-        You are Resupilot, an expert AI resume editor.
-        Current Resume JSON: ${JSON.stringify(currentData)}
+        You are Resupilot, an expert career AI assistant.
         
-        User Instruction: "${instruction}"
+        User Message: "${userMessage}"
         
-        Task: Update the resume JSON based strictly on the user's instruction. 
-        - If they ask to add a skill, add it to the skills array.
-        - If they ask to change the summary, rewrite the summary field.
-        - If they ask to add a job, add a new entry to the experience array with generated IDs.
-        - Maintain all other data exactly as is.
+        Current Resume Context:
+        ${JSON.stringify(currentResume).substring(0, 8000)}
         
-        Return ONLY the fully valid, updated JSON object.
+        Analyze the user's request and determine the best action.
+        
+        1. UPDATE_RESUME: If the user asks to edit, change, add, or remove something from the resume.
+           - Perform the edit on the JSON.
+           - Return action: "update_resume" and the FULL valid updatedResume JSON.
+           - Hydrate new items with UUIDs.
+           
+        2. SUGGEST_JOBS: If the user asks for job recommendations, "what can I apply for?", "find me jobs", or implies they are looking for work.
+           - Extract keywords and location from the resume or user message.
+           - Return action: "suggest_jobs" and a searchQuery object.
+           
+        3. NONE: If it's a general question, feedback, or conversation.
+           - Return action: "none".
+           
+        Return JSON ONLY:
+        {
+            "text": "Your helpful, conversational response to the user...",
+            "action": "update_resume" | "suggest_jobs" | "none",
+            "updatedResume": { ... } (only if action is update_resume),
+            "searchQuery": { "query": "software engineer", "location": "remote" } (only if action is suggest_jobs)
+        }
     `;
-
+    
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
@@ -843,30 +869,37 @@ export const updateResumeWithAI = async (currentData: ResumeData, instruction: s
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
-                thinkingConfig: model === 'gemini-3-pro-preview' ? { thinkingBudget: 1024 } : undefined
+                thinkingConfig: model === 'gemini-3-pro-preview' ? { thinkingBudget: 2048 } : undefined
             }
         });
 
-        const text = response.text?.trim() || "{}";
-        const updatedData = JSON.parse(text);
+        const result = JSON.parse(response.text?.trim() || "{}");
         
-        // Hydrate IDs
-        if (updatedData.experience) {
-            updatedData.experience = updatedData.experience.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
+        // Post-process IDs for updates
+        if (result.updatedResume) {
+             if (result.updatedResume.experience) {
+                result.updatedResume.experience = result.updatedResume.experience.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
+            }
+            if (result.updatedResume.education) {
+                result.updatedResume.education = result.updatedResume.education.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
+            }
+            if (result.updatedResume.projects) {
+                result.updatedResume.projects = result.updatedResume.projects.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
+            }
         }
-        if (updatedData.education) {
-            updatedData.education = updatedData.education.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
-        }
-        if (updatedData.projects) {
-            updatedData.projects = updatedData.projects.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
-        }
-
-        return updatedData as ResumeData;
+        
+        return result;
 
     } catch (error) {
-        console.error("Resupilot update failed:", error);
-        throw error;
+        console.error("Resupilot Chat Error:", error);
+        return { text: "I'm sorry, I had trouble processing that request.", action: "none" };
     }
+};
+
+export const updateResumeWithAI = async (currentData: ResumeData, instruction: string, model: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'): Promise<ResumeData> => {
+    // Deprecated but kept for backward compat if needed, new logic moved to chatWithResupilot
+    const res = await chatWithResupilot(instruction, currentData, model);
+    return res.updatedResume || currentData;
 };
 
 // --- CUSTOM AGENT EXECUTION ---
