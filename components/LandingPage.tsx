@@ -30,7 +30,8 @@ import {
   Building2,
   Globe2,
   Cloud,
-  FlaskConical
+  FlaskConical,
+  BrainCircuit
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -641,18 +642,49 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                   {/* Kyndra Circle */}
                   <ScrollReveal delay={200}>
                       <div className="h-full p-8 rounded-3xl border border-neutral-800 bg-neutral-900 text-white flex flex-col shadow-2xl hover:scale-105 transition-transform relative overflow-hidden group">
+                          {/* Background Gradients */}
                           <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-blue-900/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
-                          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider border border-white/10">
+                          
+                          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider border border-white/10 z-20">
                               Coming Soon
                           </div>
-                          <div className="mb-4 relative z-10">
-                              <h3 className="text-xl font-bold flex items-center gap-2">
-                                  Kyndra Circle <Sparkles className="w-4 h-4 text-purple-400" />
-                              </h3>
-                              <div className="text-4xl font-bold mt-4 mb-1">$20<span className="text-lg font-normal text-neutral-400">/mo</span></div>
-                              <p className="text-sm text-neutral-400">The ultimate career suite.</p>
+                          
+                          {/* Labs Circle Visual */}
+                          <div className="relative h-40 mb-2 flex items-center justify-center mt-4">
+                                {/* Outer Orbit */}
+                                <div className="absolute w-32 h-32 border border-white/10 rounded-full animate-spin" style={{ animationDuration: '15s' }}>
+                                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 p-1.5 rounded-full border border-white/20 shadow-lg shadow-purple-500/20">
+                                        <Zap className="w-4 h-4 text-yellow-400" />
+                                    </div>
+                                    <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 bg-neutral-900 p-1.5 rounded-full border border-white/20 shadow-lg shadow-pink-500/20">
+                                        <FlaskConical className="w-4 h-4 text-pink-400" />
+                                    </div>
+                                </div>
+                                
+                                {/* Inner Orbit (Reverse) */}
+                                <div className="absolute w-20 h-20 border border-white/10 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '10s' }}>
+                                    <div className="absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-neutral-900 p-1.5 rounded-full border border-white/20 shadow-lg shadow-blue-500/20">
+                                        <Bot className="w-3 h-3 text-blue-400" />
+                                    </div>
+                                    <div className="absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 bg-neutral-900 p-1.5 rounded-full border border-white/20 shadow-lg shadow-emerald-500/20">
+                                        <BrainCircuit className="w-3 h-3 text-emerald-400" />
+                                    </div>
+                                </div>
+                                
+                                {/* Core */}
+                                <div className="absolute w-12 h-12 bg-gradient-to-br from-purple-600 to-blue-600 rounded-full flex items-center justify-center shadow-[0_0_25px_rgba(124,58,237,0.6)] z-10 relative">
+                                    <Sparkles className="w-6 h-6 text-white animate-pulse" />
+                                    <div className="absolute inset-0 bg-white/20 rounded-full animate-ping opacity-20"></div>
+                                </div>
                           </div>
-                          <div className="flex-1 space-y-4 my-8 relative z-10">
+
+                          <div className="mb-6 relative z-10 text-center">
+                              <h3 className="text-2xl font-bold mb-1 tracking-tight">Kyndra Circle</h3>
+                              <p className="text-sm text-neutral-400">The ultimate AI career suite.</p>
+                              <div className="text-4xl font-bold mt-4 mb-1">$20<span className="text-lg font-normal text-neutral-500">/mo</span></div>
+                          </div>
+
+                          <div className="flex-1 space-y-4 my-4 relative z-10 border-t border-white/10 pt-6">
                               {[
                                   { name: "Unlimited AI Credits", icon: Zap },
                                   { name: "Future Labs Access", icon: FlaskConical },
@@ -665,7 +697,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                                   </div>
                               ))}
                           </div>
-                          <button className="w-full py-2.5 rounded-full bg-white text-neutral-900 font-bold text-sm hover:bg-neutral-100 transition-colors relative z-10 cursor-not-allowed opacity-80">
+                          <button className="w-full py-3 rounded-full bg-white text-neutral-900 font-bold text-sm hover:bg-neutral-100 transition-colors relative z-10 cursor-not-allowed opacity-80 mt-auto shadow-lg">
                               Join Circle Waitlist
                           </button>
                       </div>
