@@ -474,6 +474,49 @@ export const generateEmailTemplate = async (data: ResumeData, type: string, reci
     }
 };
 
+// --- REFINEMENT TOOL (DEEP AGENT) ---
+
+export const refineToolOutput = async (currentContent: string, userInstruction: string, toolType: string): Promise<string> => {
+    const prompt = `
+        You are an expert AI Agent helping a user refine generated content.
+        
+        Context / Tool Type: ${toolType}
+        
+        Current Content:
+        "${currentContent}"
+        
+        User Instruction for Revision:
+        "${userInstruction}"
+        
+        Task:
+        Rewrite the content based on the user's instruction. 
+        - If it's code (HTML), return only valid HTML code.
+        - If it's text (email/script), return only the text.
+        - Maintain the original format.
+        
+        Output:
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview', // Use smartest model for refinement
+            contents: prompt,
+            config: { thinkingConfig: { thinkingBudget: 1024 } }
+        });
+        
+        let result = response.text?.trim() || "";
+        // Cleanup code blocks if needed
+        if (toolType === 'appify' || toolType.includes('html')) {
+             result = result.replace(/```html/g, '').replace(/```/g, '');
+        }
+        return result;
+    } catch (error) {
+        console.error("Refinement failed:", error);
+        throw error;
+    }
+};
+
 // --- TOOLS & HELPERS ---
 
 export const generateInterviewQuestions = async (data: ResumeData): Promise<string[]> => {
