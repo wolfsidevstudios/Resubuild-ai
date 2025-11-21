@@ -4,6 +4,7 @@ import { Search, MapPin, Briefcase, DollarSign, Clock, ExternalLink, Building2, 
 import { searchJobs, JobPost } from '../services/jobService';
 import { Button } from './Button';
 import { Input } from './InputField';
+import { AdUnit } from './AdUnit';
 
 export const JobSearch: React.FC = () => {
     const [query, setQuery] = useState('');
@@ -69,6 +70,11 @@ export const JobSearch: React.FC = () => {
                 <div className="h-full overflow-y-auto custom-scrollbar p-6 md:p-8">
                     <div className="max-w-5xl mx-auto">
                         
+                        {/* Ad Banner */}
+                        <div className="mb-8">
+                            <AdUnit slot="1234567890" style={{ minHeight: '120px' }} />
+                        </div>
+
                         {/* Stats / Filters Header */}
                         <div className="flex justify-between items-center mb-6">
                             <div className="text-sm font-medium text-neutral-500">
@@ -108,54 +114,62 @@ export const JobSearch: React.FC = () => {
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {jobs.map(job => (
-                                    <div 
-                                        key={job.id}
-                                        onClick={() => setSelectedJob(job)}
-                                        className="group bg-white p-6 rounded-2xl border border-neutral-200 hover:border-neutral-300 hover:shadow-lg transition-all cursor-pointer flex flex-col h-full relative overflow-hidden"
-                                    >
-                                        <div className="flex justify-between items-start mb-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 bg-white border border-neutral-100 rounded-xl flex items-center justify-center p-1 shadow-sm">
-                                                    {job.company_logo ? (
-                                                        <img src={job.company_logo} alt={job.company_name} className="w-full h-full object-contain rounded-lg" onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/40')} />
-                                                    ) : (
-                                                        <Building2 className="w-6 h-6 text-neutral-400" />
-                                                    )}
+                                {jobs.map((job, idx) => (
+                                    <React.Fragment key={job.id}>
+                                        <div 
+                                            onClick={() => setSelectedJob(job)}
+                                            className="group bg-white p-6 rounded-2xl border border-neutral-200 hover:border-neutral-300 hover:shadow-lg transition-all cursor-pointer flex flex-col h-full relative overflow-hidden"
+                                        >
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-12 h-12 bg-white border border-neutral-100 rounded-xl flex items-center justify-center p-1 shadow-sm">
+                                                        {job.company_logo ? (
+                                                            <img src={job.company_logo} alt={job.company_name} className="w-full h-full object-contain rounded-lg" onError={(e) => (e.currentTarget.src = 'https://via.placeholder.com/40')} />
+                                                        ) : (
+                                                            <Building2 className="w-6 h-6 text-neutral-400" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-neutral-900 line-clamp-1 group-hover:text-blue-600 transition-colors">{job.title}</h3>
+                                                        <div className="text-sm text-neutral-500 font-medium">{job.company_name}</div>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <h3 className="font-bold text-neutral-900 line-clamp-1 group-hover:text-blue-600 transition-colors">{job.title}</h3>
-                                                    <div className="text-sm text-neutral-500 font-medium">{job.company_name}</div>
+                                                {job.publication_date && (
+                                                    <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider bg-neutral-50 px-2 py-1 rounded">
+                                                        {formatDate(job.publication_date)}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="flex flex-wrap gap-2 mb-6">
+                                                <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-bold flex items-center gap-1">
+                                                    <Briefcase className="w-3 h-3" /> {job.job_type || 'Full-time'}
+                                                </span>
+                                                <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-bold flex items-center gap-1">
+                                                    <Globe className="w-3 h-3" /> {job.candidate_required_location || 'Remote'}
+                                                </span>
+                                                {job.salary && (
+                                                    <span className="px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-bold flex items-center gap-1">
+                                                        <DollarSign className="w-3 h-3" /> {job.salary}
+                                                    </span>
+                                                )}
+                                            </div>
+
+                                            <div className="mt-auto pt-4 border-t border-neutral-50 flex justify-between items-center">
+                                                <span className="text-xs text-neutral-400 font-medium">{job.category}</span>
+                                                <div className="text-sm font-bold text-neutral-900 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
+                                                    View Details <ChevronRight className="w-4 h-4" />
                                                 </div>
                                             </div>
-                                            {job.publication_date && (
-                                                <span className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider bg-neutral-50 px-2 py-1 rounded">
-                                                    {formatDate(job.publication_date)}
-                                                </span>
-                                            )}
                                         </div>
-
-                                        <div className="flex flex-wrap gap-2 mb-6">
-                                            <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded-md text-xs font-bold flex items-center gap-1">
-                                                <Briefcase className="w-3 h-3" /> {job.job_type || 'Full-time'}
-                                            </span>
-                                            <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs font-bold flex items-center gap-1">
-                                                <Globe className="w-3 h-3" /> {job.candidate_required_location || 'Remote'}
-                                            </span>
-                                            {job.salary && (
-                                                <span className="px-2 py-1 bg-green-50 text-green-700 rounded-md text-xs font-bold flex items-center gap-1">
-                                                    <DollarSign className="w-3 h-3" /> {job.salary}
-                                                </span>
-                                            )}
-                                        </div>
-
-                                        <div className="mt-auto pt-4 border-t border-neutral-50 flex justify-between items-center">
-                                            <span className="text-xs text-neutral-400 font-medium">{job.category}</span>
-                                            <div className="text-sm font-bold text-neutral-900 flex items-center gap-1 group-hover:translate-x-1 transition-transform">
-                                                View Details <ChevronRight className="w-4 h-4" />
+                                        
+                                        {/* In-feed ad logic */}
+                                        {(idx === 4 || idx === 12) && (
+                                            <div className="col-span-1 md:col-span-2">
+                                                <AdUnit slot="1234567890" style={{ minHeight: '100px' }} />
                                             </div>
-                                        </div>
-                                    </div>
+                                        )}
+                                    </React.Fragment>
                                 ))}
                             </div>
                         )}
@@ -191,6 +205,11 @@ export const JobSearch: React.FC = () => {
 
                             {/* Body */}
                             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                                {/* Ad Unit Detail View */}
+                                <div className="mb-6">
+                                    <AdUnit slot="1234567890" style={{ minHeight: '90px' }} />
+                                </div>
+
                                 <div className="flex flex-wrap gap-3 mb-8">
                                     <div className="px-3 py-1.5 bg-neutral-100 rounded-lg text-sm font-medium text-neutral-700 flex items-center gap-2">
                                         <MapPin className="w-4 h-4" /> {selectedJob.candidate_required_location}

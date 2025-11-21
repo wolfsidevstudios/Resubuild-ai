@@ -16,6 +16,7 @@ import { DataConsentModal } from './components/DataConsentModal';
 import { TermsPage, PrivacyPage } from './components/LegalPages';
 import { TermsModal } from './components/TermsModal';
 import { SuspendedView } from './components/SuspendedView';
+import { CookieBanner } from './components/CookieBanner'; // Import Cookie Banner
 import { ResumeData, UserRole, UserProfile } from './types';
 import { auth, getOrCreateUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -432,6 +433,9 @@ function App() {
       {showConsentModal && user && userProfile?.terms_accepted && (
           <DataConsentModal userId={user.uid} onClose={() => setShowConsentModal(false)} />
       )}
+
+      {/* AdSense Mandatory Cookie Banner */}
+      <CookieBanner />
     </>
   );
 }

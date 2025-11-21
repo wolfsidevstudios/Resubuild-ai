@@ -5,6 +5,7 @@ import { PublishedResume } from '../types';
 import { ResumePreview } from './ResumePreview';
 import { Search, MapPin, Briefcase, X, Loader2, FileText, User } from 'lucide-react';
 import { Button } from './Button';
+import { AdUnit } from './AdUnit';
 
 interface DiscoverProps {
     onHome: () => void;
@@ -86,6 +87,11 @@ export const Discover: React.FC<DiscoverProps> = ({ onHome }) => {
                     </div>
                 </div>
 
+                {/* Top Ad Banner */}
+                <div className="mb-12 max-w-3xl mx-auto">
+                    <AdUnit slot="1234567890" className="w-full" style={{ minHeight: '100px' }} />
+                </div>
+
                 {loading ? (
                     <div className="flex justify-center py-20">
                         <Loader2 className="w-8 h-8 animate-spin text-neutral-900" />
@@ -100,51 +106,59 @@ export const Discover: React.FC<DiscoverProps> = ({ onHome }) => {
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                        {filteredResumes.map((resume) => (
-                            <div 
-                                key={resume.id} 
-                                onClick={() => setSelectedResume(resume)}
-                                className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full"
-                            >
-                                {/* Preview header */}
-                                <div className="h-24 bg-gradient-to-br from-neutral-100 to-neutral-200 relative">
-                                    <div className="absolute -bottom-6 left-6">
-                                        <div className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center text-white shadow-md border-4 border-white">
-                                            <span className="font-bold text-lg">{resume.full_name.charAt(0)}</span>
+                        {filteredResumes.map((resume, index) => (
+                            <React.Fragment key={resume.id}>
+                                <div 
+                                    onClick={() => setSelectedResume(resume)}
+                                    className="bg-white rounded-2xl overflow-hidden border border-neutral-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer group flex flex-col h-full"
+                                >
+                                    {/* Preview header */}
+                                    <div className="h-24 bg-gradient-to-br from-neutral-100 to-neutral-200 relative">
+                                        <div className="absolute -bottom-6 left-6">
+                                            <div className="w-12 h-12 bg-neutral-900 rounded-full flex items-center justify-center text-white shadow-md border-4 border-white">
+                                                <span className="font-bold text-lg">{resume.full_name.charAt(0)}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="pt-8 pb-6 px-6 flex-1 flex flex-col">
+                                        <h3 className="font-bold text-lg text-neutral-900 mb-1 line-clamp-1">{resume.full_name}</h3>
+                                        <div className="flex items-center gap-1.5 text-sm text-neutral-500 mb-3 font-medium">
+                                            <Briefcase className="w-3.5 h-3.5" />
+                                            <span className="line-clamp-1">{resume.job_title || 'Professional'}</span>
+                                        </div>
+
+                                        {resume.location && (
+                                            <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-4">
+                                                <MapPin className="w-3 h-3" />
+                                                <span className="line-clamp-1">{resume.location}</span>
+                                            </div>
+                                        )}
+                                        
+                                        <div className="mt-auto pt-4 border-t border-neutral-100">
+                                            <div className="flex flex-wrap gap-1.5 h-16 overflow-hidden content-start">
+                                                {resume.skills?.slice(0, 4).map((skill, idx) => (
+                                                    <span key={idx} className="px-2 py-0.5 bg-neutral-50 text-neutral-600 text-[10px] uppercase font-bold tracking-wider rounded-md">
+                                                        {skill}
+                                                    </span>
+                                                ))}
+                                                {resume.skills && resume.skills.length > 4 && (
+                                                    <span className="px-2 py-0.5 text-neutral-400 text-[10px] font-medium">
+                                                        +{resume.skills.length - 4}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                                 
-                                <div className="pt-8 pb-6 px-6 flex-1 flex flex-col">
-                                    <h3 className="font-bold text-lg text-neutral-900 mb-1 line-clamp-1">{resume.full_name}</h3>
-                                    <div className="flex items-center gap-1.5 text-sm text-neutral-500 mb-3 font-medium">
-                                        <Briefcase className="w-3.5 h-3.5" />
-                                        <span className="line-clamp-1">{resume.job_title || 'Professional'}</span>
+                                {/* In-Feed Ad every 8 items */}
+                                {(index + 1) % 8 === 0 && (
+                                    <div className="col-span-1 md:col-span-2 lg:col-span-3 xl:col-span-4 py-4">
+                                        <AdUnit slot="1234567890" className="w-full flex justify-center" style={{ minHeight: '120px' }} />
                                     </div>
-
-                                    {resume.location && (
-                                        <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-4">
-                                            <MapPin className="w-3 h-3" />
-                                            <span className="line-clamp-1">{resume.location}</span>
-                                        </div>
-                                    )}
-                                    
-                                    <div className="mt-auto pt-4 border-t border-neutral-100">
-                                        <div className="flex flex-wrap gap-1.5 h-16 overflow-hidden content-start">
-                                            {resume.skills?.slice(0, 4).map((skill, idx) => (
-                                                <span key={idx} className="px-2 py-0.5 bg-neutral-50 text-neutral-600 text-[10px] uppercase font-bold tracking-wider rounded-md">
-                                                    {skill}
-                                                </span>
-                                            ))}
-                                            {resume.skills && resume.skills.length > 4 && (
-                                                <span className="px-2 py-0.5 text-neutral-400 text-[10px] font-medium">
-                                                    +{resume.skills.length - 4}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                )}
+                            </React.Fragment>
                         ))}
                     </div>
                 )}
@@ -187,6 +201,11 @@ export const Discover: React.FC<DiscoverProps> = ({ onHome }) => {
                         {/* Resume Preview Wrapper */}
                         <div className="flex-1 overflow-hidden relative bg-neutral-200/50 flex justify-center">
                             <div className="w-full h-full overflow-auto custom-scrollbar pb-20">
+                                {/* Ad Unit in Modal */}
+                                <div className="max-w-[210mm] mx-auto my-4">
+                                    <AdUnit slot="1234567890" style={{ minHeight: '90px' }} />
+                                </div>
+
                                 {/* Pass the resume data to preview, ensure pointer events are enabled for scrolling */}
                                 <ResumePreview 
                                     data={selectedResume.resume_data} 
