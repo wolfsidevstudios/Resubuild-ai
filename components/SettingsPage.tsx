@@ -21,7 +21,8 @@ import {
     Zap,
     Cpu,
     Sparkles,
-    Lock
+    Lock,
+    FileText
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -351,7 +352,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                                     </h3>
                                     <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 mb-6">
                                         <p className="text-sm text-blue-900 leading-relaxed">
-                                            We ask users to allow their anonymized resume designs to be used for training our internal AI models. 
+                                            We ask users to allow their anonymized resume designs and data in our internal training sets for future AI models. 
                                             <strong> Your data is never sold</strong> and remains securely within our database. You have the right to report any misuse.
                                         </p>
                                     </div>
@@ -370,6 +371,29 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                                             <CheckCircle2 className="w-4 h-4" /> {successMsg}
                                         </div>
                                     )}
+                                </div>
+                            </div>
+
+                            {/* AdSense & Legal Section */}
+                            <div className="bg-white p-6 md:p-8 rounded-3xl border border-neutral-200 shadow-sm space-y-6">
+                                <div>
+                                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                                        <FileText className="w-5 h-5 text-neutral-600" /> AdSense & Legal Policies
+                                    </h3>
+                                    <div className="space-y-4 text-sm text-neutral-600 leading-relaxed">
+                                        <p>
+                                            <strong>CCPA & GDPR Compliance:</strong> We respect your rights under the California Consumer Privacy Act and the General Data Protection Regulation. You have full control over your personal data via this settings panel.
+                                        </p>
+                                        <p>
+                                            <strong>Do Not Sell My Personal Information:</strong> Resubuild does not sell your personal information to third parties. The "Data Training Consent" toggle above allows you to opt-out of internal AI improvement programs.
+                                        </p>
+                                        <p>
+                                            <strong>Cookie Policy:</strong> We use cookies to personalize content and ads, provide social media features, and analyze our traffic. See our <a href="/privacy" className="text-blue-600 underline">Privacy Policy</a> for details.
+                                        </p>
+                                        <p>
+                                            <strong>AdSense Policies:</strong> This site is supported by Google AdSense. Users must adhere to <a href="https://support.google.com/adsense/answer/48182" target="_blank" rel="noreferrer" className="text-blue-600 underline">Google's Program Policies</a>, including strictly prohibiting invalid click activity.
+                                        </p>
+                                    </div>
                                 </div>
                             </div>
                         </div>

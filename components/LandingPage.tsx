@@ -844,6 +844,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                       <p className="text-sm text-neutral-500">Your PDF exports are 100% clean. No watermarks, no branding, no ads.</p>
                   </div>
               </div>
+
+              <div className="mt-12 pt-8 border-t border-neutral-100 text-center text-xs text-neutral-400 max-w-2xl mx-auto">
+                  <p className="mb-2">
+                      Our ad implementation follows strict <a href="https://support.google.com/adsense/answer/48182" target="_blank" rel="noreferrer" className="underline hover:text-neutral-600">Google AdSense Program Policies</a>.
+                  </p>
+                  <div className="flex justify-center gap-4">
+                      <button onClick={onViewPrivacy} className="underline hover:text-neutral-600">Privacy Policy</button>
+                      <span>•</span>
+                      <button onClick={onViewTerms} className="underline hover:text-neutral-600">Terms of Service</button>
+                      <span>•</span>
+                      <button onClick={onViewPrivacy} className="underline hover:text-neutral-600">Cookie Policy</button>
+                  </div>
+              </div>
           </div>
       </section>
 
