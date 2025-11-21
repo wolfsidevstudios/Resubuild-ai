@@ -134,6 +134,7 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [lastSaved, setLastSaved] = useState<Date>(new Date());
   const [isATSMode, setIsATSMode] = useState(false);
   const [isPublishing, setIsPublishing] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
   
   // Feature Modals
@@ -473,7 +474,40 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
       document.body.removeChild(a);
   };
 
-  const handlePrint = () => window.print();
+  // UPDATED: PDF Download Handler using html2pdf
+  const handleDownloadPDF = () => {
+      const element = previewRef.current;
+      if (!element) {
+          alert("Could not find resume preview.");
+          return;
+      }
+      
+      setIsDownloading(true);
+      
+      const opt = {
+          margin: 0,
+          filename: `${data.name.replace(/\s+/g, '_') || 'resume'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+          pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+      };
+
+      // @ts-ignore
+      if (window.html2pdf) {
+          // @ts-ignore
+          window.html2pdf().set(opt).from(element).save().then(() => {
+              setIsDownloading(false);
+          }).catch((err: any) => {
+              console.error("PDF Generation Error:", err);
+              setIsDownloading(false);
+              alert("Failed to generate PDF. Please try standard print (Ctrl+P).");
+          });
+      } else {
+          alert("PDF generator not loaded. Please try refreshing the page.");
+          setIsDownloading(false);
+      }
+  };
 
   const handlePublish = async () => {
       if (!confirm("Publish to Discover page?")) return;
@@ -613,8 +647,13 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                         title="Publish to Discover"
                         isLoading={isPublishing}
                     />
-                    <Button onClick={handlePrint} icon={<Download className="w-4 h-4" />} className="whitespace-nowrap">
-                        Export
+                    <Button 
+                        onClick={handleDownloadPDF} 
+                        isLoading={isDownloading}
+                        icon={<Download className="w-4 h-4" />} 
+                        className="whitespace-nowrap"
+                    >
+                        Download PDF
                     </Button>
                 </div>
             </div>
