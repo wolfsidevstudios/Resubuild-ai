@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey } from '../services/storageService';
 import { signOut } from '../services/firebase';
@@ -8,6 +8,7 @@ import { Button } from './Button';
 import { Messaging } from './Messaging';
 import { Notifications } from './Notifications';
 import { Resupilot } from './Resupilot';
+import { LinkedInAgent } from './LinkedInAgent';
 
 interface DashboardProps {
   onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
@@ -51,6 +52,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showResupilot, setShowResupilot] = useState(false);
+  const [showLinkedInAgent, setShowLinkedInAgent] = useState(false);
   
   // Creation Flow State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -83,6 +85,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   
   const handleResupilotSave = (newResume: ResumeData) => {
       setShowResupilot(false);
+      setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
+      onEdit(newResume);
+  };
+  
+  const handleLinkedInSave = (newResume: ResumeData) => {
+      setShowLinkedInAgent(false);
+      // Save is handled inside Agent before passing here, but we ensure state updates
       setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
       onEdit(newResume);
   };
@@ -126,6 +135,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   label="Resupilot AI" 
                   onClick={() => setShowResupilot(true)}
                   className="text-purple-600 hover:text-purple-700"
+               />
+               <SidebarItem 
+                  icon={Linkedin} 
+                  label="LinkedIn Agent" 
+                  onClick={() => setShowLinkedInAgent(true)}
+                  className="text-[#0077b5] hover:text-[#0077b5]"
                />
                <SidebarItem 
                   icon={MessageSquare} 
@@ -371,6 +386,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                )}
            </div>
         </div>
+      )}
+
+      {/* LinkedIn Agent Modal */}
+      {showLinkedInAgent && (
+          <LinkedInAgent onClose={() => setShowLinkedInAgent(false)} onSave={handleLinkedInSave} />
       )}
 
       {/* Messages Modal */}

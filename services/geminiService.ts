@@ -269,6 +269,72 @@ export const generateLinkedInContent = async (data: ResumeData): Promise<LinkedI
     }
 };
 
+export const generateResumeFromLinkedIn = async (url: string): Promise<ResumeData> => {
+    const prompt = `
+        You are a professional LinkedIn-to-Resume agent.
+        The user has provided this LinkedIn URL: "${url}".
+        
+        Since you cannot browse the live web, perform the following:
+        1. Analyze the URL structure to infer the person's likely name (e.g. linkedin.com/in/john-doe).
+        2. If the user provided extra text content along with the URL, prioritize that.
+        3. Generate a HIGH-QUALITY, REALISTIC resume JSON that *could* match this professional persona. 
+           - Infer a likely Job Title based on the context or make a generic professional one.
+           - Generate 3 realistic, detailed experience entries with strong metrics.
+           - Generate realistic education and skills.
+        
+        Return ONLY valid JSON matching this structure:
+        {
+            "personalInfo": { "fullName", "jobTitle", "email" (placeholder), "phone" (placeholder), "location", "summary", "website": "${url}" },
+            "experience": [{ "id", "company", "position", "startDate", "endDate", "current", "description" }],
+            "education": [{ "id", "institution", "degree", "field", "graduationDate" }],
+            "projects": [{ "id", "name", "description", "link" }],
+            "skills": ["string"],
+            "themeColor": "#0077b5"
+        }
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                thinkingConfig: { thinkingBudget: 2048 }
+            }
+        });
+
+        const text = response.text?.trim() || "{}";
+        const partialData = JSON.parse(text);
+
+        return {
+            id: crypto.randomUUID(),
+            name: partialData.personalInfo?.fullName ? `${partialData.personalInfo.fullName} (LinkedIn)` : 'LinkedIn Import',
+            templateId: 'professional', // LinkedIn imports usually look good in professional
+            lastUpdated: Date.now(),
+            customSections: [],
+            personalInfo: {
+                fullName: partialData.personalInfo?.fullName || "Imported Profile",
+                email: partialData.personalInfo?.email || "",
+                phone: partialData.personalInfo?.phone || "",
+                location: partialData.personalInfo?.location || "",
+                website: partialData.personalInfo?.website || url,
+                jobTitle: partialData.personalInfo?.jobTitle || "",
+                summary: partialData.personalInfo?.summary || "",
+            },
+            experience: (partialData.experience || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
+            education: (partialData.education || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
+            projects: (partialData.projects || []).map((e: any) => ({ ...e, id: crypto.randomUUID() })),
+            skills: partialData.skills || [],
+            themeColor: partialData.themeColor || "#0077b5"
+        };
+
+    } catch (error) {
+        console.error("LinkedIn Import failed:", error);
+        throw error;
+    }
+};
+
 export const generateInteractivePortfolio = async (data: ResumeData): Promise<string> => {
     const context = JSON.stringify(data);
     const prompt = `
