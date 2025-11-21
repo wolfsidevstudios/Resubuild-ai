@@ -321,7 +321,11 @@ function App() {
           <SettingsPage 
               user={user}
               userRole={userRole}
-              onBack={() => routeUser(user)}
+              onBack={() => {
+                  // Force navigate back to dashboard based on role, skipping the "stay on current route" check
+                  const target = userRole === 'employer' ? 'employer-dashboard' : 'dashboard';
+                  navigate(target);
+              }}
           />
       )}
 
