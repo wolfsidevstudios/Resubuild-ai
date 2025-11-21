@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { ArrowLeft, Users, Mail, Shield, Globe, Award } from 'lucide-react';
+import { ArrowLeft, Users, Mail, Shield, Globe, Award, User } from 'lucide-react';
 import { Button } from './Button';
 
 export const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
@@ -42,7 +42,7 @@ export const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     </div>
                 </div>
 
-                <div className="prose prose-neutral max-w-none space-y-8 text-neutral-800 leading-relaxed">
+                <div className="prose prose-neutral max-w-none space-y-12 text-neutral-800 leading-relaxed">
                     <section>
                         <h2 className="text-2xl font-bold mb-4">Our Story</h2>
                         <p>
@@ -51,6 +51,22 @@ export const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                             human creativity and artificial intelligence. By leveraging Google's Gemini models, we allow users to "chat" 
                             with their resume, refining it in real-time just like they would with a professional career coach.
                         </p>
+                    </section>
+
+                    <section>
+                        <h2 className="text-2xl font-bold mb-4">Leadership</h2>
+                        <div className="flex items-center gap-6 p-6 bg-neutral-50 rounded-2xl border border-neutral-100 max-w-lg">
+                             <div className="w-20 h-20 bg-neutral-200 rounded-full flex items-center justify-center text-neutral-500 flex-shrink-0 overflow-hidden">
+                                 <User className="w-10 h-10" />
+                             </div>
+                             <div>
+                                 <div className="font-bold text-xl text-neutral-900">Emanuel Martinez</div>
+                                 <div className="text-neutral-500 text-sm uppercase tracking-wider font-bold mb-2">Founder & CEO</div>
+                                 <p className="text-neutral-600 text-sm italic">
+                                     "Building tools that help people realize their potential is the greatest privilege."
+                                 </p>
+                             </div>
+                        </div>
                     </section>
 
                     <section>

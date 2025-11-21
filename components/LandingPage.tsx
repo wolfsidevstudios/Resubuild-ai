@@ -696,11 +696,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                               <p className="text-sm text-neutral-500">Forever free for everyone.</p>
                           </div>
                           <div className="flex-1 space-y-4 my-8">
-                              {["Unlimited Resumes", "Basic AI Tools (Flash)", "PDF Export", "Resume Templates", "Job Search"].map((feat, i) => (
+                              {["Unlimited Resumes", "Basic AI Tools (Flash)", "PDF Export", "Resume Templates", "Job Search", "Ad-Supported Experience"].map((feat, i) => (
                                   <div key={i} className="flex items-center gap-3 text-sm text-neutral-700">
                                       <CheckCircle2 className="w-4 h-4 text-neutral-900 shrink-0" /> {feat}
                                   </div>
                               ))}
+                              <p className="text-xs text-neutral-400 mt-4 border-t border-neutral-100 pt-4 italic">* We use Google AdSense to keep this service free for everyone.</p>
                           </div>
                           <Button onClick={() => handleAction('signup')} variant="secondary" className="w-full">
                               Get Started
