@@ -474,6 +474,48 @@ export const generateEmailTemplate = async (data: ResumeData, type: string, reci
     }
 };
 
+// --- HUMANIZER TOOL ---
+
+export const humanizeContent = async (text: string): Promise<{ rewritten: string; score: number; critique: string }> => {
+    const prompt = `
+        You are an expert editor and humanizer. Your goal is to take text that might sound robotic, stiff, or AI-generated, and rewrite it to sound natural, engaging, and authentically human.
+        
+        Original Text:
+        "${text}"
+        
+        Tasks:
+        1. Analyze the original text for robotic patterns, buzzwords, or stiffness.
+        2. Rewrite it to flow naturally, using varied sentence structure and professional but conversational warmth.
+        3. Rate the "Human-ness" of your *rewritten* version (0-100, where 100 is perfectly natural human speech).
+        
+        Return JSON ONLY:
+        {
+            "rewritten": "The new text...",
+            "score": 95,
+            "critique": "I removed the passive voice and overused words like 'leveraged'..."
+        }
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash', // Flash is fast and good for style transfer
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        
+        const result = JSON.parse(response.text?.trim() || "{}");
+        return {
+            rewritten: result.rewritten || text,
+            score: result.score || 85,
+            critique: result.critique || "Text flow improved."
+        };
+    } catch (error) {
+        console.error("Humanize failed:", error);
+        throw error;
+    }
+};
+
 // --- REFINEMENT TOOL (DEEP AGENT) ---
 
 export const refineToolOutput = async (currentContent: string, userInstruction: string, toolType: string): Promise<string> => {

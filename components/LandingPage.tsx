@@ -28,7 +28,9 @@ import {
   ArrowUp,
   ChevronDown,
   Building2,
-  Globe2
+  Globe2,
+  Cloud,
+  FlaskConical
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -266,7 +268,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           <div className="flex items-center gap-4">
              <div className="hidden md:flex items-center gap-6 mr-4">
                 <button onClick={() => document.getElementById('features')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Features</button>
-                <button onClick={() => document.getElementById('how-it-works')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">How it Works</button>
+                <button onClick={() => document.getElementById('pricing')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Pricing</button>
                 {onGoToDiscover && (
                     <button onClick={onGoToDiscover} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Discover</button>
                 )}
@@ -302,7 +304,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           
           <p className="text-xl text-neutral-500 max-w-2xl mx-auto leading-relaxed">
             The intelligent resume builder that helps you land your dream job. 
-            Smart content suggestions, real-time previews, and instant PDF exports.
+            Smart content generation, real-time previews, and instant PDF exports.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-6 pb-12">
@@ -579,6 +581,98 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
             ))}
           </div>
         </div>
+      </section>
+
+      {/* Pricing / Plans Section */}
+      <section id="pricing" className="py-24 bg-white border-t border-neutral-100">
+          <div className="max-w-7xl mx-auto px-6">
+              <div className="text-center mb-16">
+                  <h2 className="text-4xl font-bold mb-4">Choose your path.</h2>
+                  <p className="text-xl text-neutral-500">Powerful features for every stage of your career.</p>
+              </div>
+
+              <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                  
+                  {/* Free Plan */}
+                  <ScrollReveal>
+                      <div className="h-full p-8 rounded-3xl border border-neutral-200 bg-white flex flex-col hover:shadow-xl transition-all">
+                          <div className="mb-4">
+                              <h3 className="text-xl font-bold text-neutral-900">Free</h3>
+                              <div className="text-4xl font-bold mt-4 mb-1">$0</div>
+                              <p className="text-sm text-neutral-500">Forever free for everyone.</p>
+                          </div>
+                          <div className="flex-1 space-y-4 my-8">
+                              {["Unlimited Resumes", "Basic AI Tools (Flash)", "PDF Export", "Resume Templates", "Job Search"].map((feat, i) => (
+                                  <div key={i} className="flex items-center gap-3 text-sm text-neutral-700">
+                                      <CheckCircle2 className="w-4 h-4 text-neutral-900 shrink-0" /> {feat}
+                                  </div>
+                              ))}
+                          </div>
+                          <Button onClick={() => handleAction('signup')} variant="secondary" className="w-full">
+                              Get Started
+                          </Button>
+                      </div>
+                  </ScrollReveal>
+
+                  {/* Plus Plan */}
+                  <ScrollReveal delay={100}>
+                      <div className="h-full p-8 rounded-3xl border-2 border-blue-100 bg-blue-50/30 flex flex-col hover:shadow-xl transition-all relative overflow-hidden">
+                          <div className="absolute top-4 right-4 bg-blue-100 text-blue-700 text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider">
+                              Coming Soon
+                          </div>
+                          <div className="mb-4">
+                              <h3 className="text-xl font-bold text-blue-900">Plus</h3>
+                              <div className="text-4xl font-bold mt-4 mb-1 text-blue-900">$10<span className="text-lg font-normal text-blue-400">/mo</span></div>
+                              <p className="text-sm text-blue-500">For power users.</p>
+                          </div>
+                          <div className="flex-1 space-y-4 my-8">
+                              {["Everything in Free", "Gemini 2.5 Pro & 3.0 Pro", "100 AI Credits / Day", "Deep Reasoning Mode", "Priority Processing"].map((feat, i) => (
+                                  <div key={i} className="flex items-center gap-3 text-sm text-blue-800">
+                                      <CheckCircle2 className="w-4 h-4 text-blue-600 shrink-0" /> {feat}
+                                  </div>
+                              ))}
+                          </div>
+                          <button className="w-full py-2.5 rounded-full border border-blue-200 text-blue-600 font-bold text-sm cursor-not-allowed bg-white/50">
+                              Join Waitlist
+                          </button>
+                      </div>
+                  </ScrollReveal>
+
+                  {/* Kyndra Circle */}
+                  <ScrollReveal delay={200}>
+                      <div className="h-full p-8 rounded-3xl border border-neutral-800 bg-neutral-900 text-white flex flex-col shadow-2xl hover:scale-105 transition-transform relative overflow-hidden group">
+                          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-blue-900/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                          <div className="absolute top-4 right-4 bg-white/10 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full uppercase tracking-wider border border-white/10">
+                              Coming Soon
+                          </div>
+                          <div className="mb-4 relative z-10">
+                              <h3 className="text-xl font-bold flex items-center gap-2">
+                                  Kyndra Circle <Sparkles className="w-4 h-4 text-purple-400" />
+                              </h3>
+                              <div className="text-4xl font-bold mt-4 mb-1">$20<span className="text-lg font-normal text-neutral-400">/mo</span></div>
+                              <p className="text-sm text-neutral-400">The ultimate career suite.</p>
+                          </div>
+                          <div className="flex-1 space-y-4 my-8 relative z-10">
+                              {[
+                                  { name: "Unlimited AI Credits", icon: Zap },
+                                  { name: "Future Labs Access", icon: FlaskConical },
+                                  { name: "Cloud Storage (10GB)", icon: Cloud },
+                                  { name: "Human Expert Review", icon: User },
+                                  { name: "Custom Domains", icon: Globe2 }
+                              ].map((feat, i) => (
+                                  <div key={i} className="flex items-center gap-3 text-sm text-neutral-300">
+                                      <feat.icon className="w-4 h-4 text-purple-400 shrink-0" /> {feat.name}
+                                  </div>
+                              ))}
+                          </div>
+                          <button className="w-full py-2.5 rounded-full bg-white text-neutral-900 font-bold text-sm hover:bg-neutral-100 transition-colors relative z-10 cursor-not-allowed opacity-80">
+                              Join Circle Waitlist
+                          </button>
+                      </div>
+                  </ScrollReveal>
+
+              </div>
+          </div>
       </section>
 
       {/* Testimonials */}

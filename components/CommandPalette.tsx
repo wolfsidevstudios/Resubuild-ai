@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Search, Sparkles, Calculator, Megaphone, Languages, BrainCircuit, Target, PenTool, Mic, Linkedin, Compass, Code2, X, Command } from 'lucide-react';
+import { Search, Sparkles, Calculator, Megaphone, Languages, BrainCircuit, Target, PenTool, Mic, Linkedin, Compass, Code2, X, Command, UserCheck } from 'lucide-react';
 
 interface CommandPaletteProps {
     isOpen: boolean;
@@ -17,6 +17,7 @@ interface Tool {
 }
 
 const TOOLS: Tool[] = [
+    { id: 'humanizer', label: 'AI Humanizer', desc: 'Make text natural & see human score', icon: UserCheck, color: 'text-indigo-600' },
     { id: 'metric_booster', label: 'Metric Booster', desc: 'Add numbers to your bullets', icon: Calculator, color: 'text-emerald-600' },
     { id: 'tone_polish', label: 'Tone Polish', desc: 'Rewrite in executive or creative voice', icon: Megaphone, color: 'text-pink-600' },
     { id: 'translate', label: 'Translator', desc: 'Convert resume to another language', icon: Languages, color: 'text-cyan-600' },
