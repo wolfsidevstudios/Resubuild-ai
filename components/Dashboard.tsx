@@ -1,8 +1,8 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X, Briefcase } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X, Briefcase, Feather, Terminal } from 'lucide-react';
 import { ResumeData } from '../types';
-import { getResumes, deleteResume, getStoredAPIKey } from '../services/storageService';
+import { getResumes, deleteResume } from '../services/storageService';
 import { signOut } from '../services/firebase';
 import { Button } from './Button';
 import { Messaging } from './Messaging';
@@ -12,6 +12,7 @@ import { LinkedInAgent } from './LinkedInAgent';
 import { BetaTools } from './BetaTools';
 import { AgentBuilder } from './AgentBuilder';
 import { JobSearch } from './JobSearch';
+import { TemplateThumbnail } from './TemplateThumbnail';
 
 interface DashboardProps {
   onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
@@ -26,6 +27,8 @@ const TEMPLATES = [
     { id: 'professional', name: 'Professional', icon: FileText, desc: 'Traditional serif layout for corporate roles.' },
     { id: 'creative', name: 'Creative', icon: Palette, desc: 'Bold sidebar with accent colors for designers.' },
     { id: 'minimal', name: 'Minimal', icon: AlignLeft, desc: 'Simple, centered, whitespace-heavy.' },
+    { id: 'elegant', name: 'Elegant', icon: Feather, desc: 'Sophisticated serif typography.' },
+    { id: 'tech', name: 'Tech', icon: Terminal, desc: 'Monospaced layout for developers.' },
 ];
 
 // Sidebar Icon Helper
@@ -94,7 +97,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   
   const handleLinkedInSave = (newResume: ResumeData) => {
       setView('dashboard');
-      // Save is handled inside Agent before passing here, but we ensure state updates
       setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
       onEdit(newResume);
   };
@@ -300,21 +302,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                                 className="group relative flex flex-col h-[320px] bg-white border border-neutral-200/60 rounded-[2rem] overflow-hidden hover:shadow-2xl hover:shadow-neutral-900/5 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                               >
                                 {/* Card Preview Header */}
-                                <div className="h-40 bg-neutral-100/50 p-6 relative overflow-hidden">
-                                  {/* Abstract Skeleton UI */}
-                                  <div className="absolute top-6 left-6 right-6 space-y-3 opacity-30 group-hover:opacity-50 transition-opacity duration-500 transform group-hover:scale-105 origin-top">
-                                    <div className="flex gap-3 items-center mb-4">
-                                         <div className="w-8 h-8 rounded-full bg-neutral-800"></div>
-                                         <div className="flex-1 space-y-1.5">
-                                             <div className="h-2 bg-neutral-800 w-1/2 rounded-full"></div>
-                                             <div className="h-1.5 bg-neutral-400 w-1/3 rounded-full"></div>
-                                         </div>
-                                    </div>
-                                    <div className="space-y-1.5">
-                                         <div className="h-1.5 bg-neutral-400 w-full rounded-full"></div>
-                                         <div className="h-1.5 bg-neutral-400 w-5/6 rounded-full"></div>
-                                         <div className="h-1.5 bg-neutral-400 w-4/6 rounded-full"></div>
-                                    </div>
+                                <div className="h-40 bg-neutral-100/50 p-6 relative overflow-hidden flex flex-col justify-center">
+                                  
+                                  {/* Template Thumbnail Preview (Simplified for Card) */}
+                                  <div className="absolute inset-4 opacity-50 group-hover:opacity-80 transition-opacity duration-500 transform group-hover:scale-105 origin-top">
+                                      <div className="w-full h-full border border-neutral-200 bg-white shadow-sm rounded-lg p-2">
+                                          <div className="w-1/3 h-2 bg-neutral-800 rounded-full mb-2"></div>
+                                          <div className="w-full h-1 bg-neutral-100 rounded-full mb-1"></div>
+                                          <div className="w-full h-1 bg-neutral-100 rounded-full mb-1"></div>
+                                          <div className="w-2/3 h-1 bg-neutral-100 rounded-full"></div>
+                                      </div>
                                   </div>
 
                                   {/* Template Badge */}
@@ -366,8 +363,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
       {/* Create Mode Selection Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/40 backdrop-blur-md animate-in fade-in duration-200">
-           <div className="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200 scale-100">
-               <div className="p-8 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50">
+           <div className="bg-white w-full max-w-4xl rounded-[2rem] shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200 scale-100 max-h-[90vh] flex flex-col">
+               <div className="p-8 border-b border-neutral-100 flex justify-between items-center bg-neutral-50/50 shrink-0">
                   <div className="flex items-center gap-3">
                       {createStep === 'templates' && (
                           <button onClick={() => setCreateStep('method')} className="p-2 bg-white border border-neutral-200 rounded-full hover:bg-neutral-100 transition-colors">
@@ -384,7 +381,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                </div>
 
                {createStep === 'method' ? (
-                   <div className="p-8 grid md:grid-cols-2 gap-6">
+                   <div className="p-8 grid md:grid-cols-2 gap-6 overflow-y-auto">
                        {/* AI Option */}
                        <button 
                           onClick={() => onCreate('ai')}
@@ -417,21 +414,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                        </button>
                    </div>
                ) : (
-                   <div className="p-8 grid grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto custom-scrollbar">
+                   <div className="p-8 grid grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto custom-scrollbar bg-neutral-50/50">
                        {TEMPLATES.map(t => (
-                           <button
-                                key={t.id}
-                                onClick={() => onCreate('manual', t.id)}
-                                className="flex items-start gap-4 p-5 rounded-2xl border border-neutral-200 hover:border-neutral-900 hover:shadow-lg transition-all text-left group bg-white"
-                           >
-                               <div className="w-12 h-12 bg-neutral-50 rounded-xl flex items-center justify-center flex-shrink-0 group-hover:bg-neutral-900 group-hover:text-white transition-colors duration-300">
-                                   <t.icon className="w-6 h-6" />
+                           <div key={t.id} className="flex flex-col gap-3">
+                               <TemplateThumbnail 
+                                   templateId={t.id}
+                                   selected={false}
+                                   onClick={() => onCreate('manual', t.id)}
+                               />
+                               <div className="text-center">
+                                   <div className="font-bold text-neutral-900 text-sm">{t.name}</div>
+                                   <div className="text-xs text-neutral-500">{t.desc}</div>
                                </div>
-                               <div>
-                                   <h3 className="font-bold text-neutral-900 group-hover:text-blue-600 transition-colors">{t.name}</h3>
-                                   <p className="text-xs text-neutral-500 mt-1 leading-relaxed font-medium">{t.desc}</p>
-                               </div>
-                           </button>
+                           </div>
                        ))}
                    </div>
                )}
