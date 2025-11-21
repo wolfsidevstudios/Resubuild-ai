@@ -18,8 +18,23 @@ export const AdUnit: React.FC<AdUnitProps> = ({ slot, format = 'auto', layoutKey
         if (isDev) return;
 
         try {
+            // Check for Non-Personalized Ads flag (set by AgeGateModal)
+            const npa = localStorage.getItem('resubuild_npa');
+            
             // @ts-ignore
-            (window.adsbygoogle = window.adsbygoogle || []).push({});
+            const adsbygoogle = window.adsbygoogle || [];
+            
+            // Configure ad request options if NPA is required
+            // Note: This usually needs to be set before the push, or passed in the config.
+            // For individual units, we can push empty config first or rely on global settings if set elsewhere.
+            // However, passing params directly in the push object is supported for some tag types.
+            
+            const pushParams: any = {};
+            if (npa === '1') {
+                pushParams.params = { 'npa': '1' };
+            }
+
+            adsbygoogle.push(pushParams);
         } catch (e) {
             console.error("AdSense push error", e);
         }

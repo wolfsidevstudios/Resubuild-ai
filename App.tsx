@@ -14,10 +14,11 @@ import { SettingsPage } from './components/SettingsPage';
 import { DesignPilot } from './components/DesignPilot'; 
 import { DataConsentModal } from './components/DataConsentModal';
 import { TermsPage, PrivacyPage } from './components/LegalPages';
-import { AboutPage } from './components/AboutPage'; // Import AboutPage
+import { AboutPage } from './components/AboutPage';
 import { TermsModal } from './components/TermsModal';
 import { SuspendedView } from './components/SuspendedView';
-import { CookieBanner } from './components/CookieBanner'; // Import Cookie Banner
+import { CookieBanner } from './components/CookieBanner';
+import { AgeGateModal } from './components/AgeGateModal'; // Import AgeGate
 import { ResumeData, UserRole, UserProfile } from './types';
 import { auth, getOrCreateUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -40,7 +41,7 @@ const ROUTES: Record<string, View> = {
   '/design-pilot': 'design-pilot',
   '/terms': 'terms',
   '/privacy': 'privacy',
-  '/about': 'about', // Add about route
+  '/about': 'about',
   '/suspended': 'suspended'
 };
 
@@ -56,8 +57,9 @@ function App() {
   const [guestPrompt, setGuestPrompt] = useState<string>('');
   const [showAuthModal, setShowAuthModal] = useState(false);
   
-  // Data Consent State
+  // Data Consent & Privacy State
   const [showConsentModal, setShowConsentModal] = useState(false);
+  const [showAgeGate, setShowAgeGate] = useState(false);
 
   // --- ROUTING HELPERS ---
 
@@ -200,6 +202,13 @@ function App() {
 
   useEffect(() => {
     let isMounted = true;
+
+    // Check for Age Gate (Client-side only check)
+    const ageCollected = localStorage.getItem('resubuild_user_age');
+    if (!ageCollected) {
+        // Small delay to not overlap with other modals instantly
+        setTimeout(() => setShowAgeGate(true), 1500);
+    }
 
     // Handle Browser Back/Forward
     const onPopState = () => {
@@ -439,6 +448,11 @@ function App() {
       {/* Data Consent Modal (Global) - Only if terms accepted and consent not set */}
       {showConsentModal && user && userProfile?.terms_accepted && (
           <DataConsentModal userId={user.uid} onClose={() => setShowConsentModal(false)} />
+      )}
+
+      {/* Age Gate Modal - Global for all users to ensure AdSense Compliance */}
+      {showAgeGate && (
+          <AgeGateModal onComplete={() => setShowAgeGate(false)} />
       )}
 
       {/* AdSense Mandatory Cookie Banner */}
