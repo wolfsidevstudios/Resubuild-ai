@@ -29,9 +29,11 @@ import {
   serverTimestamp,
   or,
   and,
-  deleteDoc
+  deleteDoc,
+  arrayUnion,
+  arrayRemove
 } from "firebase/firestore";
-import { ResumeData, Message, Notification, UserProfile, PublishedResume, CustomAgent } from '../types';
+import { ResumeData, Message, Notification, UserProfile, PublishedResume, CustomAgent, ContestEntry } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyALmX4xk9t4PbRK_3MSl3wxMyEayK9tbBI",
@@ -88,7 +90,7 @@ export const fetchPublishedResumes = async (): Promise<PublishedResume[]> => {
     }
 };
 
-// --- Profile & Role ---
+// --- Profile & Role & Consent ---
 
 export const getUserProfile = async (userId: string): Promise<UserProfile | null> => {
     try {
@@ -138,6 +140,22 @@ export const updateUser = async (userId: string, data: Partial<UserProfile>) => 
     }
 };
 
+export const setTrainingConsent = async (userId: string, consent: boolean) => {
+    try {
+        const userRef = doc(db, "users", userId);
+        // Check if doc exists first, if not create partial
+        const snap = await getDoc(userRef);
+        if (!snap.exists()) {
+             await setDoc(userRef, { training_consent: consent }, { merge: true });
+        } else {
+             await updateDoc(userRef, { training_consent: consent });
+        }
+    } catch (error) {
+        console.error("Error setting consent:", error);
+        throw error;
+    }
+};
+
 // --- Custom Agents ---
 
 export const saveCustomAgent = async (agent: CustomAgent) => {
@@ -166,6 +184,42 @@ export const deleteCustomAgent = async (agentId: string) => {
         await deleteDoc(doc(db, "custom_agents", agentId));
     } catch (error) {
         console.error("Error deleting agent:", error);
+    }
+};
+
+// --- Design Pilot Contest ---
+
+export const submitContestEntry = async (entry: Omit<ContestEntry, 'id'>) => {
+    try {
+        await addDoc(collection(db, "contest_entries"), entry);
+    } catch (error) {
+        console.error("Error submitting design:", error);
+        throw error;
+    }
+};
+
+export const getContestEntries = async (): Promise<ContestEntry[]> => {
+    try {
+        const q = query(collection(db, "contest_entries"), orderBy("created_at", "desc"));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ContestEntry));
+    } catch (error) {
+        console.error("Error getting contest entries:", error);
+        return [];
+    }
+};
+
+export const voteForDesign = async (entryId: string, userId: string) => {
+    try {
+        const ref = doc(db, "contest_entries", entryId);
+        // Simple toggle: add user if not present
+        // In a real app we'd check if already voted to toggle off, but let's assume upvote only for now
+        await updateDoc(ref, {
+            votes: arrayUnion(userId)
+        });
+    } catch (error) {
+        console.error("Error voting:", error);
+        throw error;
     }
 };
 

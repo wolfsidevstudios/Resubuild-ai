@@ -11,13 +11,15 @@ import { Auth } from './components/Auth';
 import { NotFound } from './components/NotFound';
 import { AppAssets } from './components/AppAssets';
 import { SettingsPage } from './components/SettingsPage';
+import { DesignPilot } from './components/DesignPilot'; // Import new component
+import { DataConsentModal } from './components/DataConsentModal'; // Import new component
 import { ResumeData, UserRole } from './types';
 import { auth, getUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot';
 
 // Map views to URL paths
 const ROUTES: Record<string, View> = {
@@ -30,6 +32,7 @@ const ROUTES: Record<string, View> = {
   '/create': 'guest-resupilot',
   '/media-kit': 'app-assets',
   '/settings': 'settings',
+  '/design-pilot': 'design-pilot',
 };
 
 function App() {
@@ -42,6 +45,9 @@ function App() {
   // Guest Mode State
   const [guestPrompt, setGuestPrompt] = useState<string>('');
   const [showAuthModal, setShowAuthModal] = useState(false);
+  
+  // Data Consent State
+  const [showConsentModal, setShowConsentModal] = useState(false);
 
   // --- ROUTING HELPERS ---
 
@@ -129,7 +135,7 @@ function App() {
   // Helper to route user based on role (called on login)
   const routeUser = async (currentUser: User | null, targetView?: View) => {
       if (!currentUser) {
-          if (view !== 'guest-resupilot' && view !== 'app-assets' && view !== 'discover') {
+          if (view !== 'guest-resupilot' && view !== 'app-assets' && view !== 'discover' && view !== 'design-pilot') {
              navigate('landing');
           }
           setUserRole(null);
@@ -140,6 +146,11 @@ function App() {
         const profile = await getUserProfile(currentUser.uid);
         const role = profile?.role || 'candidate';
         setUserRole(role);
+        
+        // Check for consent logic
+        if (profile && profile.training_consent === undefined) {
+            setShowConsentModal(true);
+        }
 
         // If a specific target is requested (e.g. from URL), try to go there
         if (targetView) {
@@ -149,7 +160,7 @@ function App() {
 
         // Otherwise default routing based on role, BUT respect current URL if it's valid
         const currentPathView = ROUTES[window.location.pathname];
-        if (currentPathView === 'builder' || currentPathView === 'onboarding' || currentPathView === 'settings') {
+        if (currentPathView === 'builder' || currentPathView === 'onboarding' || currentPathView === 'settings' || currentPathView === 'design-pilot') {
             // Stay on current view
             return;
         }
@@ -186,14 +197,19 @@ function App() {
                  const profile = await getUserProfile(user.uid);
                  const role = profile?.role || 'candidate';
                  setUserRole(role);
+                 // Check consent on initial load
+                 if (profile && profile.training_consent === undefined) {
+                     setShowConsentModal(true);
+                 }
              } catch (e) {
                  console.warn("Profile load failed, defaulting to candidate");
                  setUserRole('candidate');
              }
         } else {
              setUserRole(null);
+             setShowConsentModal(false);
              // Don't redirect if we are on public pages
-             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover'];
+             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot'];
              if (!publicViews.includes(view)) {
                 navigate('landing');
              }
@@ -276,6 +292,10 @@ function App() {
             onGuestTry={handleGuestEntry}
             onGoToAssets={() => navigate('app-assets')}
         />
+      )}
+      
+      {view === 'design-pilot' && (
+          <DesignPilot />
       )}
       
       {view === 'not-found' && (
@@ -365,6 +385,11 @@ function App() {
                   <Auth onSuccess={handleAuthSuccess} defaultView="signup" />
               </div>
           </div>
+      )}
+
+      {/* Data Consent Modal (Global) */}
+      {showConsentModal && user && (
+          <DataConsentModal userId={user.uid} onClose={() => setShowConsentModal(false)} />
       )}
     </>
   );

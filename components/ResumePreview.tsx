@@ -12,7 +12,7 @@ interface ResumePreviewProps {
 }
 
 export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, isATSMode = false, isEditing = false, onUpdate }) => {
-  const { personalInfo, experience, education, skills, projects, customSections, themeColor, templateId = 'modern' } = data;
+  const { personalInfo, experience, education, skills, projects, customSections, themeColor, templateId = 'modern', customStyle } = data;
   
   // --- EDITABLE WRAPPER ---
   const Editable = ({ 
@@ -356,7 +356,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, 
           default: 
               // MODERN (Default)
               return (
-                <div className="p-[15mm] md:p-[20mm]">
+                <div className="p-[15mm] md:p-[20mm]" style={customStyle ? customStyle : {}}>
                   <header className="border-b pb-6 mb-6" style={{borderColor: themeColor === '#000000' ? '#e5e5e5' : themeColor}}>
                     <Editable section="personalInfo" field="fullName" value={personalInfo.fullName} className="text-4xl font-bold tracking-tight uppercase mb-2 block" style={{ color: themeColor }} tag="h1" placeholder="YOUR NAME" />
                     <Editable section="personalInfo" field="jobTitle" value={personalInfo.jobTitle} className="text-xl text-neutral-500 font-medium mb-4 block" tag="p" placeholder="Target Job Title" />

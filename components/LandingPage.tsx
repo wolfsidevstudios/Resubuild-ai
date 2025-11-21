@@ -886,6 +886,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           <div className="flex gap-8 text-sm text-neutral-500 flex-wrap justify-center">
               <a href="#" className="hover:text-neutral-900 transition-colors">Features</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Pricing</a>
+              <a href="/design-pilot" className="hover:text-purple-600 text-purple-600 font-bold transition-colors flex items-center gap-1"><FlaskConical className="w-3 h-3"/> Design Pilot</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Careers</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Privacy</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Terms</a>

@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
-import { updateUser, signOut } from '../services/firebase';
+import { updateUser, signOut, getUserProfile, setTrainingConsent } from '../services/firebase';
 import { getStoredAPIKey, saveAPIKey, removeAPIKey, getPreferredModel, savePreferredModel } from '../services/storageService';
 import { Button } from './Button';
 import { Input } from './InputField';
@@ -20,7 +20,8 @@ import {
     BrainCircuit,
     Zap,
     Cpu,
-    Sparkles
+    Sparkles,
+    Lock
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -30,11 +31,12 @@ interface SettingsPageProps {
 }
 
 export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRole }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'integrations' | 'account'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'integrations' | 'account' | 'privacy'>('profile');
   const [apiKey, setApiKey] = useState('');
   const [fullName, setFullName] = useState(user.displayName || '');
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [trainingConsent, setTrainingConsentState] = useState(false);
   
   // Model Preference
   const [preferredModel, setPreferredModel] = useState('gemini-2.5-flash');
@@ -42,7 +44,10 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
   useEffect(() => {
     setApiKey(getStoredAPIKey() || '');
     setPreferredModel(getPreferredModel());
-  }, []);
+    getUserProfile(user.uid).then(p => {
+        if (p) setTrainingConsentState(!!p.training_consent);
+    });
+  }, [user.uid]);
 
   const handleSaveProfile = async () => {
       setIsSaving(true);
@@ -74,6 +79,17 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
       setSuccessMsg('AI Model preference updated.');
       setTimeout(() => setSuccessMsg(''), 3000);
   }
+
+  const handleTrainingConsentChange = async (consent: boolean) => {
+      try {
+          await setTrainingConsent(user.uid, consent);
+          setTrainingConsentState(consent);
+          setSuccessMsg('Privacy settings updated.');
+          setTimeout(() => setSuccessMsg(''), 3000);
+      } catch (e) {
+          console.error(e);
+      }
+  };
 
   const handleSignOut = async () => {
       if (confirm('Are you sure you want to sign out?')) {
@@ -158,6 +174,12 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                         <Key className="w-4 h-4" /> Integrations & AI
                     </button>
                     <button 
+                        onClick={() => setActiveTab('privacy')}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'privacy' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-600 hover:bg-white hover:shadow-sm'}`}
+                    >
+                        <Lock className="w-4 h-4" /> Privacy & Data
+                    </button>
+                    <button 
                         onClick={() => setActiveTab('account')}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'account' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-600 hover:bg-white hover:shadow-sm'}`}
                     >
@@ -223,7 +245,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                                     <Button onClick={handleSaveProfile} isLoading={isSaving}>
                                         Save Changes
                                     </Button>
-                                    {successMsg && (
+                                    {successMsg && activeTab === 'profile' && (
                                         <span className="text-sm text-green-600 flex items-center gap-1 animate-in fade-in">
                                             <CheckCircle2 className="w-4 h-4" /> {successMsg}
                                         </span>
@@ -267,7 +289,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                                     <Button onClick={handleSaveKey}>
                                         Update Key
                                     </Button>
-                                    {successMsg && apiKey && (
+                                    {successMsg && apiKey && activeTab === 'integrations' && (
                                         <span className="text-sm text-green-600 flex items-center gap-1 animate-in fade-in">
                                             <CheckCircle2 className="w-4 h-4" /> {successMsg}
                                         </span>
@@ -311,6 +333,45 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                                 </div>
                             </div>
 
+                        </div>
+                    )}
+
+                    {/* Privacy Tab */}
+                    {activeTab === 'privacy' && (
+                        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                            <div>
+                                <h2 className="text-2xl font-bold mb-1">Privacy & Data</h2>
+                                <p className="text-neutral-500">Control how your data is used.</p>
+                            </div>
+
+                            <div className="bg-white p-6 md:p-8 rounded-3xl border border-neutral-200 shadow-sm space-y-6">
+                                <div>
+                                    <h3 className="font-bold text-lg mb-4 flex items-center gap-2">
+                                        <Shield className="w-5 h-5 text-blue-600" /> Data Training Consent
+                                    </h3>
+                                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100 mb-6">
+                                        <p className="text-sm text-blue-900 leading-relaxed">
+                                            We ask users to allow their anonymized resume designs to be used for training our internal AI models. 
+                                            <strong> Your data is never sold</strong> and remains securely within our database. You have the right to report any misuse.
+                                        </p>
+                                    </div>
+                                    
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-neutral-900 font-medium">Allow data usage for AI training</span>
+                                        <button 
+                                            onClick={() => handleTrainingConsentChange(!trainingConsent)}
+                                            className={`w-14 h-8 rounded-full p-1 transition-colors ${trainingConsent ? 'bg-blue-600' : 'bg-neutral-200'}`}
+                                        >
+                                            <div className={`w-6 h-6 bg-white rounded-full shadow-sm transform transition-transform ${trainingConsent ? 'translate-x-6' : ''}`}></div>
+                                        </button>
+                                    </div>
+                                    {successMsg && activeTab === 'privacy' && (
+                                        <div className="mt-4 text-sm text-green-600 flex items-center gap-1 animate-in fade-in">
+                                            <CheckCircle2 className="w-4 h-4" /> {successMsg}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
                         </div>
                     )}
 

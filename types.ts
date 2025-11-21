@@ -60,6 +60,7 @@ export interface ResumeData {
   skills: string[];
   customSections: CustomSection[];
   themeColor: string;
+  customStyle?: Record<string, string>; // For Design Pilot
 }
 
 export enum AIActionType {
@@ -77,6 +78,7 @@ export interface UserProfile {
   full_name: string;
   avatar_url?: string;
   role: UserRole;
+  training_consent?: boolean; // New privacy field
 }
 
 export interface Message {
@@ -157,4 +159,17 @@ export interface CustomAgent {
     description: string;
     nodes: AgentNode[];
     created_at: number;
+}
+
+// --- DESIGN PILOT CONTEST TYPES ---
+
+export interface ContestEntry {
+    id: string;
+    user_id: string;
+    author_name: string;
+    design_name: string;
+    custom_style: Record<string, string>; // The AI generated CSS/Theme
+    theme_color: string;
+    votes: string[]; // Array of user IDs who voted
+    created_at: string;
 }

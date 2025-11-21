@@ -559,6 +559,54 @@ export const refineToolOutput = async (currentContent: string, userInstruction: 
     }
 };
 
+// --- DESIGN PILOT ---
+
+export const generateDesignTheme = async (userPrompt: string): Promise<{ 
+    customStyle: Record<string, string>, 
+    themeColor: string,
+    fontFamily: string 
+}> => {
+    const prompt = `
+        You are a world-class Visual Designer AI.
+        User's design vibe request: "${userPrompt}"
+        
+        Generate a valid CSS-in-JS style object (React style prop format) that captures this vibe.
+        Think about backgrounds (gradients, colors), borders, spacing, and fonts.
+        
+        Return ONLY JSON:
+        {
+            "themeColor": "hex code for primary accent",
+            "fontFamily": "generic font stack string",
+            "customStyle": {
+                "backgroundColor": "...",
+                "backgroundImage": "linear-gradient(...)",
+                "color": "text color",
+                "fontFamily": "...",
+                "border": "...",
+                "borderRadius": "..."
+            }
+        }
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        const result = JSON.parse(response.text?.trim() || "{}");
+        return result;
+    } catch (error) {
+        console.error("Design Pilot failed:", error);
+        return {
+            themeColor: '#000000',
+            fontFamily: 'sans-serif',
+            customStyle: { backgroundColor: '#ffffff' }
+        };
+    }
+};
+
 // --- TOOLS & HELPERS ---
 
 export const generateInterviewQuestions = async (data: ResumeData): Promise<string[]> => {
