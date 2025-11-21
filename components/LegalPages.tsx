@@ -85,7 +85,7 @@ export const PrivacyPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                         <div className="bg-blue-50 p-6 rounded-2xl border border-blue-100 my-6">
                             <h3 className="text-lg font-bold text-blue-900 mb-2 flex items-center gap-2"><Lock className="w-4 h-4"/> AI Training Consent</h3>
                             <p className="text-blue-800 text-sm">
-                                We may ask for your permission to use anonymized resume structures to train our AI models. This data stays internal and helps us build better formatting tools. You have full control to toggle this permission in your Settings > Privacy & Data tab.
+                                We may ask for your permission to use anonymized resume structures to train our AI models. This data stays internal and helps us build better formatting tools. You have full control to toggle this permission in your Settings &gt; Privacy &amp; Data tab.
                             </p>
                         </div>
                     </section>
