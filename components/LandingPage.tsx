@@ -26,7 +26,25 @@ import {
   GraduationCap,
   BookOpen,
   Briefcase,
-  Zap
+  Zap,
+  MapPin,
+  Calendar,
+  Calculator,
+  Copy,
+  FileText,
+  GripVertical,
+  Settings,
+  Palette,
+  Share2,
+  Code2,
+  Cpu,
+  MousePointer2,
+  Shield,
+  Globe,
+  FileCode,
+  BarChart3,
+  Clock,
+  Wand2
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -46,43 +64,6 @@ interface LandingPageProps {
 
 // --- Helper Components ---
 
-const CountUp: React.FC<{ end: number; suffix?: string; duration?: number }> = ({ end, suffix = '', duration = 2000 }) => {
-    const [count, setCount] = useState(0);
-    const [isVisible, setIsVisible] = useState(false);
-    const ref = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        const observer = new IntersectionObserver(([entry]) => {
-            if (entry.isIntersecting) {
-                setIsVisible(true);
-            }
-        }, { threshold: 0.5 });
-        
-        if (ref.current) observer.observe(ref.current);
-        return () => observer.disconnect();
-    }, []);
-
-    useEffect(() => {
-        if (!isVisible) return;
-        let startTime: number;
-        let animationFrame: number;
-
-        const step = (timestamp: number) => {
-            if (!startTime) startTime = timestamp;
-            const progress = Math.min((timestamp - startTime) / duration, 1);
-            setCount(Math.floor(progress * end));
-            if (progress < 1) {
-                animationFrame = requestAnimationFrame(step);
-            }
-        };
-
-        animationFrame = requestAnimationFrame(step);
-        return () => cancelAnimationFrame(animationFrame);
-    }, [isVisible, end, duration]);
-
-    return <span ref={ref}>{count}{suffix}</span>;
-};
-
 const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; delay?: number }> = ({ children, className = "", delay = 0 }) => {
     const [isVisible, setIsVisible] = useState(false);
     const ref = useRef<HTMLDivElement>(null);
@@ -91,9 +72,8 @@ const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; de
         const observer = new IntersectionObserver(([entry]) => {
             if (entry.isIntersecting) {
                 setIsVisible(true);
-                observer.disconnect(); 
             }
-        }, { threshold: 0.15 }); 
+        }, { threshold: 0.1 }); 
         
         if (ref.current) observer.observe(ref.current);
         return () => observer.disconnect();
@@ -110,13 +90,463 @@ const ScrollReveal: React.FC<{ children: React.ReactNode; className?: string; de
     );
 };
 
+// --- UI Mockups for Features ---
+
+const MockupResumeBuilder = () => (
+    <div className="w-full aspect-video bg-white rounded-xl border border-neutral-200 shadow-lg p-4 flex gap-4 overflow-hidden relative">
+        <div className="w-1/4 bg-neutral-50 rounded-lg p-2 space-y-2 hidden md:block">
+            <div className="h-2 w-1/2 bg-neutral-200 rounded"></div>
+            <div className="h-8 w-full bg-blue-50 border border-blue-200 rounded flex items-center justify-center text-[8px] font-bold text-blue-600">AI Writing...</div>
+            <div className="space-y-1 mt-4">
+                <div className="h-2 w-full bg-neutral-200 rounded"></div>
+                <div className="h-2 w-3/4 bg-neutral-200 rounded"></div>
+            </div>
+        </div>
+        <div className="flex-1 bg-neutral-100/50 rounded-lg p-6 relative">
+            <div className="absolute top-4 right-4 w-20 h-6 bg-neutral-900 rounded-full flex items-center justify-center text-[8px] text-white shadow-md">Export PDF</div>
+            <div className="w-16 h-16 bg-neutral-200 rounded-full mb-4"></div>
+            <div className="h-4 w-1/2 bg-neutral-800 rounded mb-2"></div>
+            <div className="h-2 w-full bg-neutral-300 rounded mb-1"></div>
+            <div className="h-2 w-full bg-neutral-300 rounded mb-1"></div>
+            <div className="h-2 w-2/3 bg-neutral-300 rounded"></div>
+            
+            <div className="mt-6 space-y-3">
+                 <div className="flex justify-between">
+                     <div className="h-3 w-20 bg-neutral-400 rounded"></div>
+                     <div className="h-3 w-10 bg-neutral-200 rounded"></div>
+                 </div>
+                 <div className="h-2 w-full bg-neutral-300 rounded"></div>
+                 <div className="h-2 w-11/12 bg-neutral-300 rounded"></div>
+            </div>
+        </div>
+    </div>
+);
+
+const MockupAgentBuilder = () => (
+    <div className="w-full aspect-video bg-neutral-900 rounded-xl shadow-lg p-6 relative overflow-hidden group">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-indigo-900/50 to-neutral-900"></div>
+        <div className="relative z-10 flex justify-center items-center h-full">
+            <div className="flex items-center gap-4 md:gap-8">
+                <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-xl border-2 border-indigo-500 relative">
+                    <User className="w-6 h-6 text-indigo-600" />
+                    <div className="absolute -bottom-6 text-white text-[10px] font-mono">Persona</div>
+                </div>
+                <div className="w-12 h-1 bg-indigo-500/50 rounded-full relative overflow-hidden">
+                    <div className="absolute inset-0 bg-indigo-400 w-1/2 animate-scan"></div>
+                </div>
+                <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-xl border-2 border-purple-500 relative z-20 scale-110">
+                    <Bot className="w-8 h-8 text-purple-600" />
+                    <div className="absolute -top-2 -right-2 w-4 h-4 bg-green-500 rounded-full border-2 border-neutral-900"></div>
+                </div>
+                <div className="w-12 h-1 bg-purple-500/50 rounded-full relative overflow-hidden">
+                     <div className="absolute inset-0 bg-purple-400 w-1/2 animate-scan" style={{ animationDelay: '0.5s' }}></div>
+                </div>
+                <div className="w-16 h-16 bg-white rounded-xl flex items-center justify-center shadow-xl border-2 border-green-500 relative">
+                    <MessageSquare className="w-6 h-6 text-green-600" />
+                    <div className="absolute -bottom-6 text-white text-[10px] font-mono">Task</div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const MockupStudent = () => (
+    <div className="w-full aspect-video bg-pink-50 rounded-xl border border-pink-100 shadow-inner p-6 relative overflow-hidden flex items-center justify-center">
+        <div className="grid grid-cols-2 gap-6 w-3/4">
+            <div className="bg-white p-4 rounded-xl shadow-lg transform -rotate-6 hover:rotate-0 transition-all duration-500 border border-pink-100">
+                <div className="flex items-center gap-2 mb-2 text-pink-600 font-bold text-xs uppercase tracking-wider">
+                    <Copy className="w-3 h-3" /> Flashcard
+                </div>
+                <div className="text-sm font-bold text-neutral-800 mb-2">Mitochondria</div>
+                <div className="w-full h-px bg-neutral-100 mb-2"></div>
+                <div className="text-[10px] text-neutral-500 leading-relaxed">The powerhouse of the cell, responsible for generating ATP through respiration.</div>
+            </div>
+            <div className="bg-white p-4 rounded-xl shadow-lg transform rotate-3 hover:rotate-0 transition-all duration-500 translate-y-8 border border-blue-100">
+                <div className="flex items-center gap-2 mb-2 text-blue-600 font-bold text-xs uppercase tracking-wider">
+                    <Calendar className="w-3 h-3" /> Study Plan
+                </div>
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center bg-neutral-50 p-1.5 rounded">
+                        <span className="text-[8px] font-bold text-neutral-600">Monday</span>
+                        <span className="text-[8px] text-blue-500">Calculus</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-neutral-50 p-1.5 rounded">
+                        <span className="text-[8px] font-bold text-neutral-600">Tuesday</span>
+                        <span className="text-[8px] text-purple-500">Physics</span>
+                    </div>
+                    <div className="flex justify-between items-center bg-neutral-50 p-1.5 rounded">
+                        <span className="text-[8px] font-bold text-neutral-600">Wednesday</span>
+                        <span className="text-[8px] text-green-500">History</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const MockupTeacher = () => (
+    <div className="w-full aspect-video bg-orange-50 rounded-xl border border-orange-100 shadow-inner p-8 relative overflow-hidden flex items-center">
+        <div className="bg-white w-full max-w-md mx-auto rounded-lg border border-neutral-200 shadow-xl p-6 relative">
+            <div className="absolute -top-3 -left-3 bg-orange-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm transform -rotate-12">
+                A+ Grade
+            </div>
+            <div className="flex justify-between items-center mb-6 border-b border-neutral-100 pb-4">
+                <div>
+                    <div className="text-xs font-bold text-orange-600 uppercase mb-1">Lesson Plan</div>
+                    <div className="font-bold text-neutral-900">The Solar System</div>
+                </div>
+                <span className="text-[10px] text-neutral-400 bg-neutral-100 px-2 py-1 rounded">Grade 5</span>
+            </div>
+            <div className="space-y-4">
+                <div className="flex gap-3 items-start">
+                    <div className="w-5 h-5 rounded-full border-2 border-green-500 bg-green-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <CheckCircle2 className="w-3 h-3 text-green-600" />
+                    </div>
+                    <div>
+                        <div className="text-xs font-bold text-neutral-800">Objective</div>
+                        <div className="h-1.5 w-48 bg-neutral-200 rounded mt-1"></div>
+                    </div>
+                </div>
+                <div className="flex gap-3 items-start">
+                    <div className="w-5 h-5 rounded-full border-2 border-blue-500 bg-blue-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                        <Clock className="w-3 h-3 text-blue-600" />
+                    </div>
+                    <div>
+                        <div className="text-xs font-bold text-neutral-800">Activity (15 min)</div>
+                        <div className="h-1.5 w-32 bg-neutral-200 rounded mt-1"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+const MockupLinkedIn = () => (
+    <div className="w-full aspect-video bg-[#0077b5] rounded-xl shadow-lg relative flex items-center justify-center overflow-hidden group">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        
+        <div className="relative z-10 flex gap-4 items-center">
+            {/* URL Input */}
+            <div className="bg-white rounded-xl p-3 shadow-2xl flex items-center gap-3 w-64 animate-in slide-in-from-left duration-700">
+                <div className="w-8 h-8 bg-[#0077b5] rounded flex items-center justify-center text-white font-bold text-xs">in</div>
+                <div className="flex-1">
+                    <div className="h-2 w-24 bg-neutral-200 rounded mb-1"></div>
+                    <div className="h-1.5 w-16 bg-neutral-100 rounded"></div>
+                </div>
+            </div>
+            
+            <ArrowRight className="w-6 h-6 text-white animate-pulse" />
+            
+            {/* Result Resume */}
+            <div className="bg-white rounded-xl p-3 shadow-2xl w-48 h-32 animate-in slide-in-from-right duration-700 delay-200 flex flex-col">
+                <div className="flex gap-2 mb-2 border-b border-neutral-100 pb-2">
+                    <div className="w-8 h-8 bg-neutral-200 rounded-full"></div>
+                    <div>
+                        <div className="h-2 w-20 bg-neutral-800 rounded mb-1"></div>
+                        <div className="h-1.5 w-12 bg-neutral-400 rounded"></div>
+                    </div>
+                </div>
+                <div className="space-y-1">
+                    <div className="h-1 w-full bg-neutral-200 rounded"></div>
+                    <div className="h-1 w-full bg-neutral-200 rounded"></div>
+                    <div className="h-1 w-2/3 bg-neutral-200 rounded"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+);
+
+// --- FEATURES DATA ---
+
+const FEATURES = [
+    {
+        title: "AI Resume Builder",
+        desc: "Chat with your resume. Our AI acts as a professional writer, refining your bullets and summary in real-time.",
+        icon: Sparkles,
+        visual: <MockupResumeBuilder />,
+        color: "blue"
+    },
+    {
+        title: "LinkedIn Transformer",
+        desc: "Turn any public LinkedIn URL into a formatted, ATS-optimized resume JSON in seconds using deep reasoning.",
+        icon: Globe,
+        visual: <MockupLinkedIn />,
+        color: "sky"
+    },
+    {
+        title: "Agent Builder",
+        desc: "Visually connect data nodes to build custom AI assistants. Create a 'Recruiter Persona' or 'Study Buddy' with drag-and-drop.",
+        icon: BrainCircuit,
+        visual: <MockupAgentBuilder />,
+        color: "purple"
+    },
+    {
+        title: "Student Toolkit",
+        desc: "Flashcards, essay outlines, and GPA calculators all in one place. Study smarter with AI-generated schedules.",
+        icon: GraduationCap,
+        visual: <MockupStudent />,
+        color: "pink"
+    },
+    {
+        title: "Teacher Studio",
+        desc: "Automate lesson planning, rubric creation, and quiz generation. Focus on teaching, not paperwork.",
+        icon: BookOpen,
+        visual: <MockupTeacher />,
+        color: "orange"
+    },
+    {
+        title: "Vibe Create",
+        desc: "Simply describe your career history in plain English, and watch Kyndra construct a full resume structure instantly.",
+        icon: Zap,
+        visual: (
+            <div className="w-full aspect-video bg-neutral-900 rounded-xl p-6 flex flex-col justify-center items-center text-white relative overflow-hidden">
+                <div className="text-xl font-bold mb-4 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">"I'm a designer with 5 years exp..."</div>
+                <div className="w-12 h-12 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+            </div>
+        ),
+        color: "yellow"
+    },
+    {
+        title: "Design Pilot",
+        desc: "Experimental visuals. Ask for 'Cyberpunk' or 'Swiss Minimalist' and get a unique CSS-styled resume.",
+        icon: Palette,
+        visual: (
+            <div className="w-full aspect-video bg-gradient-to-br from-fuchsia-600 to-purple-900 rounded-xl p-6 flex items-center justify-center">
+                <div className="bg-white/10 backdrop-blur-md border border-white/20 p-6 rounded-xl text-white w-64 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform">
+                    <div className="font-mono text-xs opacity-70 mb-2">theme: cyberpunk</div>
+                    <div className="font-bold text-2xl mb-1">Neon Glow</div>
+                    <div className="text-xs opacity-50">Generated by AI</div>
+                </div>
+            </div>
+        ),
+        color: "fuchsia"
+    },
+    {
+        title: "Custom Forms",
+        desc: "Generate surveys and sign-up forms with AI. Publish them instantly and track responses in your dashboard.",
+        icon: FileCode,
+        visual: (
+            <div className="w-full aspect-video bg-neutral-100 rounded-xl p-8 flex flex-col items-center justify-center gap-4">
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-neutral-200 w-3/4 flex gap-4 items-center">
+                    <div className="w-4 h-4 rounded-full border-2 border-neutral-300"></div>
+                    <div className="h-2 w-full bg-neutral-100 rounded"></div>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-neutral-200 w-3/4 flex gap-4 items-center opacity-75">
+                    <div className="w-4 h-4 rounded-full border-2 border-neutral-300"></div>
+                    <div className="h-2 w-2/3 bg-neutral-100 rounded"></div>
+                </div>
+                <div className="bg-white p-4 rounded-xl shadow-sm border border-neutral-200 w-3/4 flex gap-4 items-center opacity-50">
+                    <div className="w-4 h-4 rounded-full border-2 border-neutral-300"></div>
+                    <div className="h-2 w-1/2 bg-neutral-100 rounded"></div>
+                </div>
+            </div>
+        ),
+        color: "emerald"
+    },
+    {
+        title: "Salary Negotiator",
+        desc: "Don't leave money on the table. Get a custom negotiation script based on your leverage and market data.",
+        icon: Calculator,
+        visual: (
+            <div className="w-full aspect-video bg-green-50 rounded-xl flex items-center justify-center relative overflow-hidden">
+                <div className="text-center relative z-10">
+                    <div className="text-xs font-bold text-green-600 uppercase mb-1 tracking-widest">Offer Increase</div>
+                    <div className="text-5xl font-bold text-green-700">+$15k</div>
+                </div>
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-green-100/0 to-green-200/30 animate-pulse"></div>
+            </div>
+        ),
+        color: "green"
+    },
+    {
+        title: "Cover Letter Gen",
+        desc: "Paste a job description and get a tailored cover letter that highlights why you are the perfect match.",
+        icon: PenTool,
+        visual: (
+            <div className="w-full aspect-video bg-white border border-neutral-200 rounded-xl p-8 relative overflow-hidden">
+                <div className="absolute -top-4 -right-4 p-8 bg-neutral-50 rounded-full"><PenTool className="w-12 h-12 text-neutral-300"/></div>
+                <div className="space-y-3 w-2/3">
+                    <div className="h-2 bg-neutral-100 rounded w-full"></div>
+                    <div className="h-2 bg-neutral-100 rounded w-full"></div>
+                    <div className="h-2 bg-neutral-100 rounded w-full"></div>
+                    <div className="h-2 bg-neutral-100 rounded w-3/4"></div>
+                    <div className="h-2 bg-neutral-100 rounded w-full"></div>
+                </div>
+                <div className="mt-6 inline-block px-4 py-2 bg-neutral-900 text-white text-xs font-bold rounded-full">Generate</div>
+            </div>
+        ),
+        color: "indigo"
+    },
+    {
+        title: "Job Matcher",
+        desc: "Our AI scans thousands of remote jobs to find roles that match your specific skills and experience level.",
+        icon: Target,
+        visual: (
+            <div className="w-full aspect-video bg-neutral-900 rounded-xl p-6 relative overflow-hidden flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center justify-center opacity-20">
+                    <div className="w-64 h-64 border border-white rounded-full animate-[spin_10s_linear_infinite]"></div>
+                    <div className="w-48 h-48 border border-white rounded-full absolute animate-[spin_7s_linear_infinite_reverse]"></div>
+                </div>
+                <Target className="w-16 h-16 text-white relative z-10" />
+                <div className="absolute bottom-6 bg-white/10 backdrop-blur-md px-4 py-1 rounded-full text-white text-xs">
+                    15 Matches Found
+                </div>
+            </div>
+        ),
+        color: "red"
+    },
+    {
+        title: "Global Translator",
+        desc: "Instantly translate your resume into any language while preserving the formatting and structure.",
+        icon: Globe2,
+        visual: (
+            <div className="w-full aspect-video bg-cyan-50 rounded-xl flex items-center justify-center gap-4 relative overflow-hidden">
+                <div className="bg-white px-4 py-2 rounded-lg shadow-sm text-sm font-bold text-cyan-900 z-10">Hello</div>
+                <ArrowRight className="w-4 h-4 text-cyan-400 z-10" />
+                <div className="bg-white px-4 py-2 rounded-lg shadow-sm text-sm font-bold text-cyan-900 z-10">Hola</div>
+                <ArrowRight className="w-4 h-4 text-cyan-400 z-10" />
+                <div className="bg-white px-4 py-2 rounded-lg shadow-sm text-sm font-bold text-cyan-900 z-10">Bonjour</div>
+                <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/world-map.png')] opacity-10"></div>
+            </div>
+        ),
+        color: "cyan"
+    },
+    {
+        title: "Interview Prep",
+        desc: "Get AI-generated interview questions tailored to your specific resume and the job role you're applying for.",
+        icon: MessageSquare,
+        visual: (
+            <div className="w-full aspect-video bg-white border border-neutral-200 rounded-xl p-6 flex flex-col justify-between">
+                <div className="bg-neutral-100 rounded-t-xl rounded-br-xl p-4 w-3/4 text-xs text-neutral-600">
+                    Tell me about a time you failed.
+                </div>
+                <div className="bg-blue-600 rounded-t-xl rounded-bl-xl p-4 w-3/4 text-xs text-white self-end">
+                    Here is a suggested STAR response...
+                </div>
+            </div>
+        ),
+        color: "blue"
+    },
+    {
+        title: "Email Writer",
+        desc: "Draft professional emails for resignations, follow-ups, and networking with a single click.",
+        icon: Mail,
+        visual: (
+            <div className="w-full aspect-video bg-slate-50 rounded-xl flex items-center justify-center relative">
+                <Mail className="w-20 h-20 text-slate-300" />
+                <div className="absolute bottom-8 bg-white px-6 py-2 rounded-full shadow-lg text-sm font-bold text-slate-700 flex items-center gap-2 animate-bounce">
+                    <CheckCircle2 className="w-4 h-4 text-green-500" /> Sent!
+                </div>
+            </div>
+        ),
+        color: "slate"
+    },
+    {
+        title: "Deep Audit",
+        desc: "Get a comprehensive score (0-100) and actionable feedback on how to improve your resume's impact.",
+        icon: Shield,
+        visual: (
+            <div className="w-full aspect-video bg-white border border-neutral-200 rounded-xl flex items-center justify-center relative overflow-hidden">
+                <div className="w-40 h-40 border-[12px] border-neutral-100 rounded-full flex items-center justify-center">
+                    <div className="text-center">
+                        <div className="text-4xl font-bold text-emerald-600">98</div>
+                        <div className="text-[10px] uppercase font-bold text-neutral-400">Score</div>
+                    </div>
+                </div>
+                <svg className="absolute w-40 h-40 rotate-[-90deg]">
+                    <circle cx="80" cy="80" r="74" fill="none" stroke="#10b981" strokeWidth="12" strokeDasharray="465" strokeDashoffset="20" className="animate-[dash_2s_ease-out]" />
+                </svg>
+            </div>
+        ),
+        color: "emerald"
+    },
+    {
+        title: "Cloud Storage",
+        desc: "Save all your documents, forms, and resumes securely in the cloud. Access them from anywhere.",
+        icon: Cloud,
+        visual: (
+            <div className="w-full aspect-video bg-blue-50 rounded-xl flex items-center justify-center relative">
+                <Cloud className="w-24 h-24 text-blue-200" />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white p-2 rounded-full shadow-sm">
+                    <CheckCircle2 className="w-6 h-6 text-blue-600" />
+                </div>
+            </div>
+        ),
+        color: "blue"
+    },
+    {
+        title: "Resume to Website",
+        desc: "Convert your resume into a personal portfolio website code (HTML/Tailwind) ready to host.",
+        icon: Code2,
+        visual: (
+            <div className="w-full aspect-video bg-neutral-900 rounded-xl p-6 font-mono text-[10px] text-green-400 leading-relaxed overflow-hidden opacity-90">
+                <span className="text-purple-400">export default</span> <span className="text-yellow-300">function</span> <span className="text-blue-400">Portfolio</span>() {'{'}<br/>
+                &nbsp;&nbsp;<span className="text-purple-400">return</span> (<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;<span className="text-red-400">div</span> class="hero"&gt;<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span className="text-red-400">h1</span>&gt;John Doe&lt;/<span className="text-red-400">h1</span>&gt;<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&lt;<span className="text-red-400">p</span>&gt;Developer&lt;/<span className="text-red-400">p</span>&gt;<br/>
+                &nbsp;&nbsp;&nbsp;&nbsp;&lt;/<span className="text-red-400">div</span>&gt;<br/>
+                &nbsp;&nbsp;);<br/>
+                {'}'}
+            </div>
+        ),
+        color: "stone"
+    },
+    {
+        title: "ATS Optimization",
+        desc: "Switch to 'ATS Mode' to strip graphics and ensure your resume parses perfectly in hiring systems.",
+        icon: Cpu,
+        visual: (
+            <div className="w-full aspect-video bg-white border border-neutral-200 rounded-xl p-8 flex flex-col gap-3">
+                <div className="h-3 w-full bg-neutral-900 rounded-sm"></div>
+                <div className="h-2 w-full bg-neutral-200 rounded-sm"></div>
+                <div className="h-2 w-full bg-neutral-200 rounded-sm"></div>
+                <div className="h-2 w-3/4 bg-neutral-200 rounded-sm"></div>
+                <div className="mt-4 pt-4 border-t border-dashed border-neutral-200">
+                    <div className="flex items-center gap-2 text-green-600 text-xs font-bold">
+                        <CheckCircle2 className="w-3 h-3" /> Parsing: 100%
+                    </div>
+                </div>
+            </div>
+        ),
+        color: "gray"
+    },
+    {
+        title: "Analytics",
+        desc: "Track views and submissions on your custom forms. Know exactly when people are engaging.",
+        icon: BarChart3,
+        visual: (
+            <div className="w-full aspect-video bg-white border border-neutral-200 rounded-xl p-6 flex items-end gap-2 items-end justify-center">
+                <div className="w-8 h-12 bg-blue-100 rounded-t-md"></div>
+                <div className="w-8 h-20 bg-blue-200 rounded-t-md"></div>
+                <div className="w-8 h-32 bg-blue-400 rounded-t-md"></div>
+                <div className="w-8 h-24 bg-blue-300 rounded-t-md"></div>
+                <div className="w-8 h-40 bg-blue-600 rounded-t-md shadow-lg"></div>
+            </div>
+        ),
+        color: "blue"
+    },
+    {
+        title: "Grammar Polish",
+        desc: "Automatically fix spelling errors and grammar mistakes without changing your tone.",
+        icon: Wand2,
+        visual: (
+            <div className="w-full aspect-video bg-purple-50 rounded-xl flex items-center justify-center">
+                <div className="bg-white px-6 py-3 rounded-full shadow-lg flex items-center gap-3">
+                    <span className="text-neutral-400 line-through decoration-red-500 decoration-2">Recieved</span>
+                    <ArrowRight className="w-4 h-4 text-purple-400" />
+                    <span className="text-purple-700 font-bold">Received</span>
+                </div>
+            </div>
+        ),
+        color: "purple"
+    }
+];
+
 export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover, onGuestTry, onGoToAssets, onViewTerms, onViewPrivacy, onViewAbout }) => {
   const [showAuth, setShowAuth] = useState(false);
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signup');
-  const [playgroundPrompt, setPlaygroundPrompt] = useState('');
-  const [openFaq, setOpenFaq] = useState<number | null>(null);
-  
-  // Waitlist State
   const [waitlistPlan, setWaitlistPlan] = useState<string | null>(null);
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
@@ -135,13 +565,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
   const closeAuth = () => {
       setShowAuth(false);
       document.body.style.overflow = 'auto';
-  };
-
-  const handlePlaygroundSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      if (playgroundPrompt.trim() && onGuestTry) {
-          onGuestTry(playgroundPrompt);
-      }
   };
 
   const openWaitlist = (plan: string) => {
@@ -168,13 +591,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           setIsSubmittingWaitlist(false);
       }
   };
-
-  const FAQs = [
-      { q: "What can I do with Kyndra?", a: "Kyndra is an all-in-one workspace. Professionals can build resumes and find jobs. Students can generate study plans and flashcards. Teachers can create lesson plans and quizzes." },
-      { q: "Is it free?", a: "Yes! You can access all core features for free. We use Google AdSense to keep the platform accessible to everyone." },
-      { q: "How smart is the AI?", a: "We use Google's Gemini 2.5 and 3.0 Pro models. It understands complex context, multimodal inputs, and reasoning tasks better than almost any other model." },
-      { q: "Is my data safe?", a: "Absolutely. We do not sell your personal data. You have full control over whether your anonymous data is used to improve our internal models." }
-  ];
 
   return (
     <div className="min-h-screen bg-white text-neutral-900 font-sans selection:bg-neutral-900 selection:text-white">
@@ -270,7 +686,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center gap-3 cursor-pointer" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth'})}>
             <img src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" alt="Logo" className="w-10 h-10 rounded-xl object-cover shadow-lg shadow-neutral-900/20 transition-transform hover:scale-105" />
-            <span className="font-bold text-xl tracking-tight">Kyndra Workspace</span>
+            <div>
+                <span className="font-bold text-xl tracking-tight block leading-none">Kyndra Workspace</span>
+                <span className="text-[10px] font-medium text-neutral-400 block mt-0.5 uppercase tracking-wide">Formerly Resubuild AI</span>
+            </div>
           </div>
           <div className="flex items-center gap-4">
              <div className="hidden md:flex items-center gap-6 mr-4">
@@ -419,8 +838,40 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           </div>
       </section>
 
+      {/* --- MEGA FEATURE SHOWCASE (20+ Sections) --- */}
+      <section id="features" className="bg-white border-t border-neutral-200">
+          <div className="max-w-7xl mx-auto px-6 py-24">
+              <div className="text-center mb-24">
+                  <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 text-white text-sm font-bold mb-6">
+                      <Sparkles className="w-4 h-4" /> Explore All Features
+                  </div>
+                  <h2 className="text-4xl md:text-6xl font-bold mb-6">One platform. Infinite possibilities.</h2>
+                  <p className="text-xl text-neutral-500 max-w-2xl mx-auto">Dive deep into the tools that power Kyndra Workspace.</p>
+              </div>
+
+              <div className="space-y-32">
+                  {FEATURES.map((feature, index) => (
+                      <ScrollReveal key={index} delay={index * 50}>
+                          <div className={`flex flex-col md:flex-row items-center gap-12 md:gap-24 ${index % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
+                              <div className="flex-1 w-full">
+                                  {feature.visual}
+                              </div>
+                              <div className="flex-1 text-center md:text-left">
+                                  <div className={`inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-${feature.color}-50 text-${feature.color}-600 mb-6 shadow-sm`}>
+                                      <feature.icon className="w-6 h-6" />
+                                  </div>
+                                  <h3 className="text-3xl font-bold text-neutral-900 mb-4">{feature.title}</h3>
+                                  <p className="text-lg text-neutral-500 leading-relaxed">{feature.desc}</p>
+                              </div>
+                          </div>
+                      </ScrollReveal>
+                  ))}
+              </div>
+          </div>
+      </section>
+
       {/* Resupilot Demo Section */}
-      <section className="py-24 bg-neutral-900 relative overflow-hidden text-white">
+      <section className="py-24 bg-neutral-900 relative overflow-hidden text-white border-t border-neutral-800">
           <div className="absolute top-0 left-0 w-full h-full overflow-hidden">
               <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-900/30 rounded-full blur-3xl"></div>
               <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-blue-900/30 rounded-full blur-3xl"></div>
