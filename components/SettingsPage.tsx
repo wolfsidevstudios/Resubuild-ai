@@ -85,6 +85,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
   const getProviderIcon = (providerId: string) => {
       if (providerId.includes('google')) return 'Google';
       if (providerId.includes('github')) return 'GitHub';
+      if (providerId.includes('yahoo')) return 'Yahoo';
       return 'Email';
   };
 

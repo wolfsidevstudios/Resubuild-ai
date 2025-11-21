@@ -7,7 +7,8 @@ import {
   createUserWithEmailAndPassword, 
   signOut as firebaseSignOut,
   onAuthStateChanged,
-  GoogleAuthProvider,
+  GithubAuthProvider,
+  OAuthProvider,
   signInWithPopup,
   User,
   updateProfile
@@ -46,7 +47,10 @@ const app = initializeApp(firebaseConfig);
 export const analytics = getAnalytics(app);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
-export const googleProvider = new GoogleAuthProvider();
+
+// Auth Providers
+export const githubProvider = new GithubAuthProvider();
+export const yahooProvider = new OAuthProvider('yahoo.com');
 
 // --- Resume Publishing ---
 
