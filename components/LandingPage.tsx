@@ -33,7 +33,9 @@ import {
   FlaskConical,
   BrainCircuit,
   Mail,
-  Loader2
+  Loader2,
+  Megaphone,
+  Shield
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -803,6 +805,44 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                       </div>
                   </ScrollReveal>
 
+              </div>
+          </div>
+      </section>
+
+      {/* Ad Transparency Section */}
+      <section className="py-24 bg-white border-t border-neutral-100">
+          <div className="max-w-4xl mx-auto px-6 text-center">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-yellow-50 text-yellow-700 text-sm font-bold mb-6">
+                  <Megaphone className="w-4 h-4" /> Transparency
+              </div>
+              <h2 className="text-4xl font-bold mb-6">Why we show ads.</h2>
+              <p className="text-xl text-neutral-500 mb-12 leading-relaxed">
+                  Our mission is to make career success accessible to everyone, regardless of budget. 
+                  To keep Resubuild free, we display ads in non-intrusive areas.
+              </p>
+
+              <div className="grid md:grid-cols-3 gap-8 text-left">
+                  <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-green-600">
+                          <Layout className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-bold text-lg mb-2">Zero Distractions</h3>
+                      <p className="text-sm text-neutral-500">We never show ads inside the editor while you're writing or designing.</p>
+                  </div>
+                  <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-blue-600">
+                          <X className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-bold text-lg mb-2">No Pop-ups</h3>
+                      <p className="text-sm text-neutral-500">We hate them too. You won't see annoying pop-overs blocking your view.</p>
+                  </div>
+                  <div className="p-6 bg-neutral-50 rounded-2xl border border-neutral-100">
+                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-purple-600">
+                          <CheckCircle2 className="w-5 h-5" />
+                      </div>
+                      <h3 className="font-bold text-lg mb-2">Clean Exports</h3>
+                      <p className="text-sm text-neutral-500">Your PDF exports are 100% clean. No watermarks, no branding, no ads.</p>
+                  </div>
               </div>
           </div>
       </section>
