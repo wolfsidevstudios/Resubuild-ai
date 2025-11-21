@@ -360,6 +360,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           </div>
           <div className="flex items-center gap-4">
              <div className="hidden md:flex items-center gap-6 mr-4">
+                <button onClick={onViewAbout} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">About</button>
                 <button onClick={() => document.getElementById('features')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Features</button>
                 <button onClick={() => document.getElementById('pricing')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Pricing</button>
                 {onGoToDiscover && (

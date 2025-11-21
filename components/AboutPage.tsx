@@ -75,8 +75,11 @@ export const AboutPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                 <a href="mailto:hello@resubuild.com" className="text-lg font-medium hover:underline">hello@resubuild.com</a>
                             </div>
                             <div>
-                                <div className="text-xs font-bold text-neutral-500 uppercase mb-1">Support</div>
-                                <a href="mailto:support@resubuild.com" className="text-lg font-medium hover:underline">support@resubuild.com</a>
+                                <div className="text-xs font-bold text-neutral-500 uppercase mb-1">Support & Inquiries</div>
+                                <a href="mailto:emartinezra2121@gmail.com" className="text-lg font-medium hover:underline">emartinezra2121@gmail.com</a>
+                                <p className="text-xs text-neutral-400 mt-1">
+                                    (Official Support Channel. Also available for business inquiries.)
+                                </p>
                             </div>
                             <div>
                                 <div className="text-xs font-bold text-neutral-500 uppercase mb-1">Location</div>
