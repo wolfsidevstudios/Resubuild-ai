@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { getMessages, sendMessage, getConversations } from '../services/supabase';
+import { getMessages, sendMessage, getConversations, db } from '../services/firebase';
 import { Message, UserProfile } from '../types';
-import { supabase } from '../services/supabase';
+import { collection, onSnapshot, query, where, orderBy, or, and } from "firebase/firestore";
 import { Send, X, Loader2, User } from 'lucide-react';
 import { Button } from './Button';
 
@@ -24,22 +24,44 @@ export const Messaging: React.FC<MessagingProps> = ({ userId, recipientId, onClo
     useEffect(() => {
         loadConversations();
         
-        // Real-time subscription for new messages
-        const channel = supabase
-            .channel('messages')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, 
-                (payload) => {
-                    const msg = payload.new as Message;
-                    if (msg.sender_id === activeChat || msg.receiver_id === activeChat) {
-                         setMessages(prev => [...prev, msg]);
-                    }
-                    loadConversations(); // Refresh list order
+        // Real-time subscription for new messages involved with the user
+        // We query messages where the user is sender OR receiver
+        // Firestore 'or' query requires a composite index usually, but for simple listeners
+        // checking 'or' on multiple fields, it's doable.
+        // However, for simplicity and performance, we can just reload conversations 
+        // when opening the modal or use a simpler trigger if needed.
+        // But let's try to set up a listener on the collection filtering for this user.
+        
+        const q = query(
+            collection(db, 'messages'), 
+            or(where("sender_id", "==", userId), where("receiver_id", "==", userId)),
+            orderBy("created_at", "desc")
+        );
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            // When new messages arrive, reload conversation list to update snippets/ordering
+            loadConversations();
+            
+            // Also if the new message belongs to active chat, update messages list
+            if (activeChat) {
+                const newMessages = snapshot.docChanges()
+                    .filter(change => change.type === 'added')
+                    .map(change => change.doc.data() as Message)
+                    .filter(msg => 
+                        (msg.sender_id === activeChat && msg.receiver_id === userId) || 
+                        (msg.sender_id === userId && msg.receiver_id === activeChat)
+                    );
+                    
+                if (newMessages.length > 0) {
+                    // We can append, but to be safe and keep order correct with existing logic
+                    // we might just let the activeChat effect handle it or merge.
+                    // For now, relying on the activeChat listener below is safer for message content.
                 }
-            )
-            .subscribe();
+            }
+        });
 
-        return () => { supabase.removeChannel(channel); };
-    }, [activeChat]);
+        return () => unsubscribe();
+    }, [userId]);
 
     const loadConversations = async () => {
         try {
@@ -51,11 +73,26 @@ export const Messaging: React.FC<MessagingProps> = ({ userId, recipientId, onClo
         }
     };
 
-    // Load active chat messages
+    // Load active chat messages with real-time listener
     useEffect(() => {
-        if (activeChat) {
-            getMessages(userId, activeChat).then(setMessages);
-        }
+        if (!activeChat) return;
+
+        // Listen for messages between userId and activeChat
+        const q = query(
+            collection(db, 'messages'),
+            or(
+                and(where("sender_id", "==", userId), where("receiver_id", "==", activeChat)),
+                and(where("sender_id", "==", activeChat), where("receiver_id", "==", userId))
+            ),
+            orderBy("created_at", "asc")
+        );
+
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const msgs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Message));
+            setMessages(msgs);
+        });
+
+        return () => unsubscribe();
     }, [activeChat, userId]);
 
     // Scroll to bottom
@@ -70,9 +107,10 @@ export const Messaging: React.FC<MessagingProps> = ({ userId, recipientId, onClo
         try {
             await sendMessage(userId, activeChat, newMessage);
             setNewMessage('');
-            // Optimistic update handled by subscription or we can do it here
+            // Real-time listener will update the UI
         } catch (e) {
             alert('Failed to send');
+            console.error(e);
         }
     };
 

@@ -11,9 +11,9 @@ import { Auth } from './components/Auth';
 import { NotFound } from './components/NotFound';
 import { AppAssets } from './components/AppAssets';
 import { ResumeData, UserRole } from './types';
-import { supabase, getUserProfile } from './services/supabase';
+import { auth, getUserProfile } from './services/firebase';
+import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
-import { Session } from '@supabase/supabase-js';
 import { Loader2, X } from 'lucide-react';
 
 type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets';
@@ -33,7 +33,7 @@ const ROUTES: Record<string, View> = {
 function App() {
   const [view, setView] = useState<View>('landing');
   const [currentResume, setCurrentResume] = useState<ResumeData | undefined>(undefined);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
   
@@ -68,7 +68,7 @@ function App() {
     window.scrollTo(0, 0);
   };
 
-  const syncViewFromUrl = async (currentSession: Session | null) => {
+  const syncViewFromUrl = async (currentUser: User | null) => {
       const path = window.location.pathname;
       const searchParams = new URLSearchParams(window.location.search);
       
@@ -89,15 +89,15 @@ function App() {
           const resumeId = searchParams.get('id');
           if (resumeId) {
              // Attempt to load resume
-             const resume = getResumeById(resumeId, currentSession?.user.id);
+             const resume = getResumeById(resumeId, currentUser?.uid);
              if (resume) {
                  setCurrentResume(resume);
              } else {
                  // Resume not found or no access
-                 navigate(currentSession ? 'dashboard' : 'landing', true);
+                 navigate(currentUser ? 'dashboard' : 'landing', true);
                  return;
              }
-          } else if (!currentSession) {
+          } else if (!currentUser) {
                navigate('landing', true);
                return;
           }
@@ -105,7 +105,7 @@ function App() {
 
       // Auth Guard
       const protectedRoutes: View[] = ['dashboard', 'employer-dashboard', 'onboarding', 'builder'];
-      if (protectedRoutes.includes(matchedView) && !currentSession) {
+      if (protectedRoutes.includes(matchedView) && !currentUser) {
           // Redirect to landing if trying to access protected route without session
           navigate('landing', true);
           return;
@@ -125,8 +125,8 @@ function App() {
   };
 
   // Helper to route user based on role (called on login)
-  const routeUser = async (currentSession: Session | null, targetView?: View) => {
-      if (!currentSession) {
+  const routeUser = async (currentUser: User | null, targetView?: View) => {
+      if (!currentUser) {
           if (view !== 'guest-resupilot' && view !== 'app-assets' && view !== 'discover') {
              navigate('landing');
           }
@@ -135,7 +135,7 @@ function App() {
       }
 
       try {
-        const profile = await getUserProfile(currentSession.user.id);
+        const profile = await getUserProfile(currentUser.uid);
         const role = profile?.role || 'candidate';
         setUserRole(role);
 
@@ -174,93 +174,40 @@ function App() {
     };
     window.addEventListener('popstate', onPopState);
 
-    const initializeApp = async () => {
-        // SAFETY TIMEOUT: If Supabase takes too long (e.g. bad connection/config), 
-        // we fall back to guest mode so the app doesn't hang on the loading screen.
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Auth timeout')), 2500)
-        );
-
-        try {
-            // Race the auth check against the timeout
-            const { data, error } = await Promise.race([
-                supabase.auth.getSession(),
-                timeoutPromise
-            ]) as any;
-
-            if (error) throw error;
-            
-            const session = data?.session;
-            
-            if (isMounted) {
-                setSession(session);
-                
-                // Determine role first if session exists
-                if (session) {
-                    try {
-                        const profile = await getUserProfile(session.user.id);
-                        const role = profile?.role || 'candidate';
-                        setUserRole(role);
-                    } catch (e) {
-                        console.warn("Profile load failed, defaulting to candidate");
-                        setUserRole('candidate');
-                    }
-                }
-                
-                // Then sync view from URL
-                await syncViewFromUrl(session);
-            }
-        } catch (error) {
-            console.warn("Initialization fallback (Guest Mode):", error);
-            // Fallback logic: Assume we are a guest
-            if (isMounted) {
-                setSession(null);
-                setUserRole(null);
-                await syncViewFromUrl(null);
-            }
-        } finally {
-            if (isMounted) setLoading(false);
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (!isMounted) return;
+        
+        setUser(user);
+        
+        if (user) {
+             try {
+                 const profile = await getUserProfile(user.uid);
+                 const role = profile?.role || 'candidate';
+                 setUserRole(role);
+             } catch (e) {
+                 console.warn("Profile load failed, defaulting to candidate");
+                 setUserRole('candidate');
+             }
+        } else {
+             setUserRole(null);
+             // Don't redirect if we are on public pages
+             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover'];
+             if (!publicViews.includes(view)) {
+                navigate('landing');
+             }
         }
-    };
-
-    initializeApp();
-
-    // Listen for Auth Changes
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return;
-      
-      setSession(session);
-      
-      if (!session) {
-          // Logged out
-          // Don't redirect if we are on public pages
-          const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover'];
-          if (!publicViews.includes(view)) {
-             navigate('landing');
-          }
-          setUserRole(null);
-      } else if (_event === 'SIGNED_IN') {
-          // Just logged in
-          // Only auto-route if we are on an auth-related page or landing
-          const path = window.location.pathname;
-          if (path === '/' || path === '/login' || path === '/signup') {
-             await routeUser(session); 
-          } else {
-             // Just update the role for the background session
-             const profile = await getUserProfile(session.user.id);
-             setUserRole(profile?.role || 'candidate');
-          }
-          
-          setShowAuthModal(false);
-      }
+        
+        // Once we know auth state, sync view (only on initial load mostly)
+        if (loading) {
+             await syncViewFromUrl(user);
+             setLoading(false);
+        }
     });
 
     return () => {
         isMounted = false;
         window.removeEventListener('popstate', onPopState);
-        subscription.unsubscribe();
+        unsubscribe();
     };
   }, []); 
 
@@ -295,6 +242,11 @@ function App() {
       setCurrentResume(resume);
       setShowAuthModal(true);
   };
+  
+  const handleAuthSuccess = () => {
+      setShowAuthModal(false);
+      if (user) routeUser(user);
+  };
 
   if (loading) {
       return (
@@ -316,8 +268,8 @@ function App() {
     <>
       {view === 'landing' && (
         <LandingPage 
-            onStart={() => routeUser(session)} 
-            isAuthenticated={!!session}
+            onStart={() => routeUser(user)} 
+            isAuthenticated={!!user}
             onGoToDiscover={() => navigate('discover')}
             onGuestTry={handleGuestEntry}
             onGoToAssets={() => navigate('app-assets')}
@@ -325,7 +277,7 @@ function App() {
       )}
       
       {view === 'not-found' && (
-          <NotFound onHome={() => session ? routeUser(session) : navigate('landing')} />
+          <NotFound onHome={() => user ? routeUser(user) : navigate('landing')} />
       )}
       
       {view === 'app-assets' && (
@@ -333,37 +285,37 @@ function App() {
       )}
       
       {view === 'discover' && (
-          <Discover onHome={() => session ? routeUser(session) : navigate('landing')} />
+          <Discover onHome={() => user ? routeUser(user) : navigate('landing')} />
       )}
       
       {/* CANDIDATE ROUTES */}
-      {view === 'dashboard' && session && userRole === 'candidate' && (
+      {view === 'dashboard' && user && userRole === 'candidate' && (
         <Dashboard 
             onCreate={handleCreateNew} 
             onEdit={handleEdit}
             onHome={() => navigate('landing')}
-            userId={session.user.id}
+            userId={user.uid}
         />
       )}
 
-      {view === 'onboarding' && session && (
+      {view === 'onboarding' && user && (
          <Onboarding 
             onComplete={handleOnboardingComplete}
             onCancel={() => navigate('dashboard')}
-            userId={session.user.id}
+            userId={user.uid}
          />
       )}
 
-      {view === 'builder' && session && (
+      {view === 'builder' && user && (
         <ResumeBuilder 
             initialData={currentResume} 
             onGoHome={() => navigate('dashboard')} 
-            userId={session.user.id}
+            userId={user.uid}
         />
       )}
 
       {/* GUEST MODE */}
-      {view === 'guest-resupilot' && !session && (
+      {view === 'guest-resupilot' && !user && (
           <Resupilot 
             userId="guest" 
             isGuest={true}
@@ -374,9 +326,9 @@ function App() {
       )}
 
       {/* EMPLOYER ROUTES */}
-      {view === 'employer-dashboard' && session && userRole === 'employer' && (
+      {view === 'employer-dashboard' && user && userRole === 'employer' && (
           <EmployerDashboard 
-              userId={session.user.id}
+              userId={user.uid}
               onHome={() => navigate('landing')}
           />
       )}
@@ -395,7 +347,7 @@ function App() {
                       <h2 className="text-2xl font-bold mb-2">Save your Resume</h2>
                       <p className="text-neutral-500">Create a free account to save your progress and download the PDF.</p>
                   </div>
-                  <Auth onSuccess={() => setShowAuthModal(false)} defaultView="signup" />
+                  <Auth onSuccess={handleAuthSuccess} defaultView="signup" />
               </div>
           </div>
       )}

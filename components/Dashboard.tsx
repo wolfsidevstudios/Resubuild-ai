@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare, Sparkles, PenTool, Layout, Grid, AlignLeft, Palette, Zap, BrainCircuit } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
-import { supabase } from '../services/supabase';
+import { signOut } from '../services/firebase';
 import { Button } from './Button';
 import { Input } from './InputField';
 import { Messaging } from './Messaging';
@@ -61,7 +61,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   };
 
   const handleSignOut = async () => {
-      await supabase.auth.signOut();
+      await signOut();
       onHome();
   };
   

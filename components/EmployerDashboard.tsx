@@ -1,6 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
 import { Briefcase, Search, MessageSquare, LogOut, Sparkles, User, ChevronRight, Send } from 'lucide-react';
-import { supabase, fetchPublishedResumes, PublishedResume, getUserProfile } from '../services/supabase';
+import { signOut, fetchPublishedResumes, getUserProfile } from '../services/firebase';
+import { PublishedResume } from '../types';
 import { findBestCandidates } from '../services/geminiService';
 import { Button } from './Button';
 import { Messaging } from './Messaging';
@@ -125,7 +127,7 @@ export const EmployerDashboard: React.FC<EmployerDashboardProps> = ({ userId, on
                          </div>
                          <div className="text-sm font-bold truncate flex-1">{companyName}</div>
                      </div>
-                     <button onClick={async () => { await supabase.auth.signOut(); onHome(); }} className="flex items-center gap-2 text-sm text-neutral-500 hover:text-red-600 px-2">
+                     <button onClick={async () => { await signOut(); onHome(); }} className="flex items-center gap-2 text-sm text-neutral-500 hover:text-red-600 px-2">
                          <LogOut className="w-4 h-4" /> Sign Out
                      </button>
                 </div>

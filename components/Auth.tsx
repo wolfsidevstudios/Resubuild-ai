@@ -1,6 +1,15 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase } from '../services/supabase';
+import { 
+    auth, 
+    googleProvider, 
+    createUserProfile 
+} from '../services/firebase';
+import { 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword, 
+    signInWithPopup 
+} from "firebase/auth";
 import { Button } from './Button';
 import { Input } from './InputField';
 import { AlertCircle, CheckCircle2, Briefcase, User, Loader2 } from 'lucide-react';
@@ -8,13 +17,6 @@ import { AlertCircle, CheckCircle2, Briefcase, User, Loader2 } from 'lucide-reac
 interface AuthProps {
     onSuccess: () => void;
     defaultView?: 'signin' | 'signup';
-}
-
-// Add type definition for Google Identity Services
-declare global {
-    interface Window {
-        google: any;
-    }
 }
 
 export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' }) => {
@@ -33,69 +35,20 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
         return () => { isMounted.current = false; };
     }, []);
 
-    // Initialize Google Sign-In
-    useEffect(() => {
-        const handleGoogleCredentialResponse = async (response: any) => {
-            if (!isMounted.current) return;
-            setLoading(true);
-            setError(null);
-            try {
-                const { error } = await supabase.auth.signInWithIdToken({
-                    provider: 'google',
-                    token: response.credential,
-                });
-                if (error) throw error;
-                if (isMounted.current) onSuccess();
-            } catch (err: any) {
-                console.error("Google Auth Error:", err);
-                if (isMounted.current) setError(err.message || 'Failed to sign in with Google');
-            } finally {
-                if (isMounted.current) setLoading(false);
-            }
-        };
-
-        const initializeGoogleBtn = () => {
-            if (window.google && document.getElementById('google-btn')) {
-                try {
-                    window.google.accounts.id.initialize({
-                        client_id: '127898517822-9kedtn413hjan7t2t3gc8lbqdvu38al4.apps.googleusercontent.com',
-                        callback: handleGoogleCredentialResponse
-                    });
-                    
-                    const btnDiv = document.getElementById('google-btn');
-                    if (btnDiv) {
-                        window.google.accounts.id.renderButton(
-                            btnDiv,
-                            { 
-                                theme: "outline", 
-                                size: "large", 
-                                width: "100%", 
-                                shape: "pill",
-                                text: view === 'signin' ? "signin_with" : "signup_with" 
-                            }
-                        );
-                    }
-                } catch (e) {
-                    console.error("Google button render failed", e);
-                }
-            }
-        };
-
-        const timer = setInterval(() => {
-            if (window.google) {
-                initializeGoogleBtn();
-                clearInterval(timer);
-            }
-        }, 500);
-        
-        // Timeout for google script loading
-        const timeout = setTimeout(() => clearInterval(timer), 5000);
-
-        return () => {
-            clearInterval(timer);
-            clearTimeout(timeout);
-        };
-    }, [view, onSuccess]);
+    const handleGoogleSignIn = async () => {
+        setLoading(true);
+        setError(null);
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+            await createUserProfile(result.user, role); // Create profile if not exists
+            if (isMounted.current) onSuccess();
+        } catch (err: any) {
+            console.error("Google Auth Error:", err);
+            if (isMounted.current) setError(err.message || 'Failed to sign in with Google');
+        } finally {
+            if (isMounted.current) setLoading(false);
+        }
+    };
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -105,59 +58,25 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
         setError(null);
         setMsg(null);
 
-        // Safety timeout wrapper
-        const authPromise = async () => {
-             if (view === 'signup') {
-                const { data, error } = await supabase.auth.signUp({
-                    email,
-                    password,
-                    options: {
-                        data: {
-                            full_name: fullName,
-                            role: role
-                        }
-                    }
-                });
-                if (error) throw error;
-                return data;
-            } else {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email,
-                    password,
-                });
-                if (error) throw error;
-                return data;
-            }
-        };
-
         try {
-            // Race against a timeout
-            const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Request timed out. Please check your connection.')), 10000)
-            );
-            
-            const data: any = await Promise.race([authPromise(), timeoutPromise]);
-
-            if (isMounted.current) {
-                if (data.session) {
-                    onSuccess();
-                } else if (view === 'signup' && data.user && !data.session) {
-                    setMsg('Account created! Please check your email to confirm.');
-                    // Switch to sign in view after delay to prevent "stuck" feeling
-                    setTimeout(() => {
-                        if (isMounted.current) {
-                            setView('signin');
-                            setMsg('Please sign in after confirming your email.');
-                        }
-                    }, 3000);
-                }
+            if (view === 'signup') {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                // Create user profile in Firestore
+                await createUserProfile(userCredential.user, role, fullName);
+                
+                if (isMounted.current) onSuccess();
+            } else {
+                await signInWithEmailAndPassword(auth, email, password);
+                if (isMounted.current) onSuccess();
             }
         } catch (err: any) {
             console.error("Auth Error:", err);
             if (isMounted.current) {
                 let errorMessage = err.message || 'An error occurred';
-                if (errorMessage.includes('Database error')) {
-                    errorMessage = 'Service temporarily unavailable. Please try again later.';
+                if (err.code === 'auth/invalid-credential') {
+                    errorMessage = 'Invalid email or password.';
+                } else if (err.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Email already in use.';
                 }
                 setError(errorMessage);
             }
@@ -263,8 +182,32 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
                 </div>
             </div>
 
-            {/* Google Sign-In Button Container */}
-            <div id="google-btn" className="w-full flex justify-center min-h-[40px]"></div>
+            {/* Google Sign-In Button */}
+            <button 
+                type="button"
+                onClick={handleGoogleSignIn}
+                className="w-full flex items-center justify-center gap-2 bg-white border border-neutral-300 text-neutral-700 font-medium py-3 rounded-full hover:bg-neutral-50 transition-colors"
+            >
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                    <path
+                        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+                        fill="#4285F4"
+                    />
+                    <path
+                        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                        fill="#34A853"
+                    />
+                    <path
+                        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.84z"
+                        fill="#FBBC05"
+                    />
+                    <path
+                        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                        fill="#EA4335"
+                    />
+                </svg>
+                <span>{view === 'signin' ? 'Sign in with Google' : 'Sign up with Google'}</span>
+            </button>
 
             <div className="mt-8 text-center">
                 <p className="text-sm text-neutral-600">

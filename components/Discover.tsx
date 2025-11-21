@@ -1,5 +1,7 @@
+
 import React, { useEffect, useState, useRef } from 'react';
-import { fetchPublishedResumes, PublishedResume } from '../services/supabase';
+import { fetchPublishedResumes } from '../services/firebase';
+import { PublishedResume } from '../types';
 import { ResumePreview } from './ResumePreview';
 import { Search, MapPin, Briefcase, X, Loader2, FileText, User } from 'lucide-react';
 import { Button } from './Button';

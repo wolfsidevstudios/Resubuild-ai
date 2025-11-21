@@ -120,3 +120,15 @@ export interface LinkedInContent {
     about: string;
     posts: string[];
 }
+
+export interface PublishedResume {
+    id: string;
+    user_id: string;
+    full_name: string;
+    job_title: string;
+    location: string;
+    skills: string[];
+    resume_data: ResumeData;
+    created_at: string;
+    contact_email?: string;
+}

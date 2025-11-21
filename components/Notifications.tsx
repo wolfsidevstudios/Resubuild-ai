@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
-import { getNotifications, markNotificationRead } from '../services/supabase';
+import { getNotifications, markNotificationRead, db } from '../services/firebase';
 import { Notification } from '../types';
+import { collection, query, where, orderBy, onSnapshot } from 'firebase/firestore';
 import { Bell, X, MessageSquare, CheckCircle } from 'lucide-react';
-import { supabase } from '../services/supabase';
 
 interface NotificationsProps {
     userId: string;
@@ -18,16 +18,18 @@ export const Notifications: React.FC<NotificationsProps> = ({ userId, onClose })
         loadNotifications();
 
         // Subscribe to new notifications
-        const channel = supabase
-            .channel('notifications')
-            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` }, 
-                (payload) => {
-                    setItems(prev => [payload.new as Notification, ...prev]);
-                }
-            )
-            .subscribe();
+        const q = query(
+            collection(db, 'notifications'),
+            where('user_id', '==', userId),
+            orderBy('created_at', 'desc')
+        );
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+            setItems(notifs);
+        });
             
-        return () => { supabase.removeChannel(channel); };
+        return () => unsubscribe();
     }, [userId]);
 
     const loadNotifications = async () => {
@@ -43,7 +45,7 @@ export const Notifications: React.FC<NotificationsProps> = ({ userId, onClose })
 
     const handleRead = async (id: string) => {
         await markNotificationRead(id);
-        setItems(prev => prev.map(n => n.id === id ? { ...n, is_read: true } : n));
+        // State updates automatically via onSnapshot
     };
 
     return (

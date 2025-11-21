@@ -1,8 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent } from "../types";
+import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent, PublishedResume } from "../types";
 import { getStoredAPIKey } from "./storageService";
-import { PublishedResume } from "./supabase";
 
 // Helper to get the AI instance dynamically
 const getAI = () => {

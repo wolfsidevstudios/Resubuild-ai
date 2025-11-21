@@ -16,7 +16,7 @@ import {
     generateInteractivePortfolio
 } from '../services/geminiService';
 import { saveResume, createEmptyResume } from '../services/storageService';
-import { publishResume } from '../services/supabase';
+import { publishResume } from '../services/firebase';
 import { ResumePreview } from './ResumePreview';
 import { Input, TextArea } from './InputField';
 import { Button } from './Button';
