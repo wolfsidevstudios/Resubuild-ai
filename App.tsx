@@ -14,6 +14,7 @@ import { SettingsPage } from './components/SettingsPage';
 import { DesignPilot } from './components/DesignPilot'; 
 import { DataConsentModal } from './components/DataConsentModal';
 import { TermsPage, PrivacyPage } from './components/LegalPages';
+import { AboutPage } from './components/AboutPage'; // Import AboutPage
 import { TermsModal } from './components/TermsModal';
 import { SuspendedView } from './components/SuspendedView';
 import { CookieBanner } from './components/CookieBanner'; // Import Cookie Banner
@@ -23,7 +24,7 @@ import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot' | 'terms' | 'privacy' | 'suspended';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot' | 'terms' | 'privacy' | 'suspended' | 'about';
 
 // Map views to URL paths
 const ROUTES: Record<string, View> = {
@@ -39,6 +40,7 @@ const ROUTES: Record<string, View> = {
   '/design-pilot': 'design-pilot',
   '/terms': 'terms',
   '/privacy': 'privacy',
+  '/about': 'about', // Add about route
   '/suspended': 'suspended'
 };
 
@@ -144,7 +146,7 @@ function App() {
   // Helper to route user based on role (called on login)
   const routeUser = async (currentUser: User | null, targetView?: View) => {
       if (!currentUser) {
-          if (['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy'].includes(view)) {
+          if (['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about'].includes(view)) {
              // stay on public page
           } else {
              navigate('landing');
@@ -237,7 +239,7 @@ function App() {
              setUserProfile(null);
              setShowConsentModal(false);
              
-             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy'];
+             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about'];
              if (!publicViews.includes(view)) {
                 navigate('landing');
              } else {
@@ -311,7 +313,12 @@ function App() {
             onGoToAssets={() => navigate('app-assets')}
             onViewTerms={() => navigate('terms')}
             onViewPrivacy={() => navigate('privacy')}
+            onViewAbout={() => navigate('about')}
         />
+      )}
+      
+      {view === 'about' && (
+          <AboutPage onBack={() => user ? routeUser(user) : navigate('landing')} />
       )}
       
       {view === 'terms' && (
@@ -419,7 +426,7 @@ function App() {
       )}
 
       {/* Terms Acceptance Modal - Mandatory. Ensure userProfile is loaded first */}
-      {user && userProfile && !userProfile.terms_accepted && view !== 'suspended' && view !== 'terms' && view !== 'privacy' && (
+      {user && userProfile && !userProfile.terms_accepted && view !== 'suspended' && view !== 'terms' && view !== 'privacy' && view !== 'about' && (
           <TermsModal 
               userId={user.uid} 
               onAccept={() => {

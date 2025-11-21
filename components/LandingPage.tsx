@@ -48,6 +48,7 @@ interface LandingPageProps {
   onGoToAssets?: () => void;
   onViewTerms?: () => void;
   onViewPrivacy?: () => void;
+  onViewAbout?: () => void; // Add About handler
 }
 
 // --- Helper Components ---
@@ -180,7 +181,7 @@ const SkeletonResume: React.FC<{ variant: 'simple' | 'modern' | 'professional' |
   );
 };
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover, onGuestTry, onGoToAssets, onViewTerms, onViewPrivacy }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover, onGuestTry, onGoToAssets, onViewTerms, onViewPrivacy, onViewAbout }) => {
   const [showAuth, setShowAuth] = useState(false);
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signup');
   const [playgroundPrompt, setPlaygroundPrompt] = useState('');
@@ -889,6 +890,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
               <a href="#" className="hover:text-neutral-900 transition-colors">Features</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Pricing</a>
               <a href="/design-pilot" className="hover:text-purple-600 text-purple-600 font-bold transition-colors flex items-center gap-1"><FlaskConical className="w-3 h-3"/> Design Pilot</a>
+              <button onClick={onViewAbout} className="hover:text-neutral-900 transition-colors font-medium text-neutral-600">About Us</button> {/* Added About Button */}
               <button onClick={onViewPrivacy} className="hover:text-neutral-900 transition-colors">Privacy</button>
               <button onClick={onViewTerms} className="hover:text-neutral-900 transition-colors">Terms</button>
               {onGoToAssets && (
