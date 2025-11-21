@@ -1,17 +1,17 @@
 
 import React, { useState } from 'react';
 import { ResumeData } from '../types';
-import { generateInteractivePortfolio, generateColdEmail, generateSalaryScript } from '../services/geminiService';
-import { MonitorPlay, FileText, Briefcase, DollarSign, Send, Download, ChevronRight, X, Loader2, Code2, Mail, Sparkles } from 'lucide-react';
+import { generateInteractivePortfolio, generateColdEmail, generateSalaryScript, generateEmailTemplate } from '../services/geminiService';
+import { MonitorPlay, FileText, Briefcase, DollarSign, Send, Download, ChevronRight, X, Loader2, Code2, Mail, Sparkles, MailOpen } from 'lucide-react';
 import { Button } from './Button';
-import { Input } from './InputField';
+import { Input, TextArea } from './InputField';
 
 interface BetaToolsProps {
     resumes: ResumeData[];
     onHome: () => void;
 }
 
-type ToolType = 'appify' | 'email' | 'negotiator' | null;
+type ToolType = 'appify' | 'email' | 'negotiator' | 'template_gen' | null;
 
 export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
     const [activeTool, setActiveTool] = useState<ToolType>(null);
@@ -28,6 +28,11 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
     // Negotiator State
     const [offerAmount, setOfferAmount] = useState('');
     const [targetAmount, setTargetAmount] = useState('');
+
+    // Template Gen State
+    const [templateType, setTemplateType] = useState('Follow-up on Application');
+    const [recipient, setRecipient] = useState('');
+    const [extraContext, setExtraContext] = useState('');
 
     const selectedResume = resumes.find(r => r.id === selectedResumeId);
 
@@ -46,6 +51,8 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
             } else if (activeTool === 'negotiator') {
                 if (!offerAmount || !targetAmount) return;
                 output = await generateSalaryScript(selectedResume, offerAmount, targetAmount);
+            } else if (activeTool === 'template_gen') {
+                output = await generateEmailTemplate(selectedResume, templateType, recipient, extraContext);
             }
             setResult(output);
         } catch (e) {
@@ -64,6 +71,9 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
         setEmailRole('');
         setOfferAmount('');
         setTargetAmount('');
+        setTemplateType('Follow-up on Application');
+        setRecipient('');
+        setExtraContext('');
     };
 
     const downloadApp = () => {
@@ -90,6 +100,7 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
                             {activeTool === 'appify' && 'Resume to App'}
                             {activeTool === 'email' && 'Cold Email Generator'}
                             {activeTool === 'negotiator' && 'Salary Negotiator'}
+                            {activeTool === 'template_gen' && 'Smart Email Templates'}
                         </h2>
                     </div>
                 </div>
@@ -134,9 +145,38 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
                                 </>
                             )}
 
+                            {activeTool === 'template_gen' && (
+                                <>
+                                    <div>
+                                        <label className="text-xs font-bold text-neutral-500 uppercase mb-2 block">Email Type</label>
+                                        <select 
+                                            className="w-full px-4 py-2.5 bg-neutral-50 border border-neutral-200 rounded-xl text-neutral-900 focus:outline-none focus:ring-2 focus:ring-neutral-900/10"
+                                            value={templateType}
+                                            onChange={e => setTemplateType(e.target.value)}
+                                        >
+                                            <option value="Follow-up on Application">Follow-up on Application</option>
+                                            <option value="Post-Interview Thank You">Post-Interview Thank You</option>
+                                            <option value="Accepting Job Offer">Accepting Job Offer</option>
+                                            <option value="Declining Job Offer">Declining Job Offer</option>
+                                            <option value="Resignation Letter">Resignation Letter</option>
+                                            <option value="Request for Recommendation">Request for Recommendation</option>
+                                            <option value="Networking Reachout">Networking Reachout</option>
+                                        </select>
+                                    </div>
+                                    <Input label="Recipient Name/Role" value={recipient} onChange={e => setRecipient(e.target.value)} placeholder="e.g. Hiring Manager" />
+                                    <TextArea label="Key Details (Optional)" value={extraContext} onChange={e => setExtraContext(e.target.value)} placeholder="e.g. Interviewed last Tuesday, really liked the team..." className="min-h-[100px]" />
+                                </>
+                            )}
+
                             <Button 
                                 onClick={handleRunTool} 
-                                disabled={!selectedResumeId || loading || (activeTool === 'email' && (!emailCompany || !emailRole)) || (activeTool === 'negotiator' && (!offerAmount || !targetAmount))}
+                                disabled={
+                                    !selectedResumeId || 
+                                    loading || 
+                                    (activeTool === 'email' && (!emailCompany || !emailRole)) || 
+                                    (activeTool === 'negotiator' && (!offerAmount || !targetAmount)) ||
+                                    (activeTool === 'template_gen' && !recipient)
+                                }
                                 className="w-full"
                                 isLoading={loading}
                                 icon={<Sparkles className="w-4 h-4" />}
@@ -173,6 +213,7 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
                                 {activeTool === 'appify' && <Code2 className="w-16 h-16 mb-4 opacity-20" />}
                                 {activeTool === 'email' && <Mail className="w-16 h-16 mb-4 opacity-20" />}
                                 {activeTool === 'negotiator' && <DollarSign className="w-16 h-16 mb-4 opacity-20" />}
+                                {activeTool === 'template_gen' && <MailOpen className="w-16 h-16 mb-4 opacity-20" />}
                                 <p>Output will appear here</p>
                             </div>
                         )}
@@ -189,7 +230,7 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
                 <p className="text-neutral-500">Experimental AI features to supercharge your job search.</p>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-2 gap-6">
                 {/* Appify */}
                 <button onClick={() => setActiveTool('appify')} className="group text-left bg-white p-8 rounded-3xl border border-neutral-200 hover:border-neutral-900 hover:shadow-xl transition-all flex flex-col h-full">
                     <div className="w-14 h-14 bg-neutral-900 text-white rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
@@ -218,6 +259,16 @@ export const BetaTools: React.FC<BetaToolsProps> = ({ resumes, onHome }) => {
                     <h3 className="text-xl font-bold mb-2">Salary Negotiator</h3>
                     <p className="text-neutral-500 mb-4 flex-1">Get a custom script to negotiate your offer based on your experience leverage.</p>
                     <div className="flex items-center text-sm font-bold text-green-600">Try it <ChevronRight className="w-4 h-4 ml-1" /></div>
+                </button>
+
+                {/* Email Templates */}
+                <button onClick={() => setActiveTool('template_gen')} className="group text-left bg-white p-8 rounded-3xl border border-neutral-200 hover:border-purple-600 hover:shadow-xl transition-all flex flex-col h-full relative overflow-hidden">
+                    <div className="w-14 h-14 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+                        <MailOpen className="w-7 h-7" />
+                    </div>
+                    <h3 className="text-xl font-bold mb-2">Smart Email Templates</h3>
+                    <p className="text-neutral-500 mb-4 flex-1">Generate follow-ups, thank you notes, resignations, and more tailored to your situation.</p>
+                    <div className="flex items-center text-sm font-bold text-purple-600">Try it <ChevronRight className="w-4 h-4 ml-1" /></div>
                 </button>
             </div>
         </div>

@@ -442,6 +442,38 @@ export const generateSalaryScript = async (data: ResumeData, offerAmount: string
     }
 };
 
+export const generateEmailTemplate = async (data: ResumeData, type: string, recipient: string, context: string): Promise<string> => {
+    const prompt = `
+        Act as a professional career coach. Write a tailored email for the following scenario.
+        
+        Email Type: ${type}
+        Recipient: ${recipient}
+        User's Context/Notes: ${context}
+        
+        User Profile:
+        Name: ${data.personalInfo.fullName}
+        Title: ${data.personalInfo.jobTitle}
+        Company: ${data.experience[0]?.company || 'N/A'}
+        
+        Requirements:
+        - Professional, polite, and concise.
+        - Include a catchy Subject Line at the top.
+        - Use placeholders like [Date] only if necessary, otherwise infer from context.
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Email template gen failed:", error);
+        throw error;
+    }
+};
+
 // --- TOOLS & HELPERS ---
 
 export const generateInterviewQuestions = async (data: ResumeData): Promise<string[]> => {
