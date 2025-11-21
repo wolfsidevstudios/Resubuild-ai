@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X, Briefcase } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey } from '../services/storageService';
 import { signOut } from '../services/firebase';
@@ -11,6 +11,7 @@ import { Resupilot } from './Resupilot';
 import { LinkedInAgent } from './LinkedInAgent';
 import { BetaTools } from './BetaTools';
 import { AgentBuilder } from './AgentBuilder';
+import { JobSearch } from './JobSearch';
 
 interface DashboardProps {
   onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
@@ -50,7 +51,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, className = '', alert
 );
 
 export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, onSettings, userId }) => {
-  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools' | 'agent-builder'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools' | 'agent-builder' | 'jobs'>('dashboard');
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -135,6 +136,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   label="Create New" 
                   onClick={openCreateModal}
                   className="text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700"
+               />
+               <SidebarItem 
+                  icon={Briefcase} 
+                  label="Find Jobs" 
+                  active={view === 'jobs'}
+                  onClick={() => setView('jobs')}
+                  className="text-emerald-600 hover:text-emerald-700"
                />
                <SidebarItem 
                   icon={Sparkles} 
@@ -234,6 +242,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
               {/* Scrollable Content Area */}
               <main className="flex-1 overflow-y-auto custom-scrollbar">
                 
+                {/* VIEW: JOB SEARCH */}
+                {view === 'jobs' && (
+                    <JobSearch />
+                )}
+
                 {/* VIEW: LINKEDIN AGENT */}
                 {view === 'linkedin' && (
                     <LinkedInAgent onSave={handleLinkedInSave} />
