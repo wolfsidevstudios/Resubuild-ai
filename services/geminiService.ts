@@ -376,7 +376,7 @@ export const generateInteractivePortfolio = async (data: ResumeData): Promise<st
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: getModel('basic'),
+            model: 'gemini-3-pro-preview', // Use pro for better code generation
             contents: prompt,
         });
         
@@ -386,6 +386,58 @@ export const generateInteractivePortfolio = async (data: ResumeData): Promise<st
         return html;
     } catch (error) {
         console.error("Interactive portfolio gen failed:", error);
+        throw error;
+    }
+};
+
+export const generateColdEmail = async (data: ResumeData, companyName: string, role: string): Promise<string> => {
+    const prompt = `
+        Write a concise, high-impact cold email to a recruiter/hiring manager at ${companyName} for the role of ${role}.
+        
+        Use this resume data to highlight relevant achievements:
+        ${JSON.stringify(data)}
+        
+        Requirements:
+        - Subject line included at the top.
+        - Max 150 words body.
+        - Professional but conversational tone.
+        - Focus on value proposition.
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('complex'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Cold email gen failed:", error);
+        throw error;
+    }
+};
+
+export const generateSalaryScript = async (data: ResumeData, offerAmount: string, targetAmount: string): Promise<string> => {
+     const prompt = `
+        I have received a job offer of ${offerAmount} but I want to negotiate for ${targetAmount}.
+        Write a script I can say on the phone or email to the recruiter.
+        
+        My profile context (to justify value):
+        ${JSON.stringify(data.personalInfo)}
+        ${JSON.stringify(data.experience[0])}
+        
+        Tone: Grateful, professional, firm but polite.
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Salary script gen failed:", error);
         throw error;
     }
 };

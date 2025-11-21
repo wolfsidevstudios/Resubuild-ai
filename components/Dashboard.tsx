@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey } from '../services/storageService';
 import { signOut } from '../services/firebase';
@@ -9,6 +9,7 @@ import { Messaging } from './Messaging';
 import { Notifications } from './Notifications';
 import { Resupilot } from './Resupilot';
 import { LinkedInAgent } from './LinkedInAgent';
+import { BetaTools } from './BetaTools';
 
 interface DashboardProps {
   onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
@@ -48,7 +49,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, className = '', alert
 );
 
 export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, onSettings, userId }) => {
-  const [view, setView] = useState<'dashboard' | 'linkedin'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools'>('dashboard');
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -144,6 +145,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   className="text-[#0077b5] hover:text-[#0077b5]"
                />
                <SidebarItem 
+                  icon={FlaskConical} 
+                  label="Beta Tools" 
+                  active={view === 'beta-tools'}
+                  onClick={() => setView('beta-tools')}
+                  className="text-orange-600 hover:text-orange-700"
+               />
+               <SidebarItem 
                   icon={MessageSquare} 
                   label="Messages" 
                   onClick={() => setShowMessages(true)}
@@ -217,6 +225,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                 {/* VIEW: LINKEDIN AGENT */}
                 {view === 'linkedin' && (
                     <LinkedInAgent onSave={handleLinkedInSave} />
+                )}
+                
+                {/* VIEW: BETA TOOLS */}
+                {view === 'beta-tools' && (
+                    <BetaTools resumes={resumes} onHome={() => setView('dashboard')} />
                 )}
 
                 {/* VIEW: DASHBOARD */}
