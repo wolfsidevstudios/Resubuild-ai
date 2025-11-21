@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Briefcase, Search, MessageSquare, LogOut, Sparkles, User, ChevronRight, Send } from 'lucide-react';
+import { Briefcase, Search, MessageSquare, LogOut, Sparkles, User, ChevronRight, Send, Settings } from 'lucide-react';
 import { signOut, fetchPublishedResumes, getUserProfile } from '../services/firebase';
 import { PublishedResume } from '../types';
 import { findBestCandidates } from '../services/geminiService';
@@ -82,6 +82,21 @@ export const EmployerDashboard: React.FC<EmployerDashboardProps> = ({ userId, on
         setShowMessages(true);
     };
 
+    // Note: EmployerDashboard renders inside App, which handles routing.
+    // To navigate to settings, we would ideally use the same router.
+    // Since this is a simple SPA, we can change the URL and trigger a popstate or pass a navigation prop.
+    // However, for simplicity here and consistency with Dashboard.tsx which received a prop,
+    // we rely on the fact that App routes '/settings'. 
+    // We'll use window.location or history API to navigate if we don't receive a prop, 
+    // but better to just link to it if we can't easily pass the callback down without changing props interface too much.
+    // Actually, App.tsx doesn't pass onSettings to EmployerDashboard yet.
+    // Let's add a simple redirect function.
+    const goToSettings = () => {
+        window.history.pushState({}, '', '/settings');
+        // Trigger popstate event so App re-renders
+        window.dispatchEvent(new PopStateEvent('popstate'));
+    };
+
     return (
         <div className="min-h-screen bg-neutral-50 font-sans flex flex-col md:flex-row overflow-hidden">
             
@@ -120,14 +135,19 @@ export const EmployerDashboard: React.FC<EmployerDashboardProps> = ({ userId, on
                     </button>
                 </nav>
 
-                <div className="p-4 border-t border-neutral-100">
+                <div className="p-4 border-t border-neutral-100 space-y-2">
                      <div className="flex items-center gap-3 mb-4 px-2">
                          <div className="w-8 h-8 bg-neutral-200 rounded-full flex items-center justify-center font-bold text-xs">
                              {companyName.charAt(0)}
                          </div>
                          <div className="text-sm font-bold truncate flex-1">{companyName}</div>
                      </div>
-                     <button onClick={async () => { await signOut(); onHome(); }} className="flex items-center gap-2 text-sm text-neutral-500 hover:text-red-600 px-2">
+                     
+                     <button onClick={goToSettings} className="w-full flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-900 px-2 py-1 rounded hover:bg-neutral-50 transition-colors text-left">
+                         <Settings className="w-4 h-4" /> Settings
+                     </button>
+
+                     <button onClick={async () => { await signOut(); onHome(); }} className="w-full flex items-center gap-2 text-sm text-neutral-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50 transition-colors text-left">
                          <LogOut className="w-4 h-4" /> Sign Out
                      </button>
                 </div>

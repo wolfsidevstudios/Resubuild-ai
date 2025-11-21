@@ -10,13 +10,14 @@ import { Resupilot } from './components/Resupilot';
 import { Auth } from './components/Auth';
 import { NotFound } from './components/NotFound';
 import { AppAssets } from './components/AppAssets';
+import { SettingsPage } from './components/SettingsPage';
 import { ResumeData, UserRole } from './types';
 import { auth, getUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings';
 
 // Map views to URL paths
 const ROUTES: Record<string, View> = {
@@ -28,6 +29,7 @@ const ROUTES: Record<string, View> = {
   '/discover': 'discover',
   '/create': 'guest-resupilot',
   '/media-kit': 'app-assets',
+  '/settings': 'settings',
 };
 
 function App() {
@@ -104,7 +106,7 @@ function App() {
       }
 
       // Auth Guard
-      const protectedRoutes: View[] = ['dashboard', 'employer-dashboard', 'onboarding', 'builder'];
+      const protectedRoutes: View[] = ['dashboard', 'employer-dashboard', 'onboarding', 'builder', 'settings'];
       if (protectedRoutes.includes(matchedView) && !currentUser) {
           // Redirect to landing if trying to access protected route without session
           navigate('landing', true);
@@ -147,7 +149,7 @@ function App() {
 
         // Otherwise default routing based on role, BUT respect current URL if it's valid
         const currentPathView = ROUTES[window.location.pathname];
-        if (currentPathView === 'builder' || currentPathView === 'onboarding') {
+        if (currentPathView === 'builder' || currentPathView === 'onboarding' || currentPathView === 'settings') {
             // Stay on current view
             return;
         }
@@ -294,6 +296,7 @@ function App() {
             onCreate={handleCreateNew} 
             onEdit={handleEdit}
             onHome={() => navigate('landing')}
+            onSettings={() => navigate('settings')}
             userId={user.uid}
         />
       )}
@@ -312,6 +315,14 @@ function App() {
             onGoHome={() => navigate('dashboard')} 
             userId={user.uid}
         />
+      )}
+      
+      {view === 'settings' && user && (
+          <SettingsPage 
+              user={user}
+              userRole={userRole}
+              onBack={() => routeUser(user)}
+          />
       )}
 
       {/* GUEST MODE */}
