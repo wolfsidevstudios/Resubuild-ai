@@ -72,6 +72,7 @@ export enum AIActionType {
 // New Types for Social/Brand Features
 
 export type UserRole = 'candidate' | 'employer';
+export type AccountStatus = 'active' | 'suspended' | 'pending_deletion';
 
 export interface UserProfile {
   id: string;
@@ -79,6 +80,13 @@ export interface UserProfile {
   avatar_url?: string;
   role: UserRole;
   training_consent?: boolean; // New privacy field
+  
+  // Terms of Service Fields
+  terms_accepted?: boolean;
+  terms_accepted_at?: string;
+  terms_version?: string;
+  account_status?: AccountStatus;
+  suspended_at?: string;
 }
 
 export interface Message {

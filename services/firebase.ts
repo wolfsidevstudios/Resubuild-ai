@@ -11,7 +11,8 @@ import {
   OAuthProvider,
   signInWithPopup,
   User,
-  updateProfile
+  updateProfile,
+  deleteUser
 } from "firebase/auth";
 import { 
   getFirestore, 
@@ -34,6 +35,7 @@ import {
   arrayRemove
 } from "firebase/firestore";
 import { ResumeData, Message, Notification, UserProfile, PublishedResume, CustomAgent, ContestEntry } from '../types';
+import { getResumes } from "./storageService";
 
 const firebaseConfig = {
   apiKey: "AIzaSyALmX4xk9t4PbRK_3MSl3wxMyEayK9tbBI",
@@ -116,7 +118,9 @@ export const createUserProfile = async (user: User, role: 'candidate' | 'employe
                 id: user.uid,
                 full_name: fullName || user.displayName || "User",
                 role: role,
-                avatar_url: user.photoURL || undefined
+                avatar_url: user.photoURL || undefined,
+                terms_accepted: false,
+                account_status: 'active'
             };
             await setDoc(userRef, profileData);
         }
@@ -152,6 +156,93 @@ export const setTrainingConsent = async (userId: string, consent: boolean) => {
         }
     } catch (error) {
         console.error("Error setting consent:", error);
+        throw error;
+    }
+};
+
+// --- Terms of Service Management ---
+
+export const acceptTermsOfService = async (userId: string) => {
+    try {
+        const userRef = doc(db, "users", userId);
+        await updateDoc(userRef, { 
+            terms_accepted: true,
+            terms_accepted_at: new Date().toISOString(),
+            terms_version: '1.0',
+            account_status: 'active',
+            suspended_at: null
+        });
+    } catch (error) {
+        console.error("Error accepting terms:", error);
+        throw error;
+    }
+};
+
+export const declineTermsOfService = async (userId: string) => {
+    try {
+        const userRef = doc(db, "users", userId);
+        await updateDoc(userRef, { 
+            terms_accepted: false,
+            account_status: 'suspended',
+            suspended_at: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error("Error declining terms:", error);
+        throw error;
+    }
+};
+
+export const downloadUserData = async (userId: string) => {
+    try {
+        // 1. Get Profile
+        const profile = await getUserProfile(userId);
+        
+        // 2. Get Resumes (From Local Storage in this app architecture, but let's pretend we sync or just get local)
+        const resumes = getResumes(userId);
+        
+        // 3. Get Messages
+        // For simplicity, we aren't fetching all messages here as it requires complex queries, 
+        // but in a real GDPR request we would.
+        
+        const exportData = {
+            profile,
+            resumes,
+            exportDate: new Date().toISOString()
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `resubuild_data_${userId}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        return true;
+    } catch (error) {
+        console.error("Data export failed:", error);
+        throw error;
+    }
+};
+
+export const deleteUserAccount = async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    
+    try {
+        // 1. Delete User Profile in Firestore
+        await deleteDoc(doc(db, "users", user.uid));
+        
+        // 2. Delete Published Resumes
+        await deleteDoc(doc(db, "published_resumes", user.uid));
+        
+        // 3. Delete Auth Account
+        await deleteUser(user);
+        
+        // Note: In a real app, you'd use Firebase Admin SDK to recursively delete subcollections (messages, notifications)
+    } catch (error) {
+        console.error("Account deletion failed:", error);
         throw error;
     }
 };

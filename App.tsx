@@ -11,15 +11,18 @@ import { Auth } from './components/Auth';
 import { NotFound } from './components/NotFound';
 import { AppAssets } from './components/AppAssets';
 import { SettingsPage } from './components/SettingsPage';
-import { DesignPilot } from './components/DesignPilot'; // Import new component
-import { DataConsentModal } from './components/DataConsentModal'; // Import new component
-import { ResumeData, UserRole } from './types';
+import { DesignPilot } from './components/DesignPilot'; 
+import { DataConsentModal } from './components/DataConsentModal';
+import { TermsPage, PrivacyPage } from './components/LegalPages';
+import { TermsModal } from './components/TermsModal';
+import { SuspendedView } from './components/SuspendedView';
+import { ResumeData, UserRole, UserProfile } from './types';
 import { auth, getUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot' | 'terms' | 'privacy' | 'suspended';
 
 // Map views to URL paths
 const ROUTES: Record<string, View> = {
@@ -33,6 +36,9 @@ const ROUTES: Record<string, View> = {
   '/media-kit': 'app-assets',
   '/settings': 'settings',
   '/design-pilot': 'design-pilot',
+  '/terms': 'terms',
+  '/privacy': 'privacy',
+  '/suspended': 'suspended'
 };
 
 function App() {
@@ -40,6 +46,7 @@ function App() {
   const [currentResume, setCurrentResume] = useState<ResumeData | undefined>(undefined);
   const [user, setUser] = useState<User | null>(null);
   const [userRole, setUserRole] = useState<UserRole | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Guest Mode State
@@ -76,19 +83,23 @@ function App() {
     window.scrollTo(0, 0);
   };
 
-  const syncViewFromUrl = async (currentUser: User | null) => {
+  const syncViewFromUrl = async (currentUser: User | null, profile?: UserProfile | null) => {
       const path = window.location.pathname;
       const searchParams = new URLSearchParams(window.location.search);
       
-      // Find view matching current path (simple matching)
+      // Handle Suspended Logic Immediately
+      if (currentUser && profile?.account_status === 'suspended') {
+          navigate('suspended', true);
+          return;
+      }
+
+      // Find view matching current path
       let matchedView: View = 'not-found';
       if (ROUTES[path]) {
           matchedView = ROUTES[path];
       } else if (path === '/login' || path === '/signup') {
-          matchedView = 'landing'; // Handle specific auth routes as landing for now
+          matchedView = 'landing'; 
       } else {
-          // Check if it's an exact match or if we should show not found
-          // For now, default to landing if root, else not-found
           if (path === '/') matchedView = 'landing';
       }
 
@@ -96,12 +107,10 @@ function App() {
       if (matchedView === 'builder') {
           const resumeId = searchParams.get('id');
           if (resumeId) {
-             // Attempt to load resume
              const resume = getResumeById(resumeId, currentUser?.uid);
              if (resume) {
                  setCurrentResume(resume);
              } else {
-                 // Resume not found or no access
                  navigate(currentUser ? 'dashboard' : 'landing', true);
                  return;
              }
@@ -112,9 +121,8 @@ function App() {
       }
 
       // Auth Guard
-      const protectedRoutes: View[] = ['dashboard', 'employer-dashboard', 'onboarding', 'builder', 'settings'];
+      const protectedRoutes: View[] = ['dashboard', 'employer-dashboard', 'onboarding', 'builder', 'settings', 'suspended'];
       if (protectedRoutes.includes(matchedView) && !currentUser) {
-          // Redirect to landing if trying to access protected route without session
           navigate('landing', true);
           return;
       }
@@ -135,19 +143,29 @@ function App() {
   // Helper to route user based on role (called on login)
   const routeUser = async (currentUser: User | null, targetView?: View) => {
       if (!currentUser) {
-          if (view !== 'guest-resupilot' && view !== 'app-assets' && view !== 'discover' && view !== 'design-pilot') {
+          if (['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy'].includes(view)) {
+             // stay on public page
+          } else {
              navigate('landing');
           }
           setUserRole(null);
+          setUserProfile(null);
           return;
       }
 
       try {
         const profile = await getUserProfile(currentUser.uid);
+        setUserProfile(profile);
         const role = profile?.role || 'candidate';
         setUserRole(role);
         
-        // Check for consent logic
+        // CHECK SUSPENSION
+        if (profile?.account_status === 'suspended') {
+            navigate('suspended', true);
+            return;
+        }
+
+        // Check for consent logic (only if active)
         if (profile && profile.training_consent === undefined) {
             setShowConsentModal(true);
         }
@@ -160,7 +178,7 @@ function App() {
 
         // Otherwise default routing based on role, BUT respect current URL if it's valid
         const currentPathView = ROUTES[window.location.pathname];
-        if (currentPathView === 'builder' || currentPathView === 'onboarding' || currentPathView === 'settings' || currentPathView === 'design-pilot') {
+        if (['builder', 'onboarding', 'settings', 'design-pilot'].includes(currentPathView)) {
             // Stay on current view
             return;
         }
@@ -195,31 +213,36 @@ function App() {
         if (user) {
              try {
                  const profile = await getUserProfile(user.uid);
+                 setUserProfile(profile);
                  const role = profile?.role || 'candidate';
                  setUserRole(role);
-                 // Check consent on initial load
-                 if (profile && profile.training_consent === undefined) {
+                 
+                 if (profile?.account_status === 'suspended') {
+                     navigate('suspended', true);
+                 } else if (profile && profile.training_consent === undefined) {
+                     // Only show training consent if not suspended
                      setShowConsentModal(true);
                  }
+                 await syncViewFromUrl(user, profile);
              } catch (e) {
-                 console.warn("Profile load failed, defaulting to candidate");
+                 console.warn("Profile load failed", e);
                  setUserRole('candidate');
+                 await syncViewFromUrl(user, null);
              }
         } else {
              setUserRole(null);
+             setUserProfile(null);
              setShowConsentModal(false);
-             // Don't redirect if we are on public pages
-             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot'];
+             
+             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy'];
              if (!publicViews.includes(view)) {
                 navigate('landing');
+             } else {
+                 // Just ensure view matches URL
+                 await syncViewFromUrl(null, null);
              }
         }
-        
-        // Once we know auth state, sync view (only on initial load mostly)
-        if (loading) {
-             await syncViewFromUrl(user);
-             setLoading(false);
-        }
+        setLoading(false);
     });
 
     return () => {
@@ -236,7 +259,6 @@ function App() {
     } else {
         const newResume = createEmptyResume(templateId);
         setCurrentResume(newResume);
-        // For manual create, we're basically in builder mode with a fresh object.
         navigate('builder');
     }
   };
@@ -271,13 +293,6 @@ function App() {
           <div className="min-h-screen flex flex-col items-center justify-center bg-white">
               <Loader2 className="w-10 h-10 animate-spin text-neutral-900 mb-4" />
               <p className="text-neutral-500 text-sm animate-pulse">Loading Resubuild...</p>
-              {/* Fallback button if it takes unusually long visually */}
-              <button 
-                className="mt-8 text-xs text-neutral-400 underline hover:text-neutral-600"
-                onClick={() => setLoading(false)}
-              >
-                Stuck? Click here to skip
-              </button>
           </div>
       );
   }
@@ -291,7 +306,17 @@ function App() {
             onGoToDiscover={() => navigate('discover')}
             onGuestTry={handleGuestEntry}
             onGoToAssets={() => navigate('app-assets')}
+            onViewTerms={() => navigate('terms')}
+            onViewPrivacy={() => navigate('privacy')}
         />
+      )}
+      
+      {view === 'terms' && (
+          <TermsPage onBack={() => user ? routeUser(user) : navigate('landing')} />
+      )}
+
+      {view === 'privacy' && (
+          <PrivacyPage onBack={() => user ? routeUser(user) : navigate('landing')} />
       )}
       
       {view === 'design-pilot' && (
@@ -308,6 +333,10 @@ function App() {
       
       {view === 'discover' && (
           <Discover onHome={() => user ? routeUser(user) : navigate('landing')} />
+      )}
+      
+      {view === 'suspended' && user && (
+          <SuspendedView userId={user.uid} onReactivate={() => window.location.href = '/dashboard'} />
       )}
       
       {/* CANDIDATE ROUTES */}
@@ -342,7 +371,6 @@ function App() {
               user={user}
               userRole={userRole}
               onBack={() => {
-                  // Force navigate back to dashboard based on role, skipping the "stay on current route" check
                   const target = userRole === 'employer' ? 'employer-dashboard' : 'dashboard';
                   navigate(target);
               }}
@@ -387,8 +415,19 @@ function App() {
           </div>
       )}
 
-      {/* Data Consent Modal (Global) */}
-      {showConsentModal && user && (
+      {/* Terms Acceptance Modal - Mandatory */}
+      {user && userProfile && !userProfile.terms_accepted && view !== 'suspended' && view !== 'terms' && view !== 'privacy' && (
+          <TermsModal 
+              userId={user.uid} 
+              onAccept={() => {
+                  // Optimistically update local state so it closes without refresh
+                  setUserProfile(prev => prev ? { ...prev, terms_accepted: true } : null);
+              }} 
+          />
+      )}
+
+      {/* Data Consent Modal (Global) - Only if terms accepted and consent not set */}
+      {showConsentModal && user && userProfile?.terms_accepted && (
           <DataConsentModal userId={user.uid} onClose={() => setShowConsentModal(false)} />
       )}
     </>
