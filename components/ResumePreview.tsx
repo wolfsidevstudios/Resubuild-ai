@@ -558,7 +558,7 @@ export const ResumePreview: React.FC<ResumePreviewProps> = ({ data, previewRef, 
   // 7. DEFAULT: MODERN TEMPLATE
   return (
     <LayoutWrapper className="bg-white p-[15mm] md:p-[20mm]">
-      <header className="border-b pb-6 mb-6" style={{borderColor: themeColor === '#000000' ? '#e5e5e5' : themeColor, borderBottomOpacity: 0.3}}>
+      <header className="border-b pb-6 mb-6" style={{borderColor: themeColor === '#000000' ? '#e5e5e5' : themeColor}}>
         <h1 className="text-4xl font-bold tracking-tight uppercase mb-2" style={themeStyle}>{personalInfo.fullName || "Your Name"}</h1>
         <p className="text-xl text-neutral-500 font-medium mb-4">{personalInfo.jobTitle || "Target Job Title"}</p>
         <ContactInfo className="text-neutral-600" iconStyle={themeStyle} />

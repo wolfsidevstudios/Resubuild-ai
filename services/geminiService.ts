@@ -16,7 +16,7 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-// --- FLASH TIER (Fast, gemini-2.5-flash) ---
+// --- STANDARD MODE (Fast, gemini-2.5-flash) ---
 
 export const generateResumeSummary = async (data: ResumeData): Promise<string> => {
   const prompt = `
@@ -89,7 +89,7 @@ export const suggestSkills = async (jobTitle: string, currentDescription: string
 };
 
 export const auditResume = async (data: ResumeData): Promise<ResumeAuditResult> => {
-    // Basic Audit (Flash Tier)
+    // Basic Audit
     const context = JSON.stringify({
         summary: data.personalInfo.summary,
         experience: data.experience.map(e => e.description),
@@ -158,7 +158,7 @@ export const generateCoverLetter = async (data: ResumeData, jobDescription: stri
     }
 };
 
-// --- PRO TIER (Reasoning, gemini-3-pro-preview) ---
+// --- ADVANCED MODE (Reasoning, gemini-3-pro-preview) ---
 
 export const performDeepAudit = async (data: ResumeData): Promise<ResumeAuditResult> => {
     const context = JSON.stringify(data);
@@ -266,6 +266,45 @@ export const generateLinkedInContent = async (data: ResumeData): Promise<LinkedI
         return JSON.parse(text);
     } catch (error) {
         console.error("LinkedIn gen failed:", error);
+        throw error;
+    }
+};
+
+export const generateInteractivePortfolio = async (data: ResumeData): Promise<string> => {
+    const context = JSON.stringify(data);
+    const prompt = `
+        You are a world-class frontend engineer. 
+        Create a single-file HTML personal portfolio website based on the resume data provided.
+        
+        Requirements:
+        1. Use Tailwind CSS via CDN.
+        2. Use Alpine.js via CDN for interactivity (mobile menu, modal, etc).
+        3. Design: Modern, minimalist, "Bento grid" or "Apple-style" clean aesthetic.
+        4. Features:
+           - Hero section with name and title.
+           - Interactive Experience timeline (animate on scroll using IntersectionObserver).
+           - Skills section with hover effects.
+           - A 'Contact Me' button that opens a mailto link.
+           - Dark mode support if possible (or just a really nice dark theme default).
+        5. The output must be ONLY the raw HTML code (starting with <!DOCTYPE html>). No markdown code blocks.
+        
+        Resume Data:
+        ${context}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+        
+        let html = response.text?.trim() || "";
+        // Strip markdown blocks if Gemini adds them despite instructions
+        html = html.replace(/```html/g, '').replace(/```/g, '');
+        return html;
+    } catch (error) {
+        console.error("Interactive portfolio gen failed:", error);
         throw error;
     }
 };

@@ -1,9 +1,9 @@
-
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare, Sparkles, PenTool, Layout, Grid, AlignLeft, Palette, Zap, BrainCircuit } from 'lucide-react';
-import { ResumeData, UserTier } from '../types';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, Key, LogOut, Bell, MessageSquare, Sparkles, Layout, AlignLeft, Palette } from 'lucide-react';
+import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
-import { supabase } from '../services/supabase';
+import { auth } from '../services/firebase';
+import { signOut } from 'firebase/auth';
 import { Button } from './Button';
 import { Input } from './InputField';
 import { Messaging } from './Messaging';
@@ -36,11 +36,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   const [createStep, setCreateStep] = useState<'method' | 'templates'>('method');
   
   const [apiKey, setApiKey] = useState('');
-  // Simulated Tier State
-  const [userTier, setUserTier] = useState<UserTier>(localStorage.getItem('resubuild_tier') as UserTier || 'flash');
 
   useEffect(() => {
-    // Load resumes for this specific user
     setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
     setApiKey(getStoredAPIKey() || '');
   }, [userId]);
@@ -59,14 +56,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
     } else {
       removeAPIKey();
     }
-    localStorage.setItem('resubuild_tier', userTier);
     setShowSettings(false);
-    // Force reload to apply tier changes to builder without complex context
-    window.location.reload();
   };
 
   const handleSignOut = async () => {
-      await supabase.auth.signOut();
+      await signOut(auth);
       onHome();
   };
   
@@ -98,12 +92,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                     className="w-10 h-10 rounded-xl object-cover"
                 />
                 <span className="font-bold text-xl tracking-tight">Resubuild</span>
-                {userTier === 'pro' && (
-                    <span className="px-2 py-0.5 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded">PRO</span>
-                )}
               </div>
               
-              {/* Resupilot Button */}
               <button 
                 onClick={() => setShowResupilot(true)}
                 className="hidden md:flex items-center gap-2 bg-neutral-100 hover:bg-neutral-200 text-neutral-900 px-4 py-2 rounded-full text-sm font-bold transition-all"
@@ -115,7 +105,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           <div className="flex items-center gap-2">
              <Button variant="ghost" className="relative" onClick={() => setShowNotifications(!showNotifications)}>
                  <Bell className="w-4 h-4" />
-                 {/* Dot for unread could go here */}
              </Button>
              <Button variant="ghost" onClick={() => setShowMessages(true)}>
                  <MessageSquare className="w-4 h-4" />
@@ -131,7 +120,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
         </div>
       </nav>
 
-      {/* Notification Dropdown */}
       {showNotifications && <Notifications userId={userId} onClose={() => setShowNotifications(false)} />}
 
       <main className="max-w-6xl mx-auto px-6 py-12">
@@ -158,14 +146,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                 <Button onClick={openCreateModal} variant="primary">
                 Create Your First Resume
                 </Button>
-                <Button onClick={() => setShowResupilot(true)} variant="secondary" icon={<Sparkles className="w-4 h-4 text-blue-600" />}>
-                    Try Resupilot
-                </Button>
             </div>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* Create New Card */}
             <div 
               onClick={openCreateModal}
               className="group flex flex-col items-center justify-center h-[280px] bg-white border-2 border-dashed border-neutral-200 rounded-3xl hover:border-neutral-900 hover:bg-neutral-50 transition-all cursor-pointer"
@@ -176,24 +160,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
               <span className="font-bold text-neutral-900">Create New Resume</span>
             </div>
 
-            {/* Resume Cards */}
             {resumes.map(resume => (
               <div 
                 key={resume.id}
                 onClick={() => onEdit(resume)}
                 className="group relative flex flex-col h-[280px] bg-white border border-neutral-200 rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
               >
-                {/* Card Preview Header */}
                 <div className="h-32 bg-neutral-100 p-6 relative overflow-hidden">
-                  <div className="absolute top-4 left-6 right-6 space-y-2 opacity-40 group-hover:opacity-60 transition-opacity">
-                    <div className="h-2 bg-neutral-900 w-1/3 rounded-full"></div>
-                    <div className="h-1.5 bg-neutral-400 w-1/2 rounded-full"></div>
-                    <div className="space-y-1 pt-2">
-                         <div className="h-1 bg-neutral-300 w-full rounded-full"></div>
-                         <div className="h-1 bg-neutral-300 w-5/6 rounded-full"></div>
-                    </div>
-                  </div>
-                  {/* Template Badge */}
                   <div className="absolute top-3 left-3">
                       <span className="text-[10px] font-bold uppercase tracking-wider bg-white px-2 py-1 rounded shadow-sm border border-neutral-100 text-neutral-500">
                           {resume.templateId || 'Modern'}
@@ -210,7 +183,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   </div>
                 </div>
 
-                {/* Card Body */}
                 <div className="flex-1 p-6 flex flex-col justify-between">
                   <div>
                     <h3 className="font-bold text-lg mb-1 line-clamp-1">{resume.name || 'Untitled Resume'}</h3>
@@ -233,7 +205,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
         )}
       </main>
 
-      {/* Create Mode Selection Modal */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/20 backdrop-blur-sm animate-in fade-in duration-200">
            <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl border border-neutral-200 overflow-hidden animate-in zoom-in-95 duration-200">
@@ -249,13 +220,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                       </h2>
                   </div>
                   <button onClick={() => setShowCreateModal(false)} className="p-2 hover:bg-neutral-100 rounded-full">
-                    <X className="w-5 h-5 text-neutral-500" />
+                    {/* X Icon */}
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-neutral-500"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                   </button>
                </div>
 
                {createStep === 'method' ? (
                    <div className="p-6 md:p-8 grid md:grid-cols-2 gap-6">
-                       {/* AI Option */}
                        <button 
                           onClick={() => onCreate('ai')}
                           className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
@@ -269,13 +240,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                           </p>
                        </button>
     
-                       {/* Manual Option */}
                        <button 
                           onClick={() => setCreateStep('templates')}
                           className="group flex flex-col text-left p-6 rounded-2xl border-2 border-neutral-100 hover:border-neutral-900 hover:bg-neutral-50 transition-all"
                        >
                           <div className="w-12 h-12 bg-white text-neutral-900 border-2 border-neutral-200 rounded-xl flex items-center justify-center mb-4 shadow-sm group-hover:scale-110 transition-transform">
-                              <Grid className="w-6 h-6" />
+                               <Layout className="w-6 h-6" />
                           </div>
                           <h3 className="text-lg font-bold mb-2">Pick a Template</h3>
                           <p className="text-sm text-neutral-500 leading-relaxed">
@@ -306,7 +276,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
         </div>
       )}
 
-      {/* Messages Modal */}
       {showMessages && (
           <Messaging 
             userId={userId} 
@@ -314,7 +283,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           />
       )}
 
-      {/* Settings Modal */}
       {showSettings && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-neutral-900/20 backdrop-blur-sm">
             <div className="bg-white w-full max-w-md rounded-2xl shadow-2xl border border-neutral-200 animate-in zoom-in-95 duration-200">
@@ -323,7 +291,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                         <Settings className="w-5 h-5" /> Settings
                     </h3>
                     <button onClick={() => setShowSettings(false)} className="p-1 hover:bg-neutral-100 rounded-full">
-                        <X className="w-5 h-5 text-neutral-500" />
+                        {/* X Icon */}
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5 text-neutral-500"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
                     </button>
                 </div>
                 <div className="p-6 space-y-6">
@@ -340,30 +309,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                         />
                         <p className="text-xs text-neutral-500">
                             Your API key is stored locally in your browser. 
-                        </p>
-                    </div>
-                    
-                    {/* Tier Simulation for Demo */}
-                    <div className="space-y-3 pt-4 border-t border-neutral-100">
-                        <label className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
-                            <Zap className="w-4 h-4" /> Plan Tier (Simulated)
-                        </label>
-                        <div className="flex gap-2">
-                             <button 
-                                onClick={() => setUserTier('flash')}
-                                className={`flex-1 py-2 rounded-xl border-2 text-sm font-bold transition-colors ${userTier === 'flash' ? 'border-neutral-900 bg-neutral-50 text-neutral-900' : 'border-neutral-100 text-neutral-500'}`}
-                             >
-                                 Flash (Free)
-                             </button>
-                             <button 
-                                onClick={() => setUserTier('pro')}
-                                className={`flex-1 py-2 rounded-xl border-2 text-sm font-bold transition-colors ${userTier === 'pro' ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-100 text-neutral-500'}`}
-                             >
-                                 Pro (Upgrade)
-                             </button>
-                        </div>
-                        <p className="text-xs text-neutral-500">
-                             Switching to Pro enables <b>Gemini 3.0</b> reasoning tools.
                         </p>
                     </div>
                 </div>
