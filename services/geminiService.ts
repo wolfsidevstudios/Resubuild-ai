@@ -1036,3 +1036,170 @@ export const runCustomAgent = async (agent: CustomAgent, userInput: string, resu
         throw error;
     }
 };
+
+// --- STUDENT TOOLS ---
+
+export const generateStudyPlan = async (subject: string, examDate: string, availableHoursPerDay: string): Promise<string> => {
+    const prompt = `
+        Create a detailed study plan for a "${subject}" exam occurring on ${examDate}.
+        I have ${availableHoursPerDay} hours available per day.
+        
+        Structure the response as a day-by-day schedule starting from today.
+        For each day, specify topics to cover and recommended study techniques (e.g. Pomodoro, active recall).
+        Format as a clean Markdown list.
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('complex'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Study plan failed:", error);
+        throw error;
+    }
+};
+
+export const generateEssayOutline = async (topic: string): Promise<string> => {
+    const prompt = `
+        Create a comprehensive essay outline for the topic: "${topic}".
+        Include:
+        1. Thesis Statement
+        2. Introduction (Hook, Context)
+        3. Body Paragraphs (Main Point, Supporting Evidence for each)
+        4. Conclusion (Summary, Final Thought)
+        
+        Format as clear Markdown.
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Essay outline failed:", error);
+        throw error;
+    }
+};
+
+export const generateFlashcards = async (topic: string, count: number = 5): Promise<{front: string, back: string}[]> => {
+    const prompt = `
+        Create ${count} study flashcards for the topic: "${topic}".
+        Return a JSON Array of objects with "front" (question/term) and "back" (answer/definition).
+        Do not include markdown formatting in the JSON.
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        return JSON.parse(response.text?.trim() || "[]");
+    } catch (error) {
+        console.error("Flashcards failed:", error);
+        return [];
+    }
+};
+
+export const explainConcept = async (concept: string, level: string = 'High School'): Promise<string> => {
+    const prompt = `
+        Explain the concept "${concept}" to a ${level} student.
+        Use analogies, simple language, and bullet points for clarity.
+        Keep it under 300 words.
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Explanation failed:", error);
+        throw error;
+    }
+};
+
+// --- TEACHER TOOLS ---
+
+export const generateLessonPlan = async (subject: string, grade: string, topic: string): Promise<string> => {
+    const prompt = `
+        Create a comprehensive lesson plan for a ${grade} ${subject} class on the topic: "${topic}".
+        
+        Include:
+        1. Learning Objectives
+        2. Materials Needed
+        3. Hook/Warm-up Activity (5-10 min)
+        4. Direct Instruction (15-20 min)
+        5. Guided Practice
+        6. Independent Practice
+        7. Assessment/Exit Ticket
+        
+        Format with clear Markdown headings.
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('complex'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Lesson plan failed:", error);
+        throw error;
+    }
+};
+
+export const generateQuiz = async (topic: string, grade: string, questionCount: number = 5): Promise<{question: string, options: string[], answer: string}[]> => {
+    const prompt = `
+        Create a ${questionCount}-question multiple-choice quiz for ${grade} students on "${topic}".
+        Return a JSON Array of objects. Each object must have:
+        - "question": string
+        - "options": array of 4 strings
+        - "answer": string (the correct option text)
+        
+        Do not include markdown in the JSON output.
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        return JSON.parse(response.text?.trim() || "[]");
+    } catch (error) {
+        console.error("Quiz generation failed:", error);
+        return [];
+    }
+};
+
+export const generateRubric = async (assignment: string, grade: string): Promise<string> => {
+    const prompt = `
+        Create a grading rubric for a ${grade} assignment: "${assignment}".
+        Use a table format (Markdown) with columns: Criteria, 4 (Excellent), 3 (Good), 2 (Fair), 1 (Needs Improvement).
+        Include 4-5 criteria rows (e.g. Content, Organization, Mechanics).
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+        });
+        return response.text?.trim() || "";
+    } catch (error) {
+        console.error("Rubric generation failed:", error);
+        throw error;
+    }
+};

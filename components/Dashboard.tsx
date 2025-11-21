@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X, Briefcase, Feather, Terminal } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X, Briefcase, Feather, Terminal, GraduationCap, BookOpen } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume } from '../services/storageService';
 import { signOut } from '../services/firebase';
@@ -12,6 +12,8 @@ import { LinkedInAgent } from './LinkedInAgent';
 import { BetaTools } from './BetaTools';
 import { AgentBuilder } from './AgentBuilder';
 import { JobSearch } from './JobSearch';
+import { StudentTools } from './StudentTools';
+import { TeacherTools } from './TeacherTools';
 import { TemplateThumbnail } from './TemplateThumbnail';
 
 interface DashboardProps {
@@ -54,7 +56,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, className = '', alert
 );
 
 export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, onSettings, userId }) => {
-  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools' | 'agent-builder' | 'jobs'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools' | 'agent-builder' | 'jobs' | 'student-tools' | 'teacher-tools'>('dashboard');
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -115,9 +117,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
     <div className="flex h-screen bg-white font-sans overflow-hidden selection:bg-neutral-900 selection:text-white">
       
       {/* 1. THIN LEFT SIDEBAR */}
-      <aside className="w-20 bg-white flex flex-col items-center py-8 gap-6 z-30 shrink-0">
+      <aside className="w-20 bg-white flex flex-col items-center py-8 gap-4 z-30 shrink-0 border-r border-neutral-100 overflow-y-auto custom-scrollbar">
           {/* Logo */}
-          <div className="mb-2 cursor-pointer" onClick={onHome}>
+          <div className="mb-4 cursor-pointer" onClick={onHome}>
               <img 
                   src="https://i.ibb.co/BVvMCjx1/Google-AI-Studio-2025-11-20-T21-17-48-480-Z-modified.png" 
                   alt="Logo" 
@@ -125,11 +127,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
               />
           </div>
 
-          {/* Nav Icons */}
-          <div className="flex flex-col gap-4 w-full items-center">
+          {/* HOME & CREATE */}
+          <div className="flex flex-col gap-3 w-full items-center pb-4 border-b border-neutral-100">
                <SidebarItem 
                   icon={Grid} 
-                  label="Dashboard" 
+                  label="Home" 
                   active={view === 'dashboard'}
                   onClick={() => setView('dashboard')}
                />
@@ -139,6 +141,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   onClick={openCreateModal}
                   className="text-blue-600 bg-blue-50 hover:bg-blue-100 hover:text-blue-700"
                />
+          </div>
+
+          {/* CAREER SUITE */}
+          <div className="flex flex-col gap-3 w-full items-center pb-4 border-b border-neutral-100">
+               <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Career</div>
                <SidebarItem 
                   icon={Briefcase} 
                   label="Find Jobs" 
@@ -147,18 +154,42 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   className="text-emerald-600 hover:text-emerald-700"
                />
                <SidebarItem 
-                  icon={Sparkles} 
-                  label="Resupilot AI" 
-                  onClick={() => setShowResupilot(true)}
-                  className="text-purple-600 hover:text-purple-700"
-               />
-               <SidebarItem 
                   icon={Linkedin} 
                   label="LinkedIn Agent" 
                   active={view === 'linkedin'}
                   onClick={() => setView('linkedin')}
                   className="text-[#0077b5] hover:text-[#0077b5]"
                />
+               <SidebarItem 
+                  icon={Sparkles} 
+                  label="Resupilot AI" 
+                  onClick={() => setShowResupilot(true)}
+                  className="text-purple-600 hover:text-purple-700"
+               />
+          </div>
+
+          {/* EDUCATION SUITE */}
+          <div className="flex flex-col gap-3 w-full items-center pb-4 border-b border-neutral-100">
+               <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Edu</div>
+               <SidebarItem 
+                  icon={GraduationCap} 
+                  label="Student Hub" 
+                  active={view === 'student-tools'}
+                  onClick={() => setView('student-tools')}
+                  className="text-pink-600 hover:text-pink-700"
+               />
+               <SidebarItem 
+                  icon={BookOpen} 
+                  label="Teacher Studio" 
+                  active={view === 'teacher-tools'}
+                  onClick={() => setView('teacher-tools')}
+                  className="text-orange-600 hover:text-orange-700"
+               />
+          </div>
+
+          {/* LABS */}
+          <div className="flex flex-col gap-3 w-full items-center">
+               <div className="text-[10px] font-bold text-neutral-400 uppercase tracking-wider">Labs</div>
                <SidebarItem 
                   icon={LayoutGrid} 
                   label="Agent Builder" 
@@ -171,19 +202,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   label="Beta Tools" 
                   active={view === 'beta-tools'}
                   onClick={() => setView('beta-tools')}
-                  className="text-orange-600 hover:text-orange-700"
-               />
-               <SidebarItem 
-                  icon={MessageSquare} 
-                  label="Messages" 
-                  onClick={() => setShowMessages(true)}
+                  className="text-cyan-600 hover:text-cyan-700"
                />
           </div>
 
           <div className="flex-1"></div>
 
           {/* Bottom Icons */}
-          <div className="flex flex-col gap-4 pb-2">
+          <div className="flex flex-col gap-4 pb-2 pt-4 border-t border-neutral-100 w-full items-center">
+              <SidebarItem 
+                  icon={MessageSquare} 
+                  label="Messages" 
+                  onClick={() => setShowMessages(true)}
+               />
               <SidebarItem 
                   icon={Settings} 
                   label="Settings" 
@@ -199,25 +230,25 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
       </aside>
 
       {/* 2. MAIN CONTENT WRAPPER */}
-      <div className="flex-1 h-full p-4 relative">
+      <div className="flex-1 h-full p-4 relative bg-neutral-50">
           
           {/* FLOATING CONTENT BOX */}
-          <div className="w-full h-full bg-neutral-50/50 border border-neutral-200 rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-sm">
+          <div className="w-full h-full bg-white border border-neutral-200 rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-sm">
               
               {/* Show Header only in Dashboard View */}
               {view === 'dashboard' && (
-                  <header className="px-8 py-6 flex items-center justify-between bg-white/50 backdrop-blur-sm sticky top-0 z-20 border-b border-neutral-100/50">
+                  <header className="px-8 py-6 flex items-center justify-between bg-white sticky top-0 z-20 border-b border-neutral-100">
                       <div>
-                          <h1 className="text-2xl font-bold text-neutral-900">My Resumes</h1>
-                          <p className="text-sm text-neutral-400 font-medium">Manage and edit your documents</p>
+                          <h1 className="text-2xl font-bold text-neutral-900">Kyndra Workspace</h1>
+                          <p className="text-sm text-neutral-400 font-medium">Your AI Command Center</p>
                       </div>
 
                       <div className="flex items-center gap-4">
                           {/* Search Bar */}
-                          <div className="hidden md:flex items-center bg-white px-4 py-2 rounded-full border border-neutral-200 focus-within:ring-2 focus-within:ring-neutral-900/10 transition-all shadow-sm">
+                          <div className="hidden md:flex items-center bg-neutral-50 px-4 py-2 rounded-full border border-neutral-200 focus-within:ring-2 focus-within:ring-neutral-900/10 transition-all shadow-sm">
                               <Search className="w-4 h-4 text-neutral-400 mr-2" />
                               <input 
-                                  placeholder="Search..." 
+                                  placeholder="Search files..." 
                                   className="bg-transparent outline-none text-sm w-40 placeholder-neutral-400"
                                   value={searchTerm}
                                   onChange={e => setSearchTerm(e.target.value)}
@@ -249,6 +280,16 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                     <JobSearch />
                 )}
 
+                {/* VIEW: STUDENT TOOLS */}
+                {view === 'student-tools' && (
+                    <StudentTools />
+                )}
+
+                {/* VIEW: TEACHER TOOLS */}
+                {view === 'teacher-tools' && (
+                    <TeacherTools />
+                )}
+
                 {/* VIEW: LINKEDIN AGENT */}
                 {view === 'linkedin' && (
                     <LinkedInAgent onSave={handleLinkedInSave} />
@@ -264,19 +305,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                     <div className="p-8">
                         {resumes.length === 0 ? (
                           <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-                            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 shadow-sm border border-neutral-100">
-                              <FileText className="w-8 h-8 text-neutral-300" />
+                            <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-6 shadow-sm border border-neutral-200">
+                              <FileText className="w-8 h-8 text-neutral-400" />
                             </div>
-                            <h3 className="text-xl font-bold mb-2 text-neutral-900">No resumes yet</h3>
+                            <h3 className="text-xl font-bold mb-2 text-neutral-900">Welcome to Kyndra</h3>
                             <p className="text-neutral-500 mb-8 max-w-sm mx-auto leading-relaxed">
-                              Start building your professional identity today. Use AI to craft the perfect resume in minutes.
+                              Start building your professional identity, planning your lessons, or organizing your studies.
                             </p>
                             <div className="flex justify-center gap-3">
                                 <Button onClick={openCreateModal} variant="primary" className="shadow-lg shadow-neutral-900/20">
                                   Create Resume
                                 </Button>
                                 <Button onClick={() => setShowResupilot(true)} variant="secondary" icon={<Sparkles className="w-4 h-4 text-purple-600" />}>
-                                    AI Builder
+                                    AI Assistant
                                 </Button>
                             </div>
                           </div>
@@ -285,12 +326,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                             {/* Create New Card */}
                             <div 
                               onClick={openCreateModal}
-                              className="group flex flex-col items-center justify-center h-[320px] bg-white border border-dashed border-neutral-300 rounded-[2rem] hover:border-neutral-900 hover:bg-white transition-all cursor-pointer hover:shadow-xl hover:-translate-y-1"
+                              className="group flex flex-col items-center justify-center h-[320px] bg-neutral-50 border border-dashed border-neutral-300 rounded-[2rem] hover:border-neutral-900 hover:bg-white transition-all cursor-pointer hover:shadow-xl hover:-translate-y-1"
                             >
-                              <div className="w-14 h-14 bg-neutral-50 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-neutral-900 group-hover:text-white transition-all duration-300">
+                              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-neutral-900 group-hover:text-white transition-all duration-300 shadow-sm">
                                 <Plus className="w-6 h-6 text-neutral-400 group-hover:text-white" />
                               </div>
-                              <span className="font-bold text-neutral-900">Create New</span>
+                              <span className="font-bold text-neutral-900">New Resume</span>
                               <span className="text-xs text-neutral-400 mt-1 font-medium">Start from scratch</span>
                             </div>
 
@@ -299,12 +340,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                               <div 
                                 key={resume.id}
                                 onClick={() => onEdit(resume)}
-                                className="group relative flex flex-col h-[320px] bg-white border border-neutral-200/60 rounded-[2rem] overflow-hidden hover:shadow-2xl hover:shadow-neutral-900/5 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                                className="group relative flex flex-col h-[320px] bg-white border border-neutral-200 rounded-[2rem] overflow-hidden hover:shadow-2xl hover:shadow-neutral-900/5 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                               >
                                 {/* Card Preview Header */}
                                 <div className="h-40 bg-neutral-100/50 p-6 relative overflow-hidden flex flex-col justify-center">
                                   
-                                  {/* Template Thumbnail Preview (Simplified for Card) */}
+                                  {/* Template Thumbnail Preview */}
                                   <div className="absolute inset-4 opacity-50 group-hover:opacity-80 transition-opacity duration-500 transform group-hover:scale-105 origin-top">
                                       <div className="w-full h-full border border-neutral-200 bg-white shadow-sm rounded-lg p-2">
                                           <div className="w-1/3 h-2 bg-neutral-800 rounded-full mb-2"></div>
