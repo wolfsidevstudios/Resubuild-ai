@@ -277,6 +277,21 @@ export const markNotificationRead = async (id: string) => {
     }
 };
 
+// --- Waitlist ---
+
+export const joinWaitlist = async (email: string, plan: string) => {
+    try {
+        await addDoc(collection(db, "waitlist"), {
+            email,
+            plan,
+            created_at: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error("Error joining waitlist:", error);
+        throw error;
+    }
+};
+
 export const signOut = async () => {
     await firebaseSignOut(auth);
 };

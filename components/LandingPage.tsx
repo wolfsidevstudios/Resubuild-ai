@@ -31,11 +31,14 @@ import {
   Globe2,
   Cloud,
   FlaskConical,
-  BrainCircuit
+  BrainCircuit,
+  Mail,
+  Loader2
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
 import { ResupilotDemo } from './ResupilotDemo';
+import { joinWaitlist } from '../services/firebase';
 
 interface LandingPageProps {
   onStart: () => void; // This now means "Enter App" (Dashboard)
@@ -180,6 +183,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signup');
   const [playgroundPrompt, setPlaygroundPrompt] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  
+  // Waitlist State
+  const [waitlistPlan, setWaitlistPlan] = useState<string | null>(null);
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
+  const [waitlistSuccess, setWaitlistSuccess] = useState(false);
 
   const handleAction = (view: 'signin' | 'signup') => {
       if (isAuthenticated) {
@@ -200,6 +209,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
       e.preventDefault();
       if (playgroundPrompt.trim() && onGuestTry) {
           onGuestTry(playgroundPrompt);
+      }
+  };
+
+  const openWaitlist = (plan: string) => {
+      setWaitlistPlan(plan);
+      setWaitlistEmail('');
+      setWaitlistSuccess(false);
+  };
+
+  const handleJoinWaitlist = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!waitlistEmail || !waitlistPlan) return;
+      
+      setIsSubmittingWaitlist(true);
+      try {
+          await joinWaitlist(waitlistEmail, waitlistPlan);
+          setWaitlistSuccess(true);
+          setTimeout(() => {
+              setWaitlistPlan(null); // Close modal after delay
+          }, 3000);
+      } catch (e) {
+          console.error(e);
+          alert("Something went wrong. Please try again.");
+      } finally {
+          setIsSubmittingWaitlist(false);
       }
   };
 
@@ -255,6 +289,61 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                         </div>
                         <Auth onSuccess={() => { closeAuth(); onStart(); }} defaultView={authView} />
                    </div>
+              </div>
+          </div>
+      )}
+
+      {/* Waitlist Modal */}
+      {waitlistPlan && (
+          <div className="fixed inset-0 z-[100] bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+              <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 relative animate-in zoom-in-95">
+                  <button 
+                    onClick={() => setWaitlistPlan(null)}
+                    className="absolute top-4 right-4 p-2 hover:bg-neutral-100 rounded-full text-neutral-400"
+                  >
+                      <X className="w-5 h-5" />
+                  </button>
+                  
+                  {waitlistSuccess ? (
+                      <div className="text-center py-8">
+                          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-in zoom-in">
+                              <CheckCircle2 className="w-8 h-8 text-green-600" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-neutral-900 mb-2">You're on the list!</h3>
+                          <p className="text-neutral-500">We'll notify you as soon as {waitlistPlan} becomes available.</p>
+                      </div>
+                  ) : (
+                      <div className="text-center">
+                          <div className="w-12 h-12 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                              <Mail className="w-6 h-6 text-neutral-900" />
+                          </div>
+                          <h3 className="text-2xl font-bold text-neutral-900 mb-2">Join the Waitlist</h3>
+                          <p className="text-neutral-500 mb-6">
+                              Get early access to <strong>{waitlistPlan}</strong> features.
+                          </p>
+                          
+                          <form onSubmit={handleJoinWaitlist} className="space-y-4">
+                              <div className="text-left">
+                                  <label className="text-xs font-bold text-neutral-500 uppercase ml-1 mb-1 block">Email Address</label>
+                                  <input 
+                                      type="email" 
+                                      required
+                                      className="w-full px-4 py-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-neutral-900"
+                                      placeholder="you@example.com"
+                                      value={waitlistEmail}
+                                      onChange={(e) => setWaitlistEmail(e.target.value)}
+                                  />
+                              </div>
+                              <Button 
+                                  type="submit" 
+                                  className="w-full py-3 text-base"
+                                  isLoading={isSubmittingWaitlist}
+                              >
+                                  Join Now
+                              </Button>
+                          </form>
+                      </div>
+                  )}
               </div>
           </div>
       )}
@@ -633,7 +722,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                                   </div>
                               ))}
                           </div>
-                          <button className="w-full py-2.5 rounded-full border border-blue-200 text-blue-600 font-bold text-sm cursor-not-allowed bg-white/50">
+                          <button 
+                            onClick={() => openWaitlist('Plus Plan')}
+                            className="w-full py-2.5 rounded-full border border-blue-200 text-blue-600 font-bold text-sm bg-white/50 hover:bg-white hover:shadow-sm transition-all"
+                          >
                               Join Waitlist
                           </button>
                       </div>
@@ -697,7 +789,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                                   </div>
                               ))}
                           </div>
-                          <button className="w-full py-3 rounded-full bg-white text-neutral-900 font-bold text-sm hover:bg-neutral-100 transition-colors relative z-10 cursor-not-allowed opacity-80 mt-auto shadow-lg">
+                          <button 
+                            onClick={() => openWaitlist('Kyndra Circle')}
+                            className="w-full py-3 rounded-full bg-white text-neutral-900 font-bold text-sm hover:bg-neutral-100 transition-colors relative z-10 mt-auto shadow-lg"
+                          >
                               Join Circle Waitlist
                           </button>
                       </div>
