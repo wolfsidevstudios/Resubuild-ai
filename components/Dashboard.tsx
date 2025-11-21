@@ -1,6 +1,7 @@
+
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare, Sparkles, PenTool, Layout, Grid, AlignLeft, Palette } from 'lucide-react';
-import { ResumeData } from '../types';
+import { Plus, FileText, Clock, Trash2, Edit2, ArrowRight, Settings, Key, X, LogOut, Bell, MessageSquare, Sparkles, PenTool, Layout, Grid, AlignLeft, Palette, Zap, BrainCircuit } from 'lucide-react';
+import { ResumeData, UserTier } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
 import { supabase } from '../services/supabase';
 import { Button } from './Button';
@@ -35,6 +36,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   const [createStep, setCreateStep] = useState<'method' | 'templates'>('method');
   
   const [apiKey, setApiKey] = useState('');
+  // Simulated Tier State
+  const [userTier, setUserTier] = useState<UserTier>(localStorage.getItem('resubuild_tier') as UserTier || 'flash');
 
   useEffect(() => {
     // Load resumes for this specific user
@@ -56,7 +59,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
     } else {
       removeAPIKey();
     }
+    localStorage.setItem('resubuild_tier', userTier);
     setShowSettings(false);
+    // Force reload to apply tier changes to builder without complex context
+    window.location.reload();
   };
 
   const handleSignOut = async () => {
@@ -92,6 +98,9 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                     className="w-10 h-10 rounded-xl object-cover"
                 />
                 <span className="font-bold text-xl tracking-tight">Resubuild</span>
+                {userTier === 'pro' && (
+                    <span className="px-2 py-0.5 bg-neutral-900 text-white text-[10px] font-bold uppercase tracking-wider rounded">PRO</span>
+                )}
               </div>
               
               {/* Resupilot Button */}
@@ -317,7 +326,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                         <X className="w-5 h-5 text-neutral-500" />
                     </button>
                 </div>
-                <div className="p-6 space-y-4">
+                <div className="p-6 space-y-6">
                     <div className="space-y-2">
                         <label className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
                             <Key className="w-4 h-4" /> Gemini API Key
@@ -331,7 +340,30 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                         />
                         <p className="text-xs text-neutral-500">
                             Your API key is stored locally in your browser. 
-                            Leave empty to remove the key.
+                        </p>
+                    </div>
+                    
+                    {/* Tier Simulation for Demo */}
+                    <div className="space-y-3 pt-4 border-t border-neutral-100">
+                        <label className="text-sm font-semibold text-neutral-900 flex items-center gap-2">
+                            <Zap className="w-4 h-4" /> Plan Tier (Simulated)
+                        </label>
+                        <div className="flex gap-2">
+                             <button 
+                                onClick={() => setUserTier('flash')}
+                                className={`flex-1 py-2 rounded-xl border-2 text-sm font-bold transition-colors ${userTier === 'flash' ? 'border-neutral-900 bg-neutral-50 text-neutral-900' : 'border-neutral-100 text-neutral-500'}`}
+                             >
+                                 Flash (Free)
+                             </button>
+                             <button 
+                                onClick={() => setUserTier('pro')}
+                                className={`flex-1 py-2 rounded-xl border-2 text-sm font-bold transition-colors ${userTier === 'pro' ? 'border-neutral-900 bg-neutral-900 text-white' : 'border-neutral-100 text-neutral-500'}`}
+                             >
+                                 Pro (Upgrade)
+                             </button>
+                        </div>
+                        <p className="text-xs text-neutral-500">
+                             Switching to Pro enables <b>Gemini 3.0</b> reasoning tools.
                         </p>
                     </div>
                 </div>

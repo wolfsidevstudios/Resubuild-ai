@@ -1,15 +1,18 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { ResumeData, Experience, Education, Project, CustomSectionItem, ResumeAuditResult } from '../types';
+import { ResumeData, Experience, Education, Project, CustomSectionItem, ResumeAuditResult, UserTier, CareerPathSuggestion, LinkedInContent } from '../types';
 import { 
     generateResumeSummary, 
     improveJobDescription, 
     suggestSkills, 
     auditResume, 
+    performDeepAudit,
     generateCoverLetter, 
     fixGrammarAndSpelling,
     generateInterviewQuestions,
-    analyzeJobMatch
+    analyzeJobMatch,
+    suggestCareerPaths,
+    generateLinkedInContent
 } from '../services/geminiService';
 import { saveResume, createEmptyResume } from '../services/storageService';
 import { publishResume } from '../services/supabase';
@@ -46,7 +49,11 @@ import {
   Mic,
   Target,
   ListChecks,
-  Terminal
+  Terminal,
+  Lock,
+  Linkedin,
+  Compass,
+  BrainCircuit
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -79,6 +86,9 @@ const TEMPLATES = [
 
 export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoHome, userId }) => {
   const [data, setData] = useState<ResumeData>(initialData || createEmptyResume());
+  // SIMULATED USER TIER - In a real app this comes from Auth context
+  const [userTier, setUserTier] = useState<UserTier>(localStorage.getItem('resubuild_tier') as UserTier || 'flash');
+  
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
   const [improvingExpId, setImprovingExpId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<string>('design');
@@ -112,6 +122,15 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [jobMatchDesc, setJobMatchDesc] = useState('');
   const [jobMatchResult, setJobMatchResult] = useState<{score: number, missingKeywords: string[], advice: string} | null>(null);
   const [isAnalyzingJob, setIsAnalyzingJob] = useState(false);
+  
+  // PRO TOOLS STATE
+  const [showCareerPath, setShowCareerPath] = useState(false);
+  const [careerPaths, setCareerPaths] = useState<CareerPathSuggestion[]>([]);
+  const [isAnalzyingCareer, setIsAnalyzingCareer] = useState(false);
+
+  const [showLinkedIn, setShowLinkedIn] = useState(false);
+  const [linkedInContent, setLinkedInContent] = useState<LinkedInContent | null>(null);
+  const [isGeneratingLinkedIn, setIsGeneratingLinkedIn] = useState(false);
   
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -245,7 +264,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
       setIsAuditing(true);
       setShowAudit(true);
       try {
-          const result = await auditResume(data);
+          // Use PRO deep audit if tier is pro
+          const result = userTier === 'pro' ? await performDeepAudit(data) : await auditResume(data);
           setAuditResult(result);
       } catch (e) {
           console.error(e);
@@ -290,6 +310,32 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
       } finally {
           setIsAnalyzingJob(false);
       }
+  };
+  
+  const handleCareerPath = async () => {
+      if (userTier !== 'pro') return;
+      setIsAnalyzingCareer(true);
+      try {
+          const paths = await suggestCareerPaths(data);
+          setCareerPaths(paths);
+      } catch (e) {
+          console.error(e);
+      } finally {
+          setIsAnalyzingCareer(false);
+      }
+  };
+
+  const handleLinkedInGen = async () => {
+       if (userTier !== 'pro') return;
+       setIsGeneratingLinkedIn(true);
+       try {
+           const content = await generateLinkedInContent(data);
+           setLinkedInContent(content);
+       } catch (e) {
+           console.error(e);
+       } finally {
+           setIsGeneratingLinkedIn(false);
+       }
   };
 
   // --- Actions ---
@@ -338,6 +384,13 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
     { id: 'skills', label: 'Skills', icon: Sparkles },
   ];
 
+  // Helper for lock state
+  const ProLock = () => (
+      <div className="absolute -top-1 -right-1 bg-neutral-900 text-white rounded-full p-0.5 border border-white shadow-sm z-10">
+          <Lock className="w-2.5 h-2.5" />
+      </div>
+  );
+
   return (
     <div className="flex flex-col md:flex-row h-screen bg-neutral-50 overflow-hidden animate-in fade-in duration-500">
       
@@ -350,19 +403,21 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                <button onClick={onGoHome} className="flex items-center text-sm text-neutral-500 hover:text-neutral-900 transition-colors">
                    <ChevronLeft className="w-4 h-4 mr-1" /> Back to Dashboard
                </button>
-               <div className="flex items-center gap-2">
+               
+               {/* FLASH TOOLBAR */}
+               <div className="flex items-center gap-1 overflow-x-auto hide-scrollbar">
                     <Button 
                         variant="ghost" 
-                        className="text-xs h-7 px-2" 
+                        className="text-xs h-7 px-2 whitespace-nowrap" 
                         icon={<FileCheck className="w-3 h-3" />}
                         onClick={handleAudit}
-                        title="AI Audit"
+                        title={userTier === 'pro' ? "Deep Audit (Powered by Gemini 3.0)" : "Basic Audit"}
                     >
-                        Audit
+                        {userTier === 'pro' ? <span className="text-purple-600 font-bold flex items-center gap-1"><BrainCircuit className="w-3 h-3"/> Deep Audit</span> : "Audit"}
                     </Button>
                     <Button 
                         variant="ghost" 
-                        className="text-xs h-7 px-2" 
+                        className="text-xs h-7 px-2 whitespace-nowrap" 
                         icon={<PenTool className="w-3 h-3" />}
                         onClick={() => setShowCoverLetter(true)}
                         title="Cover Letter"
@@ -371,7 +426,7 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                     </Button>
                      <Button 
                         variant="ghost" 
-                        className="text-xs h-7 px-2" 
+                        className="text-xs h-7 px-2 whitespace-nowrap" 
                         icon={<Mic className="w-3 h-3" />}
                         onClick={() => setShowInterviewPrep(true)}
                         title="Interview Prep"
@@ -380,17 +435,41 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                     </Button>
                      <Button 
                         variant="ghost" 
-                        className="text-xs h-7 px-2" 
+                        className="text-xs h-7 px-2 whitespace-nowrap" 
                         icon={<Target className="w-3 h-3" />}
                         onClick={() => setShowJobMatch(true)}
                         title="Tailor to Job"
                     >
                         Tailor
                     </Button>
+                    
+                    <div className="w-px h-4 bg-neutral-200 mx-1"></div>
 
-                    <span className="text-xs text-neutral-400 flex items-center gap-1 border-l border-neutral-200 pl-2 ml-2">
-                        <Save className="w-3 h-3" /> {lastSaved.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </span>
+                    {/* PRO TOOLBAR */}
+                    <div className="relative inline-block">
+                         <Button 
+                            variant="ghost" 
+                            className={`text-xs h-7 px-2 whitespace-nowrap ${userTier !== 'pro' ? 'opacity-60 hover:bg-transparent cursor-not-allowed' : ''}`}
+                            icon={<Compass className="w-3 h-3 text-purple-600" />}
+                            onClick={() => userTier === 'pro' ? setShowCareerPath(true) : alert("Upgrade to Pro to unlock Career Path analysis.")}
+                        >
+                            Career Path
+                        </Button>
+                        {userTier !== 'pro' && <ProLock />}
+                    </div>
+
+                     <div className="relative inline-block">
+                         <Button 
+                            variant="ghost" 
+                            className={`text-xs h-7 px-2 whitespace-nowrap ${userTier !== 'pro' ? 'opacity-60 hover:bg-transparent cursor-not-allowed' : ''}`}
+                            icon={<Linkedin className="w-3 h-3 text-blue-600" />}
+                            onClick={() => userTier === 'pro' ? setShowLinkedIn(true) : alert("Upgrade to Pro to unlock LinkedIn Generator.")}
+                        >
+                            LinkedIn
+                        </Button>
+                        {userTier !== 'pro' && <ProLock />}
+                    </div>
+
                </div>
            </div>
            <div className="flex items-center justify-between gap-4">
@@ -735,7 +814,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
               <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95">
                   <div className="p-6 border-b flex justify-between items-center">
                       <h3 className="text-xl font-bold flex items-center gap-2">
-                          <Zap className="w-5 h-5 text-yellow-500" /> AI Resume Audit
+                          {userTier === 'pro' ? <BrainCircuit className="w-5 h-5 text-purple-600" /> : <Zap className="w-5 h-5 text-yellow-500" />}
+                          {userTier === 'pro' ? 'Deep Resume Analysis (Gemini 3.0)' : 'AI Resume Audit'}
                       </h3>
                       <button onClick={() => setShowAudit(false)} className="p-2 hover:bg-neutral-100 rounded-full"><X className="w-5 h-5" /></button>
                   </div>
@@ -744,7 +824,9 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                       {isAuditing ? (
                            <div className="flex flex-col items-center justify-center py-12">
                                <Sparkles className="w-12 h-12 text-neutral-900 animate-pulse mb-4" />
-                               <p className="text-neutral-500">Analyzing your resume against 50+ checkpoints...</p>
+                               <p className="text-neutral-500">
+                                   {userTier === 'pro' ? "Thinking deeply about your career history..." : "Analyzing your resume against 50+ checkpoints..."}
+                               </p>
                            </div>
                       ) : auditResult ? (
                           <div className="space-y-8">
@@ -1006,6 +1088,146 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
                               </div>
                           </div>
                       )}
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* PRO FEATURE: Career Path Modal */}
+      {showCareerPath && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95">
+                   <div className="p-6 border-b flex justify-between items-center bg-purple-50">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-purple-900">
+                          <Compass className="w-6 h-6 text-purple-600" /> Career Path (Pro)
+                      </h3>
+                      <button onClick={() => setShowCareerPath(false)} className="p-2 hover:bg-white rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+                  
+                  <div className="flex-1 overflow-y-auto p-8">
+                      {isAnalzyingCareer ? (
+                           <div className="flex flex-col items-center justify-center py-12">
+                               <Sparkles className="w-12 h-12 text-purple-600 animate-pulse mb-4" />
+                               <p className="text-neutral-500">Mapping your future career trajectory...</p>
+                           </div>
+                      ) : careerPaths.length > 0 ? (
+                          <div className="space-y-8">
+                               <p className="text-neutral-600">Based on your current experience, here are 3 potential career moves you could make.</p>
+                               <div className="grid gap-6">
+                                   {careerPaths.map((path, i) => (
+                                       <div key={i} className="border border-neutral-200 rounded-2xl p-6 hover:shadow-lg transition-shadow bg-white">
+                                           <div className="flex justify-between items-start mb-4">
+                                               <div>
+                                                   <h4 className="text-xl font-bold text-neutral-900">{path.role}</h4>
+                                                   <div className="text-sm text-green-600 font-medium mt-1">{path.matchScore}% Skill Match</div>
+                                               </div>
+                                               <div className="w-10 h-10 bg-neutral-100 rounded-full flex items-center justify-center font-bold text-neutral-500">
+                                                   {i+1}
+                                               </div>
+                                           </div>
+                                           <p className="text-neutral-600 text-sm mb-4 leading-relaxed">{path.reasoning}</p>
+                                           
+                                           {path.missingSkills.length > 0 && (
+                                               <div>
+                                                   <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Skills to Acquire</div>
+                                                   <div className="flex flex-wrap gap-2">
+                                                       {path.missingSkills.map(skill => (
+                                                           <span key={skill} className="px-2 py-1 bg-purple-50 text-purple-700 text-xs font-medium rounded-md border border-purple-100">
+                                                               + {skill}
+                                                           </span>
+                                                       ))}
+                                                   </div>
+                                               </div>
+                                           )}
+                                       </div>
+                                   ))}
+                               </div>
+                               <div className="flex justify-center mt-4">
+                                   <Button variant="secondary" onClick={handleCareerPath}>Regenerate Paths</Button>
+                               </div>
+                          </div>
+                      ) : (
+                          <div className="text-center py-12">
+                              <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                  <Compass className="w-8 h-8 text-purple-600" />
+                              </div>
+                              <h3 className="text-xl font-bold mb-2">Where to next?</h3>
+                              <p className="text-neutral-500 mb-8 max-w-md mx-auto">
+                                  Our Pro AI analyzes your history to suggest logical next steps and identifies skill gaps.
+                              </p>
+                              <Button onClick={handleCareerPath} className="bg-purple-600 hover:bg-purple-700 text-white">Analyze Career Path</Button>
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* PRO FEATURE: LinkedIn Generator */}
+      {showLinkedIn && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-3xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95">
+                   <div className="p-6 border-b flex justify-between items-center bg-blue-50">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-blue-900">
+                          <Linkedin className="w-6 h-6 text-blue-600" /> LinkedIn Optimizer (Pro)
+                      </h3>
+                      <button onClick={() => setShowLinkedIn(false)} className="p-2 hover:bg-white rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+
+                  <div className="flex-1 overflow-y-auto p-8">
+                       {isGeneratingLinkedIn ? (
+                           <div className="flex flex-col items-center justify-center py-12">
+                               <Sparkles className="w-12 h-12 text-blue-600 animate-pulse mb-4" />
+                               <p className="text-neutral-500">Crafting your personal brand...</p>
+                           </div>
+                       ) : linkedInContent ? (
+                           <div className="space-y-8">
+                               {/* Headline */}
+                               <div>
+                                   <div className="flex justify-between items-end mb-2">
+                                       <h4 className="font-bold text-neutral-900">Optimized Headline</h4>
+                                       <button onClick={() => navigator.clipboard.writeText(linkedInContent.headline)} className="text-xs text-blue-600 hover:underline">Copy</button>
+                                   </div>
+                                   <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 text-sm font-medium">
+                                       {linkedInContent.headline}
+                                   </div>
+                               </div>
+
+                               {/* About */}
+                               <div>
+                                   <div className="flex justify-between items-end mb-2">
+                                       <h4 className="font-bold text-neutral-900">About Section</h4>
+                                       <button onClick={() => navigator.clipboard.writeText(linkedInContent.about)} className="text-xs text-blue-600 hover:underline">Copy</button>
+                                   </div>
+                                   <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200 text-sm whitespace-pre-wrap">
+                                       {linkedInContent.about}
+                                   </div>
+                               </div>
+
+                               {/* Posts */}
+                               <div>
+                                   <h4 className="font-bold text-neutral-900 mb-2">Draft Post Ideas</h4>
+                                   <div className="grid gap-4">
+                                       {linkedInContent.posts.map((post, i) => (
+                                           <div key={i} className="p-4 bg-white border border-neutral-200 rounded-xl shadow-sm text-sm whitespace-pre-wrap">
+                                               {post}
+                                           </div>
+                                       ))}
+                                   </div>
+                               </div>
+                           </div>
+                       ) : (
+                            <div className="text-center py-12">
+                              <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                  <Linkedin className="w-8 h-8 text-blue-600" />
+                              </div>
+                              <h3 className="text-xl font-bold mb-2">Go Viral on LinkedIn</h3>
+                              <p className="text-neutral-500 mb-8 max-w-md mx-auto">
+                                  Convert your resume into a compelling headline, bio, and engagement posts instantly.
+                              </p>
+                              <Button onClick={handleLinkedInGen} className="bg-blue-600 hover:bg-blue-700 text-white">Generate Content</Button>
+                          </div>
+                       )}
                   </div>
               </div>
           </div>

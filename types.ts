@@ -71,12 +71,14 @@ export enum AIActionType {
 // New Types for Social/Brand Features
 
 export type UserRole = 'candidate' | 'employer';
+export type UserTier = 'flash' | 'pro';
 
 export interface UserProfile {
   id: string;
   full_name: string;
   avatar_url?: string;
   role: UserRole;
+  tier?: UserTier;
 }
 
 export interface Message {
@@ -105,4 +107,18 @@ export interface ResumeAuditResult {
   summary: string;
   strengths: string[];
   improvements: string[];
+}
+
+// Pro Feature Types
+export interface CareerPathSuggestion {
+    role: string;
+    matchScore: number;
+    missingSkills: string[];
+    reasoning: string;
+}
+
+export interface LinkedInContent {
+    headline: string;
+    about: string;
+    posts: string[];
 }

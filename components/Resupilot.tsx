@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Sparkles, ArrowUp, X, Save, Send, Bot, User, Loader2 } from 'lucide-react';
+import { Sparkles, ArrowUp, X, Save, Send, Bot, User, Loader2, Zap, BrainCircuit } from 'lucide-react';
 import { generateResumeFromPrompt, updateResumeWithAI } from '../services/geminiService';
 import { saveResume } from '../services/storageService';
 import { ResumeData } from '../types';
@@ -21,6 +21,10 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave, is
     const [prompt, setPrompt] = useState(initialPrompt);
     const [isGenerating, setIsGenerating] = useState(false);
     const [currentResume, setCurrentResume] = useState<ResumeData | null>(null);
+    
+    // PRO MODE STATE
+    const [modelMode, setModelMode] = useState<'flash' | 'pro'>('flash');
+    
     const [chatHistory, setChatHistory] = useState<{role: 'ai' | 'user', content: string}[]>([
         { role: 'ai', content: "I've created a first draft based on your request. What would you like to tweak? You can say things like 'Make the summary more punchy' or 'Add Figma to my skills'." }
     ]);
@@ -39,7 +43,8 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave, is
     const handleInitialGenerate = async (promptText: string) => {
         setIsGenerating(true);
         try {
-            const data = await generateResumeFromPrompt(promptText);
+            const modelName = modelMode === 'pro' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
+            const data = await generateResumeFromPrompt(promptText, modelName);
             setCurrentResume(data);
             setView('workspace');
         } catch (error) {
@@ -65,8 +70,10 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave, is
         setChatInput('');
         setIsUpdating(true);
         
+        const modelName = modelMode === 'pro' ? 'gemini-3-pro-preview' : 'gemini-2.5-flash';
+
         try {
-             const updatedData = await updateResumeWithAI(currentResume, userMsg);
+             const updatedData = await updateResumeWithAI(currentResume, userMsg, modelName);
              setCurrentResume(updatedData);
              setChatHistory(prev => [...prev, { role: 'ai', content: "I've updated your resume based on your request. How does it look now?" }]);
              
@@ -111,15 +118,30 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave, is
                 </button>
 
                 <div className="relative z-10 w-full max-w-3xl px-6 flex flex-col items-center text-center">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-neutral-900 text-white text-sm font-bold mb-8 shadow-lg shadow-blue-200/50">
-                        <Sparkles className="w-4 h-4" /> Resupilot AI
+                    
+                    <div className="flex items-center gap-2 mb-8 bg-neutral-100 p-1 rounded-full">
+                        <button 
+                            onClick={() => setModelMode('flash')}
+                            className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${modelMode === 'flash' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500'}`}
+                        >
+                            <Zap className="w-4 h-4 text-yellow-500" /> Resupilot Flash
+                        </button>
+                        <button 
+                             onClick={() => setModelMode('pro')}
+                             className={`px-4 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${modelMode === 'pro' ? 'bg-neutral-900 shadow-sm text-white' : 'text-neutral-500'}`}
+                        >
+                            <BrainCircuit className="w-4 h-4 text-purple-400" /> Resupilot Pro
+                        </button>
                     </div>
 
                     <h2 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight text-neutral-900">
-                        What do you want to create?
+                        {modelMode === 'pro' ? 'Deep Reasoning Resume Creation' : 'Fast Resume Generation'}
                     </h2>
                     <p className="text-xl text-neutral-500 mb-12 max-w-2xl">
-                        Describe your dream role, your experience, or paste your LinkedIn about section. We'll vibe create the rest.
+                        {modelMode === 'pro' 
+                           ? "Powered by Gemini 3.0. Describes your role with executive precision and deeper context inference."
+                           : "Powered by Gemini 2.5. Describe your role, your experience, or paste your LinkedIn about section."
+                        }
                     </p>
 
                     <form onSubmit={handleInitialSubmit} className="w-full relative group">
@@ -165,8 +187,8 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave, is
             {/* Header */}
             <div className="h-16 bg-white border-b border-neutral-200 flex items-center justify-between px-6 shadow-sm z-20">
                 <div className="flex items-center gap-2">
-                    <Sparkles className="w-5 h-5 text-blue-600" />
-                    <span className="font-bold text-lg">Resupilot Workspace</span>
+                    {modelMode === 'pro' ? <BrainCircuit className="w-5 h-5 text-purple-600" /> : <Sparkles className="w-5 h-5 text-blue-600" />}
+                    <span className="font-bold text-lg">Resupilot {modelMode === 'pro' ? 'Pro' : 'Flash'}</span>
                     {isGuest && <span className="text-xs px-2 py-0.5 bg-neutral-100 rounded-full text-neutral-500">Guest Mode</span>}
                 </div>
                 <div className="flex items-center gap-3">
@@ -197,7 +219,7 @@ export const Resupilot: React.FC<ResupilotProps> = ({ userId, onExit, onSave, is
                                     <Bot className="w-4 h-4" />
                                 </div>
                                 <div className="bg-white border border-neutral-200 px-4 py-3 rounded-2xl rounded-tl-none shadow-sm flex items-center gap-2 text-sm text-neutral-500">
-                                    <Loader2 className="w-4 h-4 animate-spin" /> Updating resume...
+                                    <Loader2 className="w-4 h-4 animate-spin" /> {modelMode === 'pro' ? 'Reasoning...' : 'Updating...'}
                                 </div>
                             </div>
                         )}

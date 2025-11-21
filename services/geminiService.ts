@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ResumeData, Experience, ResumeAuditResult } from "../types";
+import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent } from "../types";
 import { getStoredAPIKey } from "./storageService";
 import { PublishedResume } from "./supabase";
 
@@ -15,6 +15,8 @@ const getAI = () => {
   
   return new GoogleGenAI({ apiKey });
 };
+
+// --- FLASH TIER (Fast, gemini-2.5-flash) ---
 
 export const generateResumeSummary = async (data: ResumeData): Promise<string> => {
   const prompt = `
@@ -86,10 +88,8 @@ export const suggestSkills = async (jobTitle: string, currentDescription: string
   }
 };
 
-// --- NEW FEATURES ---
-
 export const auditResume = async (data: ResumeData): Promise<ResumeAuditResult> => {
-    // Minify data to save tokens
+    // Basic Audit (Flash Tier)
     const context = JSON.stringify({
         summary: data.personalInfo.summary,
         experience: data.experience.map(e => e.description),
@@ -119,7 +119,6 @@ export const auditResume = async (data: ResumeData): Promise<ResumeAuditResult> 
         return JSON.parse(text);
     } catch (error) {
         console.error("Audit failed:", error);
-        // Fallback
         return {
             score: 75,
             summary: "Resume looks decent but needs more quantification.",
@@ -158,6 +157,120 @@ export const generateCoverLetter = async (data: ResumeData, jobDescription: stri
         throw error;
     }
 };
+
+// --- PRO TIER (Reasoning, gemini-3-pro-preview) ---
+
+export const performDeepAudit = async (data: ResumeData): Promise<ResumeAuditResult> => {
+    const context = JSON.stringify(data);
+
+    // Uses Gemini 3 Pro with Thinking for deep analysis
+    const prompt = `
+        Analyze this resume deeply. Identify gaps in career history, vague impact statements, and overused buzzwords.
+        Critique it like a Fortune 500 executive recruiter.
+        
+        Return JSON:
+        {
+            "score": number (0-100, be strict),
+            "summary": "Detailed paragraph critique",
+            "strengths": ["Detailed strength 1", "Detailed strength 2", "Detailed strength 3"],
+            "improvements": ["Specific actionable fix 1", "Specific actionable fix 2", "Specific actionable fix 3"]
+        }
+        
+        Resume: ${context}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { 
+                responseMimeType: 'application/json',
+                thinkingConfig: { thinkingBudget: 2048 } // Enable thinking for deep analysis
+            }
+        });
+        const text = response.text?.trim() || "{}";
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Deep audit failed:", error);
+        throw error;
+    }
+};
+
+export const suggestCareerPaths = async (data: ResumeData): Promise<CareerPathSuggestion[]> => {
+    const context = JSON.stringify({
+        title: data.personalInfo.jobTitle,
+        skills: data.skills,
+        experience: data.experience.map(e => ({ role: e.position, desc: e.description }))
+    });
+
+    const prompt = `
+        Based on this user's experience and skills, suggest 3 potential career paths they could transition into or advance towards.
+        Analyze their skill gaps for each role.
+        
+        Return JSON Array:
+        [
+            {
+                "role": "Next Level Role Title",
+                "matchScore": 85,
+                "missingSkills": ["Skill A", "Skill B"],
+                "reasoning": "Why this is a good fit..."
+            }
+        ]
+        
+        Data: ${context}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { 
+                responseMimeType: 'application/json'
+            }
+        });
+        const text = response.text?.trim() || "[]";
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("Career path failed:", error);
+        return [];
+    }
+};
+
+export const generateLinkedInContent = async (data: ResumeData): Promise<LinkedInContent> => {
+    const context = JSON.stringify(data);
+    const prompt = `
+        Transform this resume into a high-impact LinkedIn profile.
+        
+        Return JSON:
+        {
+            "headline": "Catchy, keyword-rich headline (max 220 chars)",
+            "about": "Engaging first-person bio (max 2000 chars) using storytelling",
+            "posts": ["Draft text for a LinkedIn post announcing a job search or sharing expertise"]
+        }
+        
+        Resume: ${context}
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-pro-preview',
+            contents: prompt,
+            config: { 
+                responseMimeType: 'application/json'
+            }
+        });
+        const text = response.text?.trim() || "{}";
+        return JSON.parse(text);
+    } catch (error) {
+        console.error("LinkedIn gen failed:", error);
+        throw error;
+    }
+};
+
+// --- TOOLS & HELPERS ---
 
 export const generateInterviewQuestions = async (data: ResumeData): Promise<string[]> => {
     const context = JSON.stringify({
@@ -245,8 +358,6 @@ export const analyzeJobMatch = async (data: ResumeData, jobDescription: string):
     }
 };
 
-// --- AI Tools Toolbar ---
-
 export const fixGrammarAndSpelling = async (data: ResumeData): Promise<ResumeData> => {
     const prompt = `
         Act as a professional editor. Review the following resume JSON data.
@@ -274,14 +385,11 @@ export const fixGrammarAndSpelling = async (data: ResumeData): Promise<ResumeDat
     }
 }
 
-// --- Brand / Employer Matching ---
-
 export const findBestCandidates = async (
     employerQuery: string, 
     candidates: PublishedResume[]
 ): Promise<{ candidateId: string; reason: string; score: number }[]> => {
     
-    // We minimize the candidate data payload to save tokens
     const candidateSummaries = candidates.map(c => ({
         id: c.user_id,
         name: c.full_name,
@@ -323,14 +431,20 @@ export const findBestCandidates = async (
 
 // --- Resupilot (Vibe Create & Edit) ---
 
-export const generateResumeFromPrompt = async (userPrompt: string): Promise<ResumeData> => {
+export const generateResumeFromPrompt = async (userPrompt: string, model: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'): Promise<ResumeData> => {
+    // For Pro model, we give it more creative freedom instructions
+    const creativeInstruction = model === 'gemini-3-pro-preview' 
+        ? "Use sophisticated professional language, quantifiable metrics, and optimize for executive presence." 
+        : "";
+
     const prompt = `
         You are Resupilot, an expert AI resume builder. 
         Create a complete, high-quality JSON resume based on the following user description: "${userPrompt}".
+        ${creativeInstruction}
         
         Rules:
-        1. Infer missing details realistically (e.g. if they say "Senior React Dev", infer logical skills like TypeScript, Redux, Node.js).
-        2. Create at least 2 realistic experience entries with rich descriptions.
+        1. Infer missing details realistically.
+        2. Create at least 2 realistic experience entries.
         3. Create education entries.
         4. Generate a strong professional summary.
         5. Return ONLY valid JSON matching the ResumeData structure.
@@ -349,17 +463,17 @@ export const generateResumeFromPrompt = async (userPrompt: string): Promise<Resu
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model,
             contents: prompt,
             config: {
-                responseMimeType: 'application/json'
+                responseMimeType: 'application/json',
+                thinkingConfig: model === 'gemini-3-pro-preview' ? { thinkingBudget: 2048 } : undefined
             }
         });
         
         const text = response.text?.trim() || "{}";
         const partialData = JSON.parse(text);
         
-        // Hydrate with IDs and defaults to ensure type safety
         return {
             id: crypto.randomUUID(),
             name: partialData.personalInfo?.fullName ? `${partialData.personalInfo.fullName}'s Resume` : 'AI Generated Resume',
@@ -388,7 +502,7 @@ export const generateResumeFromPrompt = async (userPrompt: string): Promise<Resu
     }
 };
 
-export const updateResumeWithAI = async (currentData: ResumeData, instruction: string): Promise<ResumeData> => {
+export const updateResumeWithAI = async (currentData: ResumeData, instruction: string, model: 'gemini-2.5-flash' | 'gemini-3-pro-preview' = 'gemini-2.5-flash'): Promise<ResumeData> => {
     const prompt = `
         You are Resupilot, an expert AI resume editor.
         Current Resume JSON: ${JSON.stringify(currentData)}
@@ -407,17 +521,18 @@ export const updateResumeWithAI = async (currentData: ResumeData, instruction: s
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: model,
             contents: prompt,
             config: {
-                responseMimeType: 'application/json'
+                responseMimeType: 'application/json',
+                thinkingConfig: model === 'gemini-3-pro-preview' ? { thinkingBudget: 1024 } : undefined
             }
         });
 
         const text = response.text?.trim() || "{}";
         const updatedData = JSON.parse(text);
         
-        // Ensure IDs exist if AI added new items without them
+        // Hydrate IDs
         if (updatedData.experience) {
             updatedData.experience = updatedData.experience.map((e: any) => ({ ...e, id: e.id || crypto.randomUUID() }));
         }
