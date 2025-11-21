@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent, PublishedResume } from "../types";
+import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent, PublishedResume, CustomAgent } from "../types";
 import { getStoredAPIKey, getPreferredModel } from "./storageService";
 
 // Helper to get the AI instance dynamically
@@ -822,6 +822,51 @@ export const updateResumeWithAI = async (currentData: ResumeData, instruction: s
 
     } catch (error) {
         console.error("Resupilot update failed:", error);
+        throw error;
+    }
+};
+
+// --- CUSTOM AGENT EXECUTION ---
+
+export const runCustomAgent = async (agent: CustomAgent, userInput: string, resumeData?: ResumeData): Promise<string> => {
+    // 1. Build context from source nodes
+    let context = "";
+    const sourceNode = agent.nodes.find(n => n.type === 'source');
+    if (sourceNode) {
+        if (sourceNode.config.sourceType === 'resume' && resumeData) {
+            context += `\nUser Resume Context:\n${JSON.stringify(resumeData)}\n`;
+        }
+    }
+
+    // 2. Get Persona
+    const personaNode = agent.nodes.find(n => n.type === 'persona');
+    const personaInstruction = personaNode ? `You are acting as: ${personaNode.config.personaRole}.` : "";
+
+    // 3. Get Task Instructions
+    const taskNode = agent.nodes.find(n => n.type === 'task');
+    const taskInstruction = taskNode?.config.prompt || "";
+
+    const finalPrompt = `
+        ${personaInstruction}
+        
+        Context:
+        ${context}
+        
+        Task:
+        ${taskInstruction}
+        
+        User Input: "${userInput}"
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('complex'),
+            contents: finalPrompt,
+        });
+        return response.text?.trim() || "Agent could not generate a response.";
+    } catch (error) {
+        console.error("Custom Agent failed:", error);
         throw error;
     }
 };

@@ -24,6 +24,7 @@ import { ResumePreview } from './ResumePreview';
 import { Input, TextArea } from './InputField';
 import { Button } from './Button';
 import { ExperienceEditor, EducationEditor, ProjectEditor, CustomSectionEditor } from './SectionEditor';
+import { CommandPalette } from './CommandPalette';
 import { 
   Sparkles, 
   Download, 
@@ -64,7 +65,8 @@ import {
   Calculator,
   Languages,
   Megaphone,
-  Loader2
+  Loader2,
+  Command
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -128,6 +130,7 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [showPublishSuccess, setShowPublishSuccess] = useState(false);
   
   // Feature Modals
+  const [showCommandPalette, setShowCommandPalette] = useState(false);
   const [showAudit, setShowAudit] = useState(false);
   const [auditResult, setAuditResult] = useState<ResumeAuditResult | null>(null);
   const [isAuditing, setIsAuditing] = useState(false);
@@ -186,6 +189,18 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
     return () => clearTimeout(timeout);
   }, [data, userId]);
 
+  // Command Palette Shortcut
+  useEffect(() => {
+      const down = (e: KeyboardEvent) => {
+          if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+              e.preventDefault();
+              setShowCommandPalette((open) => !open);
+          }
+      }
+      document.addEventListener('keydown', down);
+      return () => document.removeEventListener('keydown', down);
+  }, []);
+
   // --- State Updates ---
   const updatePersonalInfo = (field: keyof typeof data.personalInfo, value: string) => {
     setData(prev => ({ ...prev, personalInfo: { ...prev.personalInfo, [field]: value } }));
@@ -234,7 +249,23 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
     }
   };
 
-  // --- AI Handlers (Same as before) ---
+  // --- AI Handlers ---
+  const handleCommand = (actionId: string) => {
+      switch(actionId) {
+          case 'metric_booster': setShowMetricBooster(true); break;
+          case 'tone_polish': setShowTonePolish(true); break;
+          case 'translate': setShowTranslate(true); break;
+          case 'audit': handleAudit(true); break;
+          case 'job_match': setShowJobMatch(true); break;
+          case 'cover_letter': setShowCoverLetter(true); break;
+          case 'interview_prep': setShowInterviewPrep(true); break;
+          case 'linkedin': setShowLinkedIn(true); break;
+          case 'career_path': setShowCareerPath(true); break;
+          case 'appify': setShowAppGen(true); break;
+          default: break;
+      }
+  };
+
   const handleGenerateSummary = async () => {
     setIsGeneratingSummary(true);
     try {
@@ -455,6 +486,8 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   return (
     <div className="flex h-screen bg-neutral-50 overflow-hidden animate-in fade-in duration-500 font-sans">
       
+      <CommandPalette isOpen={showCommandPalette} onClose={() => setShowCommandPalette(false)} onAction={handleCommand} />
+
       {/* 1. THIN SIDEBAR */}
       <aside className="w-18 md:w-20 bg-white border-r border-neutral-200 flex flex-col items-center py-6 gap-4 z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full overflow-y-auto custom-scrollbar">
         
@@ -497,19 +530,29 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
 
         <div className="flex-1" /> {/* Spacer */}
 
-        {/* AI Tools */}
+        {/* AI Tools (De-cluttered) */}
         <div className="flex flex-col gap-3 pb-6">
              <div className="w-8 h-px bg-neutral-100 mb-2 mx-auto" />
-             <SidebarItem icon={Calculator} label="Metric Booster" onClick={() => setShowMetricBooster(true)} color="text-emerald-600" />
-             <SidebarItem icon={Megaphone} label="Tone Polish" onClick={() => setShowTonePolish(true)} color="text-pink-600" />
-             <SidebarItem icon={Languages} label="Translate" onClick={() => setShowTranslate(true)} color="text-cyan-600" />
-             <SidebarItem icon={BrainCircuit} label="Deep Audit" onClick={() => handleAudit(true)} color="text-purple-600" />
-             <SidebarItem icon={Target} label="Job Match" onClick={() => setShowJobMatch(true)} color="text-red-600" />
-             <SidebarItem icon={PenTool} label="Cover Letter" onClick={() => setShowCoverLetter(true)} color="text-blue-600" />
-             <SidebarItem icon={Mic} label="Interview Prep" onClick={() => setShowInterviewPrep(true)} color="text-green-600" />
-             <SidebarItem icon={Linkedin} label="LinkedIn" onClick={() => setShowLinkedIn(true)} color="text-blue-700" />
-             <SidebarItem icon={Compass} label="Career Path" onClick={() => setShowCareerPath(true)} color="text-orange-600" />
-             <SidebarItem icon={Code2} label="Appify" onClick={() => setShowAppGen(true)} color="text-neutral-900" />
+             
+             <SidebarItem 
+                icon={BrainCircuit} 
+                label="Deep Audit" 
+                onClick={() => handleAudit(true)} 
+                color="text-purple-600" 
+             />
+             
+             <button
+                onClick={() => setShowCommandPalette(true)}
+                className="w-12 h-12 flex flex-col items-center justify-center rounded-2xl bg-neutral-900 text-white shadow-lg hover:scale-105 transition-transform group relative"
+             >
+                 <Command className="w-5 h-5 mb-1" />
+                 <span className="text-[8px] font-bold">CMD+K</span>
+                 
+                  <div className="absolute left-16 bg-neutral-900 text-white text-xs font-bold px-3 py-2 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 whitespace-nowrap pointer-events-none z-50 shadow-xl translate-x-2 group-hover:translate-x-0">
+                      AI Assistant
+                      <div className="absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-neutral-900 rotate-45"></div>
+                 </div>
+             </button>
         </div>
       </aside>
 

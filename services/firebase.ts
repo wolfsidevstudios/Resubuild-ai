@@ -28,9 +28,10 @@ import {
   updateDoc,
   serverTimestamp,
   or,
-  and
+  and,
+  deleteDoc
 } from "firebase/firestore";
-import { ResumeData, Message, Notification, UserProfile, PublishedResume } from '../types';
+import { ResumeData, Message, Notification, UserProfile, PublishedResume, CustomAgent } from '../types';
 
 const firebaseConfig = {
   apiKey: "AIzaSyALmX4xk9t4PbRK_3MSl3wxMyEayK9tbBI",
@@ -134,6 +135,37 @@ export const updateUser = async (userId: string, data: Partial<UserProfile>) => 
     } catch (error) {
         console.error("Error updating user:", error);
         throw error;
+    }
+};
+
+// --- Custom Agents ---
+
+export const saveCustomAgent = async (agent: CustomAgent) => {
+    try {
+        // Use Agent ID as Doc ID
+        await setDoc(doc(db, "custom_agents", agent.id), agent);
+    } catch (error) {
+        console.error("Error saving custom agent:", error);
+        throw error;
+    }
+};
+
+export const getCustomAgents = async (userId: string): Promise<CustomAgent[]> => {
+    try {
+        const q = query(collection(db, "custom_agents"), where("user_id", "==", userId));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => doc.data() as CustomAgent);
+    } catch (error) {
+        console.error("Error getting custom agents:", error);
+        return [];
+    }
+};
+
+export const deleteCustomAgent = async (agentId: string) => {
+    try {
+        await deleteDoc(doc(db, "custom_agents", agentId));
+    } catch (error) {
+        console.error("Error deleting agent:", error);
     }
 };
 

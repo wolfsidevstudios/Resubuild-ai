@@ -51,7 +51,7 @@ export interface CustomSection {
 export interface ResumeData {
   id: string;
   name: string; // For the dashboard title
-  templateId: string; // 'modern' | 'professional' | 'creative' | 'minimal'
+  templateId: string; // 'modern' | 'professional' | 'creative' | 'minimal' | 'tech' | 'elegant'
   lastUpdated: number;
   personalInfo: PersonalInfo;
   experience: Experience[];
@@ -131,4 +131,30 @@ export interface PublishedResume {
     resume_data: ResumeData;
     created_at: string;
     contact_email?: string;
+}
+
+// --- AGENT BUILDER TYPES ---
+
+export type NodeType = 'source' | 'persona' | 'task' | 'output';
+
+export interface AgentNode {
+    id: string;
+    type: NodeType;
+    title: string;
+    config: {
+        sourceType?: 'resume' | 'linkedin' | 'text';
+        personaRole?: string; // e.g. "Strict Recruiter"
+        prompt?: string;
+        outputFormat?: 'chat' | 'document';
+    };
+    position: { x: number; y: number };
+}
+
+export interface CustomAgent {
+    id: string;
+    user_id: string;
+    name: string;
+    description: string;
+    nodes: AgentNode[];
+    created_at: number;
 }

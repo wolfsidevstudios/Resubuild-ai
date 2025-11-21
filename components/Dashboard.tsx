@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical } from 'lucide-react';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X } from 'lucide-react';
 import { ResumeData } from '../types';
 import { getResumes, deleteResume, getStoredAPIKey } from '../services/storageService';
 import { signOut } from '../services/firebase';
@@ -10,6 +10,7 @@ import { Notifications } from './Notifications';
 import { Resupilot } from './Resupilot';
 import { LinkedInAgent } from './LinkedInAgent';
 import { BetaTools } from './BetaTools';
+import { AgentBuilder } from './AgentBuilder';
 
 interface DashboardProps {
   onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
@@ -49,7 +50,7 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, className = '', alert
 );
 
 export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, onSettings, userId }) => {
-  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools' | 'agent-builder'>('dashboard');
   const [resumes, setResumes] = useState<ResumeData[]>([]);
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -102,6 +103,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   if (showResupilot) {
       return <Resupilot userId={userId} onExit={() => setShowResupilot(false)} onSave={handleResupilotSave} />;
   }
+  
+  if (view === 'agent-builder') {
+      return <AgentBuilder userId={userId} onClose={() => setView('dashboard')} />;
+  }
 
   return (
     <div className="flex h-screen bg-white font-sans overflow-hidden selection:bg-neutral-900 selection:text-white">
@@ -143,6 +148,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   active={view === 'linkedin'}
                   onClick={() => setView('linkedin')}
                   className="text-[#0077b5] hover:text-[#0077b5]"
+               />
+               <SidebarItem 
+                  icon={LayoutGrid} 
+                  label="Agent Builder" 
+                  active={view === 'agent-builder'}
+                  onClick={() => setView('agent-builder')}
+                  className="text-indigo-600 hover:text-indigo-700"
                />
                <SidebarItem 
                   icon={FlaskConical} 
@@ -424,23 +436,3 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
     </div>
   );
 };
-
-function X({ className }: { className?: string }) {
-    return (
-        <svg 
-            xmlns="http://www.w3.org/2000/svg" 
-            width="24" 
-            height="24" 
-            viewBox="0 0 24 24" 
-            fill="none" 
-            stroke="currentColor" 
-            strokeWidth="2" 
-            strokeLinecap="round" 
-            strokeLinejoin="round" 
-            className={className}
-        >
-            <path d="M18 6 6 18" />
-            <path d="m6 6 18 12" />
-        </svg>
-    )
-}
