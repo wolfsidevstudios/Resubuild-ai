@@ -13,7 +13,10 @@ import {
     analyzeJobMatch,
     suggestCareerPaths,
     generateLinkedInContent,
-    generateInteractivePortfolio
+    generateInteractivePortfolio,
+    generateMetricSuggestions,
+    rewriteTextWithTone,
+    translateResumeJSON
 } from '../services/geminiService';
 import { saveResume, createEmptyResume } from '../services/storageService';
 import { publishResume } from '../services/firebase';
@@ -57,7 +60,11 @@ import {
   Code2,
   MonitorPlay,
   Layers,
-  Plus
+  Plus,
+  Calculator,
+  Languages,
+  Megaphone,
+  Loader2
 } from 'lucide-react';
 
 interface ResumeBuilderProps {
@@ -153,6 +160,21 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
   const [showAppGen, setShowAppGen] = useState(false);
   const [generatedAppHtml, setGeneratedAppHtml] = useState('');
   const [isGeneratingApp, setIsGeneratingApp] = useState(false);
+
+  // New Tools
+  const [showMetricBooster, setShowMetricBooster] = useState(false);
+  const [metricSuggestions, setMetricSuggestions] = useState<string[]>([]);
+  const [selectedExpForMetric, setSelectedExpForMetric] = useState<string>('');
+  const [isBoostingMetrics, setIsBoostingMetrics] = useState(false);
+
+  const [showTonePolish, setShowTonePolish] = useState(false);
+  const [toneTarget, setToneTarget] = useState<'summary' | 'experience'>('summary');
+  const [selectedTone, setSelectedTone] = useState('Professional');
+  const [isPolishingTone, setIsPolishingTone] = useState(false);
+
+  const [showTranslate, setShowTranslate] = useState(false);
+  const [targetLang, setTargetLang] = useState('Spanish');
+  const [isTranslating, setIsTranslating] = useState(false);
   
   const previewRef = useRef<HTMLDivElement>(null);
 
@@ -333,6 +355,55 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
           setGeneratedAppHtml(html);
       } catch (e) { alert("Failed to generate app."); } finally { setIsGeneratingApp(false); }
   };
+  
+  const handleMetricBoost = async () => {
+      if (!selectedExpForMetric) return;
+      const exp = data.experience.find(e => e.id === selectedExpForMetric);
+      if (!exp) return;
+      
+      setIsBoostingMetrics(true);
+      try {
+          const suggestions = await generateMetricSuggestions(exp.description, exp.position);
+          setMetricSuggestions(suggestions);
+      } catch (e) { console.error(e); } finally { setIsBoostingMetrics(false); }
+  };
+
+  const applyMetricSuggestion = (suggestion: string) => {
+      if (!selectedExpForMetric) return;
+      setData(prev => ({
+          ...prev,
+          experience: prev.experience.map(e => e.id === selectedExpForMetric ? { ...e, description: suggestion } : e)
+      }));
+      setShowMetricBooster(false);
+      setMetricSuggestions([]);
+  };
+
+  const handleTonePolish = async () => {
+      setIsPolishingTone(true);
+      try {
+          if (toneTarget === 'summary') {
+              const newSummary = await rewriteTextWithTone(data.personalInfo.summary, selectedTone);
+              updatePersonalInfo('summary', newSummary);
+          } else {
+               // Polish all experience descriptions
+               const newExperience = await Promise.all(data.experience.map(async (e) => ({
+                   ...e,
+                   description: await rewriteTextWithTone(e.description, selectedTone)
+               })));
+               updateExperience(newExperience);
+          }
+          setShowTonePolish(false);
+      } catch (e) { console.error(e); } finally { setIsPolishingTone(false); }
+  };
+  
+  const handleTranslation = async () => {
+      setIsTranslating(true);
+      try {
+          const translatedData = await translateResumeJSON(data, targetLang);
+          setData(translatedData);
+          setShowTranslate(false);
+      } catch (e) { alert("Translation failed. Please try a different language."); } finally { setIsTranslating(false); }
+  };
 
   const handleDownloadApp = () => {
       const blob = new Blob([generatedAppHtml], { type: 'text/html' });
@@ -385,7 +456,7 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
     <div className="flex h-screen bg-neutral-50 overflow-hidden animate-in fade-in duration-500 font-sans">
       
       {/* 1. THIN SIDEBAR */}
-      <aside className="w-18 md:w-20 bg-white border-r border-neutral-200 flex flex-col items-center py-6 gap-4 z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
+      <aside className="w-18 md:w-20 bg-white border-r border-neutral-200 flex flex-col items-center py-6 gap-4 z-30 shadow-[4px_0_24px_rgba(0,0,0,0.02)] h-full overflow-y-auto custom-scrollbar">
         
         <SidebarItem 
             icon={ChevronLeft} 
@@ -427,8 +498,11 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
         <div className="flex-1" /> {/* Spacer */}
 
         {/* AI Tools */}
-        <div className="flex flex-col gap-3 pb-2">
+        <div className="flex flex-col gap-3 pb-6">
              <div className="w-8 h-px bg-neutral-100 mb-2 mx-auto" />
+             <SidebarItem icon={Calculator} label="Metric Booster" onClick={() => setShowMetricBooster(true)} color="text-emerald-600" />
+             <SidebarItem icon={Megaphone} label="Tone Polish" onClick={() => setShowTonePolish(true)} color="text-pink-600" />
+             <SidebarItem icon={Languages} label="Translate" onClick={() => setShowTranslate(true)} color="text-cyan-600" />
              <SidebarItem icon={BrainCircuit} label="Deep Audit" onClick={() => handleAudit(true)} color="text-purple-600" />
              <SidebarItem icon={Target} label="Job Match" onClick={() => setShowJobMatch(true)} color="text-red-600" />
              <SidebarItem icon={PenTool} label="Cover Letter" onClick={() => setShowCoverLetter(true)} color="text-blue-600" />
@@ -631,8 +705,135 @@ export const ResumeBuilder: React.FC<ResumeBuilderProps> = ({ initialData, onGoH
 
       </div>
 
-      {/* --- MODALS (Keep logic same, just ensuring they render over the new layout) --- */}
+      {/* --- MODALS --- */}
+
+      {/* Metric Booster Modal */}
+      {showMetricBooster && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95">
+                  <div className="p-6 border-b flex justify-between items-center bg-emerald-50">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-emerald-800"><Calculator className="w-6 h-6 text-emerald-600" /> Metric Booster</h3>
+                      <button onClick={() => setShowMetricBooster(false)} className="p-2 hover:bg-white rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-8">
+                      <p className="text-sm text-neutral-500 mb-6">Select an experience item to analyze. AI will suggest quantifiable metrics to make your bullets punchier.</p>
+                      
+                      {data.experience.length === 0 ? (
+                           <div className="text-center p-8 text-neutral-400 border-2 border-dashed rounded-xl">No experience added yet.</div>
+                      ) : (
+                          <div className="space-y-4">
+                              {data.experience.map(exp => (
+                                  <button 
+                                    key={exp.id}
+                                    onClick={() => { setSelectedExpForMetric(exp.id); handleMetricBoost(); }} // Triggers AI immediately on select for UX speed in demo
+                                    className={`w-full text-left p-4 rounded-xl border transition-all hover:shadow-md ${selectedExpForMetric === exp.id ? 'border-emerald-500 bg-emerald-50' : 'border-neutral-200 hover:border-emerald-300'}`}
+                                  >
+                                      <div className="font-bold">{exp.position}</div>
+                                      <div className="text-xs text-neutral-500">{exp.company}</div>
+                                      <div className="text-xs text-neutral-400 mt-2 line-clamp-2">{exp.description}</div>
+                                  </button>
+                              ))}
+                          </div>
+                      )}
+                      
+                      {isBoostingMetrics && (
+                          <div className="flex flex-col items-center justify-center py-8">
+                              <Loader2 className="w-8 h-8 text-emerald-500 animate-spin mb-2" />
+                              <span className="text-sm text-emerald-600 font-medium">Finding numbers...</span>
+                          </div>
+                      )}
+                      
+                      {metricSuggestions.length > 0 && (
+                          <div className="mt-8 space-y-4 animate-in slide-in-from-bottom-4">
+                              <h4 className="font-bold text-neutral-900">Suggestions (Click to Apply)</h4>
+                              {metricSuggestions.map((sugg, i) => (
+                                  <div 
+                                    key={i}
+                                    onClick={() => applyMetricSuggestion(sugg)}
+                                    className="p-4 bg-white border border-emerald-100 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-400 cursor-pointer transition-all"
+                                  >
+                                      <p className="text-sm text-neutral-700 leading-relaxed">{sugg}</p>
+                                  </div>
+                              ))}
+                          </div>
+                      )}
+                  </div>
+              </div>
+          </div>
+      )}
       
+      {/* Tone Polish Modal */}
+      {showTonePolish && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95">
+                  <div className="p-6 border-b flex justify-between items-center bg-pink-50">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-pink-900"><Megaphone className="w-6 h-6 text-pink-600" /> Tone Polish</h3>
+                      <button onClick={() => setShowTonePolish(false)} className="p-2 hover:bg-white rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="p-8 space-y-6">
+                      <div>
+                          <label className="text-xs font-bold text-neutral-500 uppercase mb-2 block">Target Section</label>
+                          <div className="flex bg-neutral-100 p-1 rounded-xl">
+                              <button onClick={() => setToneTarget('summary')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${toneTarget === 'summary' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500'}`}>Summary</button>
+                              <button onClick={() => setToneTarget('experience')} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${toneTarget === 'experience' ? 'bg-white shadow-sm text-neutral-900' : 'text-neutral-500'}`}>Experience</button>
+                          </div>
+                      </div>
+                      
+                      <div>
+                          <label className="text-xs font-bold text-neutral-500 uppercase mb-2 block">Select Tone</label>
+                          <div className="grid grid-cols-2 gap-3">
+                              {['Professional', 'Executive', 'Startup', 'Academic', 'Creative', 'Confident'].map(tone => (
+                                  <button 
+                                    key={tone}
+                                    onClick={() => setSelectedTone(tone)}
+                                    className={`py-2 px-4 text-sm rounded-lg border transition-all ${selectedTone === tone ? 'border-pink-500 bg-pink-50 text-pink-700 font-bold' : 'border-neutral-200 text-neutral-600 hover:bg-neutral-50'}`}
+                                  >
+                                      {tone}
+                                  </button>
+                              ))}
+                          </div>
+                      </div>
+                      
+                      <Button onClick={handleTonePolish} isLoading={isPolishingTone} className="w-full bg-pink-600 hover:bg-pink-700 text-white">
+                          Rewrite Content
+                      </Button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* Translator Modal */}
+      {showTranslate && (
+          <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+              <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl flex flex-col animate-in zoom-in-95">
+                   <div className="p-6 border-b flex justify-between items-center bg-cyan-50">
+                      <h3 className="text-xl font-bold flex items-center gap-2 text-cyan-900"><Languages className="w-6 h-6 text-cyan-600" /> Resume Translator</h3>
+                      <button onClick={() => setShowTranslate(false)} className="p-2 hover:bg-white rounded-full"><X className="w-5 h-5" /></button>
+                  </div>
+                  <div className="p-8 space-y-6">
+                      <p className="text-sm text-neutral-500">Instantly translate your entire resume while maintaining formatting. Useful for international applications.</p>
+                      
+                      <div>
+                          <label className="text-xs font-bold text-neutral-500 uppercase mb-2 block">Target Language</label>
+                          <select 
+                            className="w-full p-3 bg-neutral-50 border border-neutral-200 rounded-xl focus:ring-2 focus:ring-cyan-500 outline-none"
+                            value={targetLang}
+                            onChange={e => setTargetLang(e.target.value)}
+                          >
+                              {['Spanish', 'French', 'German', 'Italian', 'Portuguese', 'Chinese (Simplified)', 'Japanese', 'Hindi'].map(lang => (
+                                  <option key={lang} value={lang}>{lang}</option>
+                              ))}
+                          </select>
+                      </div>
+
+                      <Button onClick={handleTranslation} isLoading={isTranslating} className="w-full bg-cyan-600 hover:bg-cyan-700 text-white">
+                          Translate Resume
+                      </Button>
+                  </div>
+              </div>
+          </div>
+      )}
+
       {showAppGen && (
            <div className="fixed inset-0 z-50 bg-neutral-900/50 backdrop-blur-sm flex items-center justify-center p-4">
               <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl flex flex-col h-[85vh] overflow-hidden animate-in zoom-in-95">

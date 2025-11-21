@@ -557,6 +557,77 @@ export const fixGrammarAndSpelling = async (data: ResumeData): Promise<ResumeDat
     }
 }
 
+export const generateMetricSuggestions = async (description: string, jobTitle: string): Promise<string[]> => {
+  const prompt = `
+    Analyze the following job description bullet points for a "${jobTitle}" role.
+    Rewrite them to include quantifiable metrics (numbers, percentages, dollar signs) even if you have to use placeholders like [X]%.
+    Return exactly 3 alternative versions that are punchier and data-driven.
+    
+    Original: "${description}"
+    
+    Return JSON array of strings.
+  `;
+
+  try {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: getModel('basic'),
+      contents: prompt,
+      config: { responseMimeType: 'application/json' }
+    });
+    const text = response.text?.trim() || "[]";
+    return JSON.parse(text);
+  } catch (error) {
+    console.error("Metric suggestion failed", error);
+    return [];
+  }
+};
+
+export const rewriteTextWithTone = async (text: string, tone: string): Promise<string> => {
+  const prompt = `
+    Rewrite the following resume text to have a "${tone}" tone.
+    Keep the core facts the same, but change the voice and style.
+    Do not use markdown.
+    
+    Text: "${text}"
+  `;
+
+  try {
+    const ai = getAI();
+    const response = await ai.models.generateContent({
+      model: getModel('basic'),
+      contents: prompt,
+    });
+    return response.text?.trim() || text;
+  } catch (error) {
+    console.error("Rewrite failed", error);
+    return text;
+  }
+};
+
+export const translateResumeJSON = async (data: ResumeData, language: string): Promise<ResumeData> => {
+    const prompt = `
+        Translate the content of this resume JSON into "${language}".
+        Translate: fullName (transliterate if needed), jobTitle, summary, location, all experience fields (position, description), education fields, projects, skills.
+        Do NOT translate keys or IDs. Keep structure identical.
+        
+        JSON: ${JSON.stringify(data)}
+    `;
+    
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash', // Flash is fast and good for translation
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        return JSON.parse(response.text?.trim() || "{}");
+    } catch (error) {
+        console.error("Translation failed", error);
+        throw error;
+    }
+};
+
 export const findBestCandidates = async (
     employerQuery: string, 
     candidates: PublishedResume[]
