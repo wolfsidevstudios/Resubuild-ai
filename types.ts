@@ -181,3 +181,43 @@ export interface ContestEntry {
     votes: string[]; // Array of user IDs who voted
     created_at: string;
 }
+
+// --- FORMS & DOCUMENTS ---
+
+export interface FormField {
+    id: string;
+    type: 'text' | 'textarea' | 'select' | 'checkbox' | 'email' | 'number';
+    label: string;
+    placeholder?: string;
+    options?: string[]; // For select
+    required: boolean;
+}
+
+export interface FormProject {
+    id: string;
+    userId: string;
+    title: string;
+    description: string;
+    fields: FormField[];
+    themeColor: string;
+    published: boolean;
+    views: number;
+    submissions: number;
+    createdAt: string;
+}
+
+export interface FormSubmission {
+    id: string;
+    formId: string;
+    data: Record<string, string>;
+    submittedAt: string;
+}
+
+export interface SavedDocument {
+    id: string;
+    userId: string;
+    type: 'lesson-plan' | 'study-guide' | 'essay-outline' | 'flashcards' | 'quiz' | 'rubric' | 'generic';
+    title: string;
+    content: any; // Can be string (HTML/Markdown) or JSON object
+    createdAt: string;
+}

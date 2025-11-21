@@ -1,14 +1,17 @@
 
 import React, { useState } from 'react';
-import { BookOpen, ClipboardList, CheckSquare, FileText, ChevronRight, Sparkles, Printer } from 'lucide-react';
+import { BookOpen, ClipboardList, CheckSquare, FileText, ChevronRight, Sparkles, Printer, Save, CheckCircle2 } from 'lucide-react';
 import { Button } from './Button';
 import { Input, TextArea } from './InputField';
 import { generateLessonPlan, generateQuiz, generateRubric } from '../services/geminiService';
+import { saveGenericDocument } from '../services/firebase';
 
-export const TeacherTools: React.FC = () => {
+export const TeacherTools: React.FC<{ userId?: string }> = ({ userId }) => {
     const [activeTool, setActiveTool] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     const [inputs, setInputs] = useState({
         subject: '',
@@ -26,6 +29,7 @@ export const TeacherTools: React.FC = () => {
     const reset = () => {
         setResult(null);
         setLoading(false);
+        setSaveSuccess(false);
     };
 
     const runAI = async (action: 'lesson' | 'quiz' | 'rubric') => {
@@ -47,6 +51,35 @@ export const TeacherTools: React.FC = () => {
             alert("AI request failed. Please try again.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!userId || !result) return;
+        setIsSaving(true);
+        
+        let type: any = 'generic';
+        let title = 'Saved Resource';
+        
+        if (activeTool === 'lesson') { type = 'lesson-plan'; title = `Lesson: ${inputs.topic}`; }
+        if (activeTool === 'quiz') { type = 'quiz'; title = `Quiz: ${inputs.quizTopic}`; }
+        if (activeTool === 'rubric') { type = 'rubric'; title = `Rubric: ${inputs.assignmentType}`; }
+
+        try {
+            await saveGenericDocument({
+                id: crypto.randomUUID(),
+                userId,
+                type,
+                title,
+                content: result,
+                createdAt: new Date().toISOString()
+            });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (e) {
+            alert("Failed to save.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -90,11 +123,26 @@ export const TeacherTools: React.FC = () => {
                 </div>
             ) : (
                 <div className="flex-1 flex flex-col h-full">
-                    <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center gap-4">
-                        <button onClick={() => { setActiveTool(null); reset(); }} className="p-2 hover:bg-neutral-100 rounded-full">
-                            <ChevronRight className="w-5 h-5 rotate-180" />
-                        </button>
-                        <h2 className="font-bold text-xl capitalize">{activeTool.replace(/([A-Z])/g, ' $1').trim()}</h2>
+                    <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => { setActiveTool(null); reset(); }} className="p-2 hover:bg-neutral-100 rounded-full">
+                                <ChevronRight className="w-5 h-5 rotate-180" />
+                            </button>
+                            <h2 className="font-bold text-xl capitalize">{activeTool.replace(/([A-Z])/g, ' $1').trim()}</h2>
+                        </div>
+                        {result && userId && (
+                            <div className="flex gap-2">
+                                <Button 
+                                    onClick={handleSave} 
+                                    isLoading={isSaving}
+                                    variant={saveSuccess ? "success" : "secondary"}
+                                    icon={saveSuccess ? <CheckCircle2 className="w-4 h-4"/> : <Save className="w-4 h-4"/>}
+                                >
+                                    {saveSuccess ? 'Saved!' : 'Save'}
+                                </Button>
+                                <Button variant="primary" icon={<Printer className="w-4 h-4"/>} onClick={() => window.print()}>Print</Button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 md:p-8">
@@ -167,9 +215,8 @@ export const TeacherTools: React.FC = () => {
                             )}
 
                             {result && (
-                                <div className="mt-8 pt-8 border-t border-neutral-100 flex justify-between">
+                                <div className="mt-8 pt-8 border-t border-neutral-100 flex justify-center">
                                     <Button variant="secondary" onClick={() => setResult(null)}>Start Over</Button>
-                                    <Button variant="primary" icon={<Printer className="w-4 h-4"/>} onClick={() => window.print()}>Print</Button>
                                 </div>
                             )}
                         </div>

@@ -1,9 +1,9 @@
 
 import React, { useEffect, useState } from 'react';
-import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X, Briefcase, Feather, Terminal, GraduationCap, BookOpen } from 'lucide-react';
-import { ResumeData } from '../types';
+import { Plus, FileText, Clock, Trash2, ArrowRight, Settings, LogOut, Bell, MessageSquare, Sparkles, Layout, Palette, AlignLeft, Grid, Search, Linkedin, FlaskConical, LayoutGrid, X, Briefcase, Feather, Terminal, GraduationCap, BookOpen, FolderOpen, FileCode, Eye, MousePointerClick } from 'lucide-react';
+import { ResumeData, FormProject, SavedDocument } from '../types';
 import { getResumes, deleteResume } from '../services/storageService';
-import { signOut } from '../services/firebase';
+import { signOut, getUserForms, deleteForm, getDocuments, deleteDocument } from '../services/firebase';
 import { Button } from './Button';
 import { Messaging } from './Messaging';
 import { Notifications } from './Notifications';
@@ -15,6 +15,7 @@ import { JobSearch } from './JobSearch';
 import { StudentTools } from './StudentTools';
 import { TeacherTools } from './TeacherTools';
 import { TemplateThumbnail } from './TemplateThumbnail';
+import { FormBuilder } from './FormBuilder';
 
 interface DashboardProps {
   onCreate: (mode: 'ai' | 'manual', templateId?: string) => void;
@@ -56,11 +57,15 @@ const SidebarItem = ({ icon: Icon, label, active, onClick, className = '', alert
 );
 
 export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, onSettings, userId }) => {
-  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools' | 'agent-builder' | 'jobs' | 'student-tools' | 'teacher-tools'>('dashboard');
+  const [view, setView] = useState<'dashboard' | 'linkedin' | 'beta-tools' | 'agent-builder' | 'jobs' | 'student-tools' | 'teacher-tools' | 'files'>('dashboard');
   const [resumes, setResumes] = useState<ResumeData[]>([]);
+  const [forms, setForms] = useState<FormProject[]>([]);
+  const [docs, setDocs] = useState<SavedDocument[]>([]);
+  
   const [showMessages, setShowMessages] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showResupilot, setShowResupilot] = useState(false);
+  const [showFormBuilder, setShowFormBuilder] = useState(false);
   
   // Creation Flow State
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -69,9 +74,20 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
-    // Load resumes for this specific user
-    setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
+    refreshData();
   }, [userId]);
+
+  const refreshData = async () => {
+      setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
+      
+      // Fetch Forms & Docs
+      try {
+          const f = await getUserForms(userId);
+          setForms(f);
+          const d = await getDocuments(userId);
+          setDocs(d);
+      } catch (e) { console.error(e); }
+  };
 
   const handleDelete = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
@@ -79,6 +95,22 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
       deleteResume(id, userId);
       setResumes(prev => prev.filter(r => r.id !== id));
     }
+  };
+  
+  const handleDeleteForm = async (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      if (confirm("Delete this form?")) {
+          await deleteForm(id);
+          setForms(prev => prev.filter(f => f.id !== id));
+      }
+  };
+
+  const handleDeleteDoc = async (e: React.MouseEvent, id: string) => {
+      e.stopPropagation();
+      if (confirm("Delete this document?")) {
+          await deleteDocument(id);
+          setDocs(prev => prev.filter(d => d.id !== id));
+      }
   };
 
   const handleSignOut = async () => {
@@ -93,13 +125,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   
   const handleResupilotSave = (newResume: ResumeData) => {
       setShowResupilot(false);
-      setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
+      refreshData();
       onEdit(newResume);
   };
   
   const handleLinkedInSave = (newResume: ResumeData) => {
       setView('dashboard');
-      setResumes(getResumes(userId).sort((a, b) => b.lastUpdated - a.lastUpdated));
+      refreshData();
       onEdit(newResume);
   };
 
@@ -111,6 +143,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
   
   if (view === 'agent-builder') {
       return <AgentBuilder userId={userId} onClose={() => setView('dashboard')} />;
+  }
+  
+  if (showFormBuilder) {
+      return <FormBuilder userId={userId} onClose={() => { setShowFormBuilder(false); refreshData(); }} />;
   }
 
   return (
@@ -134,6 +170,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                   label="Home" 
                   active={view === 'dashboard'}
                   onClick={() => setView('dashboard')}
+               />
+               <SidebarItem 
+                  icon={FolderOpen} 
+                  label="My Files" 
+                  active={view === 'files'}
+                  onClick={() => setView('files')}
                />
                <SidebarItem 
                   icon={Plus} 
@@ -235,12 +277,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
           {/* FLOATING CONTENT BOX */}
           <div className="w-full h-full bg-white border border-neutral-200 rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-sm">
               
-              {/* Show Header only in Dashboard View */}
-              {view === 'dashboard' && (
+              {/* Show Header only in Dashboard/Files View */}
+              {(view === 'dashboard' || view === 'files') && (
                   <header className="px-8 py-6 flex items-center justify-between bg-white sticky top-0 z-20 border-b border-neutral-100">
                       <div>
                           <h1 className="text-2xl font-bold text-neutral-900">Kyndra Workspace</h1>
-                          <p className="text-sm text-neutral-400 font-medium">Your AI Command Center</p>
+                          <p className="text-sm text-neutral-400 font-medium">{view === 'files' ? 'All your resumes, forms, and documents' : 'Your AI Command Center'}</p>
                       </div>
 
                       <div className="flex items-center gap-4">
@@ -248,7 +290,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                           <div className="hidden md:flex items-center bg-neutral-50 px-4 py-2 rounded-full border border-neutral-200 focus-within:ring-2 focus-within:ring-neutral-900/10 transition-all shadow-sm">
                               <Search className="w-4 h-4 text-neutral-400 mr-2" />
                               <input 
-                                  placeholder="Search files..." 
+                                  placeholder="Search..." 
                                   className="bg-transparent outline-none text-sm w-40 placeholder-neutral-400"
                                   value={searchTerm}
                                   onChange={e => setSearchTerm(e.target.value)}
@@ -282,12 +324,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
 
                 {/* VIEW: STUDENT TOOLS */}
                 {view === 'student-tools' && (
-                    <StudentTools />
+                    <StudentTools userId={userId} />
                 )}
 
                 {/* VIEW: TEACHER TOOLS */}
                 {view === 'teacher-tools' && (
-                    <TeacherTools />
+                    <TeacherTools userId={userId} />
                 )}
 
                 {/* VIEW: LINKEDIN AGENT */}
@@ -300,101 +342,119 @@ export const Dashboard: React.FC<DashboardProps> = ({ onCreate, onEdit, onHome, 
                     <BetaTools resumes={resumes} onHome={() => setView('dashboard')} />
                 )}
 
-                {/* VIEW: DASHBOARD */}
-                {view === 'dashboard' && (
+                {/* VIEW: DASHBOARD OR FILES */}
+                {(view === 'dashboard' || view === 'files') && (
                     <div className="p-8">
-                        {resumes.length === 0 ? (
-                          <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-                            <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mb-6 shadow-sm border border-neutral-200">
-                              <FileText className="w-8 h-8 text-neutral-400" />
-                            </div>
-                            <h3 className="text-xl font-bold mb-2 text-neutral-900">Welcome to Kyndra</h3>
-                            <p className="text-neutral-500 mb-8 max-w-sm mx-auto leading-relaxed">
-                              Start building your professional identity, planning your lessons, or organizing your studies.
-                            </p>
-                            <div className="flex justify-center gap-3">
-                                <Button onClick={openCreateModal} variant="primary" className="shadow-lg shadow-neutral-900/20">
-                                  Create Resume
-                                </Button>
-                                <Button onClick={() => setShowResupilot(true)} variant="secondary" icon={<Sparkles className="w-4 h-4 text-purple-600" />}>
-                                    AI Assistant
-                                </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {/* Create New Card */}
-                            <div 
-                              onClick={openCreateModal}
-                              className="group flex flex-col items-center justify-center h-[320px] bg-neutral-50 border border-dashed border-neutral-300 rounded-[2rem] hover:border-neutral-900 hover:bg-white transition-all cursor-pointer hover:shadow-xl hover:-translate-y-1"
-                            >
-                              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-neutral-900 group-hover:text-white transition-all duration-300 shadow-sm">
-                                <Plus className="w-6 h-6 text-neutral-400 group-hover:text-white" />
-                              </div>
-                              <span className="font-bold text-neutral-900">New Resume</span>
-                              <span className="text-xs text-neutral-400 mt-1 font-medium">Start from scratch</span>
-                            </div>
-
-                            {/* Resume Cards */}
-                            {filteredResumes.map(resume => (
-                              <div 
-                                key={resume.id}
-                                onClick={() => onEdit(resume)}
-                                className="group relative flex flex-col h-[320px] bg-white border border-neutral-200 rounded-[2rem] overflow-hidden hover:shadow-2xl hover:shadow-neutral-900/5 hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                              >
-                                {/* Card Preview Header */}
-                                <div className="h-40 bg-neutral-100/50 p-6 relative overflow-hidden flex flex-col justify-center">
-                                  
-                                  {/* Template Thumbnail Preview */}
-                                  <div className="absolute inset-4 opacity-50 group-hover:opacity-80 transition-opacity duration-500 transform group-hover:scale-105 origin-top">
-                                      <div className="w-full h-full border border-neutral-200 bg-white shadow-sm rounded-lg p-2">
-                                          <div className="w-1/3 h-2 bg-neutral-800 rounded-full mb-2"></div>
-                                          <div className="w-full h-1 bg-neutral-100 rounded-full mb-1"></div>
-                                          <div className="w-full h-1 bg-neutral-100 rounded-full mb-1"></div>
-                                          <div className="w-2/3 h-1 bg-neutral-100 rounded-full"></div>
-                                      </div>
-                                  </div>
-
-                                  {/* Template Badge */}
-                                  <div className="absolute top-4 left-4 z-10">
-                                      <span className="text-[10px] font-bold uppercase tracking-wider bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg shadow-sm border border-neutral-100 text-neutral-500">
-                                          {resume.templateId || 'Modern'}
-                                      </span>
-                                  </div>
-                                  
-                                  {/* Delete Action */}
-                                  <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity transform translate-y-2 group-hover:translate-y-0 duration-200">
-                                      <button 
-                                        onClick={(e) => handleDelete(e, resume.id)}
-                                        className="p-2 bg-white/90 backdrop-blur-sm text-red-500 rounded-full shadow-sm hover:bg-red-50 transition-colors"
-                                        title="Delete"
-                                      >
-                                        <Trash2 className="w-3.5 h-3.5" />
-                                      </button>
-                                  </div>
+                        
+                        {/* --- RESUMES SECTION --- */}
+                        <div className="mb-12">
+                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><FileText className="w-5 h-5 text-blue-600" /> Resumes</h2>
+                            {resumes.length === 0 ? (
+                                <div className="p-8 text-center border-2 border-dashed border-neutral-100 rounded-2xl text-neutral-400">
+                                    No resumes yet. Create one to get started.
                                 </div>
-
-                                {/* Card Body */}
-                                <div className="flex-1 p-6 flex flex-col justify-between">
-                                  <div>
-                                    <h3 className="font-bold text-lg mb-1 line-clamp-1 text-neutral-900 group-hover:text-blue-600 transition-colors">{resume.name || 'Untitled Resume'}</h3>
-                                    <p className="text-sm text-neutral-500 line-clamp-1 font-medium">{resume.personalInfo.jobTitle || 'No Job Title'}</p>
-                                  </div>
-                                  
-                                  <div className="flex items-center justify-between pt-4 border-t border-neutral-50 mt-2">
-                                     <div className="flex items-center gap-1.5 text-xs text-neutral-400 font-medium">
-                                        <Clock className="w-3 h-3" />
-                                        {new Date(resume.lastUpdated).toLocaleDateString()}
-                                     </div>
-                                     <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-neutral-50 text-neutral-900 group-hover:bg-neutral-900 group-hover:text-white transition-all duration-300">
-                                        <ArrowRight className="w-4 h-4 transform group-hover:translate-x-0.5 transition-transform" />
-                                     </span>
-                                  </div>
+                            ) : (
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {filteredResumes.map(resume => (
+                                        <div 
+                                            key={resume.id}
+                                            onClick={() => onEdit(resume)}
+                                            className="group relative flex flex-col h-[280px] bg-white border border-neutral-200 rounded-3xl overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
+                                        >
+                                            <div className="h-32 bg-neutral-100/50 p-6 relative overflow-hidden flex flex-col justify-center">
+                                                {/* Thumbnail Preview Logic */}
+                                                <div className="absolute inset-4 opacity-50 group-hover:opacity-80 transition-opacity transform group-hover:scale-105 origin-top">
+                                                    <div className="w-full h-full border border-neutral-200 bg-white shadow-sm rounded-lg p-2">
+                                                        <div className="w-1/3 h-2 bg-neutral-800 rounded-full mb-2"></div>
+                                                        <div className="w-full h-1 bg-neutral-100 rounded-full mb-1"></div>
+                                                        <div className="w-full h-1 bg-neutral-100 rounded-full mb-1"></div>
+                                                    </div>
+                                                </div>
+                                                <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={(e) => handleDelete(e, resume.id)} className="p-2 bg-white/90 backdrop-blur-sm text-red-500 rounded-full shadow-sm hover:bg-red-50">
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div className="flex-1 p-6">
+                                                <h3 className="font-bold text-base mb-1 line-clamp-1 text-neutral-900">{resume.name}</h3>
+                                                <p className="text-xs text-neutral-500 line-clamp-1 mb-4">{resume.personalInfo.jobTitle || 'No Job Title'}</p>
+                                                <div className="flex items-center text-xs text-neutral-400"><Clock className="w-3 h-3 mr-1" /> {new Date(resume.lastUpdated).toLocaleDateString()}</div>
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                            )}
+                        </div>
+
+                        {/* --- FORMS SECTION --- */}
+                        <div className="mb-12">
+                            <div className="flex justify-between items-center mb-6">
+                                <h2 className="text-xl font-bold flex items-center gap-2"><FileCode className="w-5 h-5 text-purple-600" /> Custom Forms</h2>
+                                <Button variant="ghost" onClick={() => setShowFormBuilder(true)} icon={<Plus className="w-4 h-4"/>}>Create Form</Button>
+                            </div>
+                            
+                            {forms.length === 0 ? (
+                                <div className="p-8 text-center border-2 border-dashed border-neutral-100 rounded-2xl text-neutral-400">
+                                    No forms created. Build surveys, sign-up sheets, and more.
+                                </div>
+                            ) : (
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                                    {forms.map(form => (
+                                        <div key={form.id} className="bg-white border border-neutral-200 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-all">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="w-10 h-10 rounded-full flex items-center justify-center text-white" style={{ backgroundColor: form.themeColor }}>
+                                                    <FileText className="w-5 h-5" />
+                                                </div>
+                                                <button onClick={(e) => handleDeleteForm(e, form.id)} className="text-neutral-300 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                            </div>
+                                            <h3 className="font-bold text-neutral-900 mb-1">{form.title}</h3>
+                                            <div className="flex gap-4 mt-4 pt-4 border-t border-neutral-50">
+                                                <div className="text-center flex-1">
+                                                    <div className="text-lg font-bold text-neutral-900">{form.views}</div>
+                                                    <div className="text-[10px] text-neutral-400 uppercase flex justify-center gap-1"><Eye className="w-3 h-3"/> Views</div>
+                                                </div>
+                                                <div className="w-px bg-neutral-100"></div>
+                                                <div className="text-center flex-1">
+                                                    <div className="text-lg font-bold text-neutral-900">{form.submissions}</div>
+                                                    <div className="text-[10px] text-neutral-400 uppercase flex justify-center gap-1"><MousePointerClick className="w-3 h-3"/> Submits</div>
+                                                </div>
+                                            </div>
+                                            <a href={`/forms/${form.id}`} target="_blank" className="block mt-4 text-center text-sm text-blue-600 font-bold hover:underline">
+                                                View Live Form
+                                            </a>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* --- SAVED DOCUMENTS SECTION --- */}
+                        <div>
+                            <h2 className="text-xl font-bold mb-6 flex items-center gap-2"><FolderOpen className="w-5 h-5 text-orange-600" /> Saved Documents</h2>
+                            {docs.length === 0 ? (
+                                <div className="p-8 text-center border-2 border-dashed border-neutral-100 rounded-2xl text-neutral-400">
+                                    No documents saved from tools.
+                                </div>
+                            ) : (
+                                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                    {docs.map(doc => (
+                                        <div key={doc.id} className="bg-white border border-neutral-200 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="px-3 py-1 bg-neutral-100 rounded-full text-xs font-bold uppercase text-neutral-500">{doc.type.replace('-', ' ')}</div>
+                                                <button onClick={(e) => handleDeleteDoc(e, doc.id)} className="text-neutral-300 hover:text-red-500"><Trash2 className="w-4 h-4"/></button>
+                                            </div>
+                                            <h3 className="font-bold text-lg text-neutral-900 mb-4">{doc.title}</h3>
+                                            <div className="prose prose-sm max-h-32 overflow-hidden text-neutral-500 text-xs mask-bottom relative">
+                                                <div className="absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-white to-transparent"></div>
+                                                {typeof doc.content === 'string' ? doc.content.substring(0, 200) : JSON.stringify(doc.content)}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
                     </div>
                 )}
               </main>

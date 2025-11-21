@@ -32,9 +32,10 @@ import {
   and,
   deleteDoc,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  increment
 } from "firebase/firestore";
-import { ResumeData, Message, Notification, UserProfile, PublishedResume, CustomAgent, ContestEntry } from '../types';
+import { ResumeData, Message, Notification, UserProfile, PublishedResume, CustomAgent, ContestEntry, FormProject, SavedDocument, FormSubmission } from '../types';
 import { getResumes } from "./storageService";
 
 const firebaseConfig = {
@@ -337,6 +338,106 @@ export const voteForDesign = async (entryId: string, userId: string) => {
     } catch (error) {
         console.error("Error voting:", error);
         throw error;
+    }
+};
+
+// --- CUSTOM FORMS ---
+
+export const createForm = async (form: FormProject) => {
+    try {
+        await setDoc(doc(db, "forms", form.id), form);
+    } catch (error) {
+        console.error("Error creating form:", error);
+        throw error;
+    }
+};
+
+export const getForm = async (formId: string): Promise<FormProject | null> => {
+    try {
+        const docRef = doc(db, "forms", formId);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+            return docSnap.data() as FormProject;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error getting form:", error);
+        return null;
+    }
+};
+
+export const submitForm = async (formId: string, data: Record<string, string>) => {
+    try {
+        await addDoc(collection(db, "form_submissions"), {
+            formId,
+            data,
+            submittedAt: new Date().toISOString()
+        });
+        
+        // Increment submission count
+        const formRef = doc(db, "forms", formId);
+        await updateDoc(formRef, { submissions: increment(1) });
+    } catch (error) {
+        console.error("Error submitting form:", error);
+        throw error;
+    }
+};
+
+export const incrementFormView = async (formId: string) => {
+    try {
+        const formRef = doc(db, "forms", formId);
+        await updateDoc(formRef, { views: increment(1) });
+    } catch (error) {
+        console.error("Error incrementing views:", error);
+    }
+};
+
+export const getUserForms = async (userId: string): Promise<FormProject[]> => {
+    try {
+        const q = query(collection(db, "forms"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => doc.data() as FormProject);
+    } catch (error) {
+        console.error("Error getting user forms:", error);
+        return [];
+    }
+};
+
+export const deleteForm = async (formId: string) => {
+    try {
+        await deleteDoc(doc(db, "forms", formId));
+    } catch (error) {
+        console.error("Error deleting form:", error);
+    }
+}
+
+// --- GENERIC DOCUMENTS ---
+
+export const saveGenericDocument = async (docData: SavedDocument) => {
+    try {
+        await setDoc(doc(db, "saved_documents", docData.id), docData);
+    } catch (error) {
+        console.error("Error saving document:", error);
+        throw error;
+    }
+};
+
+export const getDocuments = async (userId: string): Promise<SavedDocument[]> => {
+    try {
+        const q = query(collection(db, "saved_documents"), where("userId", "==", userId), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        return snapshot.docs.map(doc => doc.data() as SavedDocument);
+    } catch (error) {
+        console.error("Error getting documents:", error);
+        return [];
+    }
+};
+
+export const deleteDocument = async (docId: string) => {
+    try {
+        await deleteDoc(doc(db, "saved_documents", docId));
+    } catch (error) {
+        console.error("Error deleting doc:", error);
     }
 };
 

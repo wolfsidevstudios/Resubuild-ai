@@ -18,16 +18,16 @@ import { AboutPage } from './components/AboutPage';
 import { TermsModal } from './components/TermsModal';
 import { SuspendedView } from './components/SuspendedView';
 import { CookieBanner } from './components/CookieBanner';
-import { AgeGateModal } from './components/AgeGateModal'; // Import AgeGate
+import { AgeGateModal } from './components/AgeGateModal';
+import { FormViewer } from './components/FormViewer';
 import { ResumeData, UserRole, UserProfile } from './types';
 import { auth, getOrCreateUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot' | 'terms' | 'privacy' | 'suspended' | 'about';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot' | 'terms' | 'privacy' | 'suspended' | 'about' | 'form-viewer';
 
-// Map views to URL paths
 const ROUTES: Record<string, View> = {
   '/': 'landing',
   '/dashboard': 'dashboard',
@@ -52,6 +52,7 @@ function App() {
   const [userRole, setUserRole] = useState<UserRole | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewParams, setViewParams] = useState<any>({});
   
   // Guest Mode State
   const [guestPrompt, setGuestPrompt] = useState<string>('');
@@ -61,13 +62,10 @@ function App() {
   const [showConsentModal, setShowConsentModal] = useState(false);
   const [showAgeGate, setShowAgeGate] = useState(false);
 
-  // --- ROUTING HELPERS ---
-
   const navigate = (newView: View, replace: boolean = false, params: Record<string, string> = {}) => {
-    // Find path for view
     let path = Object.keys(ROUTES).find(key => ROUTES[key] === newView) || '/';
     
-    // Append params (e.g. builder?id=123)
+    // Append params
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
         if (value) searchParams.append(key, value);
@@ -98,7 +96,17 @@ function App() {
           return;
       }
 
-      // Find view matching current path
+      // Special Route: Form Viewer (/forms/:id)
+      if (path.startsWith('/forms/')) {
+          const formId = path.split('/forms/')[1];
+          if (formId) {
+              setViewParams({ formId });
+              setView('form-viewer');
+              return;
+          }
+      }
+
+      // Standard Route Matching
       let matchedView: View = 'not-found';
       if (ROUTES[path]) {
           matchedView = ROUTES[path];
@@ -108,7 +116,7 @@ function App() {
           if (path === '/') matchedView = 'landing';
       }
 
-      // Deep linking logic
+      // Builder Deep Link
       if (matchedView === 'builder') {
           const resumeId = searchParams.get('id');
           if (resumeId) {
@@ -145,10 +153,9 @@ function App() {
       setView(matchedView);
   };
 
-  // Helper to route user based on role (called on login)
   const routeUser = async (currentUser: User | null, targetView?: View) => {
       if (!currentUser) {
-          if (['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about'].includes(view)) {
+          if (['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about', 'form-viewer'].includes(view)) {
              // stay on public page
           } else {
              navigate('landing');
@@ -159,33 +166,27 @@ function App() {
       }
 
       try {
-        // Use getOrCreateUserProfile to ensure profile exists, otherwise TermsModal won't show for new/legacy users
         const profile = await getOrCreateUserProfile(currentUser);
         setUserProfile(profile);
         const role = profile?.role || 'candidate';
         setUserRole(role);
         
-        // CHECK SUSPENSION
         if (profile?.account_status === 'suspended') {
             navigate('suspended', true);
             return;
         }
 
-        // Check for consent logic (only if active)
         if (profile && profile.training_consent === undefined) {
             setShowConsentModal(true);
         }
 
-        // If a specific target is requested (e.g. from URL), try to go there
         if (targetView) {
              navigate(targetView);
              return;
         }
 
-        // Otherwise default routing based on role, BUT respect current URL if it's valid
         const currentPathView = ROUTES[window.location.pathname];
-        if (['builder', 'onboarding', 'settings', 'design-pilot'].includes(currentPathView)) {
-            // Stay on current view
+        if (['builder', 'onboarding', 'settings', 'design-pilot', 'form-viewer'].includes(view)) {
             return;
         }
         
@@ -203,38 +204,36 @@ function App() {
   useEffect(() => {
     let isMounted = true;
 
-    // Check for Age Gate (Client-side only check)
     const ageCollected = localStorage.getItem('resubuild_user_age');
     if (!ageCollected) {
-        // Small delay to not overlap with other modals instantly
         setTimeout(() => setShowAgeGate(true), 1500);
     }
 
-    // Handle Browser Back/Forward
     const onPopState = () => {
         const path = window.location.pathname;
-        const mappedView = ROUTES[path] || 'not-found';
-        setView(mappedView);
+        if (path.startsWith('/forms/')) {
+            const formId = path.split('/forms/')[1];
+            setViewParams({ formId });
+            setView('form-viewer');
+        } else {
+            const mappedView = ROUTES[path] || 'not-found';
+            setView(mappedView);
+        }
     };
     window.addEventListener('popstate', onPopState);
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
         if (!isMounted) return;
-        
         setUser(user);
-        
         if (user) {
              try {
-                 // Use getOrCreateUserProfile to ensure we have a profile doc for the Terms check
                  const profile = await getOrCreateUserProfile(user);
                  setUserProfile(profile);
                  const role = profile?.role || 'candidate';
                  setUserRole(role);
-                 
                  if (profile?.account_status === 'suspended') {
                      navigate('suspended', true);
                  } else if (profile && profile.training_consent === undefined) {
-                     // Only show training consent if not suspended
                      setShowConsentModal(true);
                  }
                  await syncViewFromUrl(user, profile);
@@ -247,12 +246,15 @@ function App() {
              setUserRole(null);
              setUserProfile(null);
              setShowConsentModal(false);
-             
-             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about'];
+             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about', 'form-viewer'];
              if (!publicViews.includes(view)) {
-                navigate('landing');
+                // Only redirect if we aren't on a public page (like form viewer)
+                if (!window.location.pathname.startsWith('/forms/')) {
+                    navigate('landing');
+                } else {
+                    await syncViewFromUrl(null, null);
+                }
              } else {
-                 // Just ensure view matches URL
                  await syncViewFromUrl(null, null);
              }
         }
@@ -306,13 +308,17 @@ function App() {
       return (
           <div className="min-h-screen flex flex-col items-center justify-center bg-white">
               <Loader2 className="w-10 h-10 animate-spin text-neutral-900 mb-4" />
-              <p className="text-neutral-500 text-sm animate-pulse">Loading Resubuild...</p>
+              <p className="text-neutral-500 text-sm animate-pulse">Loading Kyndra Workspace...</p>
           </div>
       );
   }
 
   return (
     <>
+      {view === 'form-viewer' && (
+          <FormViewer formId={viewParams.formId} />
+      )}
+
       {view === 'landing' && (
         <LandingPage 
             onStart={() => routeUser(user)} 
@@ -415,7 +421,7 @@ function App() {
           />
       )}
 
-      {/* Auth Modal for Guest Save or General Login */}
+      {/* Auth Modal */}
       {showAuthModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-neutral-900/50 backdrop-blur-sm">
               <div className="bg-white w-full max-w-md rounded-3xl p-6 relative animate-in zoom-in-95">
@@ -427,35 +433,34 @@ function App() {
                   </button>
                   <div className="mb-6 text-center">
                       <h2 className="text-2xl font-bold mb-2">Save your Resume</h2>
-                      <p className="text-neutral-500">Create a free account to save your progress and download the PDF.</p>
+                      <p className="text-neutral-500">Create a free account to save your progress.</p>
                   </div>
                   <Auth onSuccess={handleAuthSuccess} defaultView="signup" />
               </div>
           </div>
       )}
 
-      {/* Terms Acceptance Modal - Mandatory. Ensure userProfile is loaded first */}
+      {/* Terms Modal */}
       {user && userProfile && !userProfile.terms_accepted && view !== 'suspended' && view !== 'terms' && view !== 'privacy' && view !== 'about' && (
           <TermsModal 
               userId={user.uid} 
               onAccept={() => {
-                  // Optimistically update local state so it closes without refresh
                   setUserProfile(prev => prev ? { ...prev, terms_accepted: true } : null);
               }} 
           />
       )}
 
-      {/* Data Consent Modal (Global) - Only if terms accepted and consent not set */}
+      {/* Data Consent Modal */}
       {showConsentModal && user && userProfile?.terms_accepted && (
           <DataConsentModal userId={user.uid} onClose={() => setShowConsentModal(false)} />
       )}
 
-      {/* Age Gate Modal - Global for all users to ensure AdSense Compliance */}
+      {/* Age Gate Modal */}
       {showAgeGate && (
           <AgeGateModal onComplete={() => setShowAgeGate(false)} />
       )}
 
-      {/* AdSense Mandatory Cookie Banner */}
+      {/* Cookie Banner */}
       <CookieBanner />
     </>
   );

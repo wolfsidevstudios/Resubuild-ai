@@ -1,6 +1,6 @@
 
 import { GoogleGenAI } from "@google/genai";
-import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent, PublishedResume, CustomAgent } from "../types";
+import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent, PublishedResume, CustomAgent, FormProject } from "../types";
 import { getStoredAPIKey, getPreferredModel } from "./storageService";
 
 // Helper to get the AI instance dynamically
@@ -1200,6 +1200,60 @@ export const generateRubric = async (assignment: string, grade: string): Promise
         return response.text?.trim() || "";
     } catch (error) {
         console.error("Rubric generation failed:", error);
+        throw error;
+    }
+};
+
+// --- FORM GENERATION ---
+
+export const generateFormSchema = async (topic: string): Promise<FormProject> => {
+    const prompt = `
+        Create a custom form structure based on the request: "${topic}".
+        
+        Return JSON only matching this structure:
+        {
+            "title": "Form Title",
+            "description": "Short description for the user filling it out",
+            "themeColor": "#hexcode",
+            "fields": [
+                {
+                    "id": "unique_string_1",
+                    "type": "text" | "textarea" | "select" | "checkbox" | "email" | "number",
+                    "label": "Question Label",
+                    "placeholder": "Example answer...",
+                    "options": ["Option 1", "Option 2"] (only if type is select),
+                    "required": boolean
+                }
+            ]
+        }
+        
+        Include at least 3-5 relevant fields.
+    `;
+
+    try {
+        const ai = getAI();
+        const response = await ai.models.generateContent({
+            model: getModel('basic'),
+            contents: prompt,
+            config: { responseMimeType: 'application/json' }
+        });
+        
+        const result = JSON.parse(response.text?.trim() || "{}");
+        
+        return {
+            id: crypto.randomUUID(),
+            userId: '', // Set by caller
+            title: result.title || 'Untitled Form',
+            description: result.description || '',
+            themeColor: result.themeColor || '#000000',
+            fields: result.fields || [],
+            published: false,
+            views: 0,
+            submissions: 0,
+            createdAt: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error("Form generation failed:", error);
         throw error;
     }
 };

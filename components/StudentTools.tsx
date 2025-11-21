@@ -1,14 +1,17 @@
 
 import React, { useState } from 'react';
-import { GraduationCap, Calculator, BookOpen, PenTool, Copy, Loader2, Calendar, BrainCircuit, Sparkles, FileText, ChevronRight } from 'lucide-react';
+import { GraduationCap, Calculator, BookOpen, PenTool, Copy, Loader2, Calendar, BrainCircuit, Sparkles, FileText, ChevronRight, Save, CheckCircle2 } from 'lucide-react';
 import { Button } from './Button';
 import { Input, TextArea } from './InputField';
 import { generateStudyPlan, generateEssayOutline, generateFlashcards, explainConcept } from '../services/geminiService';
+import { saveGenericDocument } from '../services/firebase';
 
-export const StudentTools: React.FC = () => {
+export const StudentTools: React.FC<{ userId?: string }> = ({ userId }) => {
     const [activeTool, setActiveTool] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const [result, setResult] = useState<any>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
 
     // Inputs for various tools
     const [inputs, setInputs] = useState({
@@ -32,6 +35,7 @@ export const StudentTools: React.FC = () => {
     const reset = () => {
         setResult(null);
         setLoading(false);
+        setSaveSuccess(false);
     };
 
     // --- GPA Logic ---
@@ -71,7 +75,7 @@ export const StudentTools: React.FC = () => {
                 setResult(outline);
             } else if (action === 'flashcards') {
                 const cards = await generateFlashcards(inputs.flashcardTopic);
-                setResult(cards); // This will be an array
+                setResult(cards); 
             } else if (action === 'explain') {
                 const explanation = await explainConcept(inputs.concept, inputs.conceptLevel);
                 setResult(explanation);
@@ -81,6 +85,36 @@ export const StudentTools: React.FC = () => {
             alert("AI request failed. Please try again.");
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!userId || !result) return;
+        setIsSaving(true);
+        
+        let type: any = 'generic';
+        let title = 'Saved Result';
+        
+        if (activeTool === 'study') { type = 'study-guide'; title = `Study Plan: ${inputs.subject}`; }
+        if (activeTool === 'essay') { type = 'essay-outline'; title = `Outline: ${inputs.essayTopic}`; }
+        if (activeTool === 'flashcards') { type = 'flashcards'; title = `Flashcards: ${inputs.flashcardTopic}`; }
+        if (activeTool === 'homework') { type = 'generic'; title = `Explanation: ${inputs.concept}`; }
+
+        try {
+            await saveGenericDocument({
+                id: crypto.randomUUID(),
+                userId,
+                type,
+                title,
+                content: result,
+                createdAt: new Date().toISOString()
+            });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (e) {
+            alert("Failed to save.");
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -141,11 +175,23 @@ export const StudentTools: React.FC = () => {
             ) : (
                 <div className="flex-1 flex flex-col h-full">
                     {/* Header */}
-                    <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center gap-4">
-                        <button onClick={() => { setActiveTool(null); reset(); }} className="p-2 hover:bg-neutral-100 rounded-full">
-                            <ChevronRight className="w-5 h-5 rotate-180" />
-                        </button>
-                        <h2 className="font-bold text-xl capitalize">{activeTool === 'gpa' ? 'GPA Calculator' : activeTool === 'homework' ? 'Homework Helper' : `${activeTool} Tool`}</h2>
+                    <div className="bg-white border-b border-neutral-200 px-6 py-4 flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => { setActiveTool(null); reset(); }} className="p-2 hover:bg-neutral-100 rounded-full">
+                                <ChevronRight className="w-5 h-5 rotate-180" />
+                            </button>
+                            <h2 className="font-bold text-xl capitalize">{activeTool === 'gpa' ? 'GPA Calculator' : activeTool === 'homework' ? 'Homework Helper' : `${activeTool} Tool`}</h2>
+                        </div>
+                        {result && userId && (
+                            <Button 
+                                onClick={handleSave} 
+                                isLoading={isSaving}
+                                variant={saveSuccess ? "success" : "secondary"}
+                                icon={saveSuccess ? <CheckCircle2 className="w-4 h-4"/> : <Save className="w-4 h-4"/>}
+                            >
+                                {saveSuccess ? 'Saved!' : 'Save to Files'}
+                            </Button>
+                        )}
                     </div>
 
                     <div className="flex-1 overflow-y-auto p-6 md:p-8">
