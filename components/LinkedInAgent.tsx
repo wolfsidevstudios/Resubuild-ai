@@ -1,13 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, Linkedin, ArrowRight, Loader2, CheckCircle2, AlertCircle, ScanLine } from 'lucide-react';
+import { X, Linkedin, ArrowRight, Loader2, CheckCircle2, AlertCircle, ScanLine, Sparkles } from 'lucide-react';
 import { generateResumeFromLinkedIn } from '../services/geminiService';
 import { ResumeData } from '../types';
 import { Button } from './Button';
 import { Input } from './InputField';
 
 interface LinkedInAgentProps {
-    onClose: () => void;
+    onClose?: () => void; // Optional in full-screen mode
     onSave: (resume: ResumeData) => void;
 }
 
@@ -65,22 +65,22 @@ export const LinkedInAgent: React.FC<LinkedInAgentProps> = ({ onClose, onSave })
     };
 
     return (
-        <div className="fixed inset-0 z-50 bg-neutral-900/40 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-            <div className="bg-white w-full max-w-lg rounded-[2.5rem] shadow-2xl overflow-hidden border border-neutral-200 flex flex-col relative animate-in zoom-in-95 duration-300">
-                
-                {/* Close Button */}
-                <button 
-                    onClick={onClose} 
-                    className="absolute top-6 right-6 p-2 hover:bg-neutral-100 rounded-full transition-colors z-10"
-                >
-                    <X className="w-5 h-5 text-neutral-400" />
-                </button>
+        <div className="w-full h-full flex flex-col items-center justify-center p-6 relative overflow-hidden bg-neutral-50/50">
+            
+            {/* Background Decoration */}
+            <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] bg-blue-100/30 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-[-20%] right-[-10%] w-[600px] h-[600px] bg-purple-100/30 rounded-full blur-3xl pointer-events-none"></div>
 
+            <div className="bg-white w-full max-w-3xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-neutral-200 flex flex-col relative animate-in zoom-in-95 duration-300">
+                
                 {/* Header Graphic */}
-                <div className="h-40 bg-[#0077b5] relative overflow-hidden flex items-center justify-center">
+                <div className="h-48 bg-[#0077b5] relative overflow-hidden flex items-center justify-center">
                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
-                    <div className="relative z-10 w-20 h-20 bg-white rounded-2xl shadow-xl flex items-center justify-center rotate-3">
-                        <Linkedin className="w-10 h-10 text-[#0077b5]" />
+                    <div className="relative z-10 w-24 h-24 bg-white rounded-3xl shadow-2xl flex items-center justify-center rotate-3">
+                        <Linkedin className="w-12 h-12 text-[#0077b5]" />
+                    </div>
+                    <div className="absolute top-6 left-6 flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-white text-xs font-bold border border-white/20">
+                        <Sparkles className="w-3 h-3" /> Powered by Gemini 3.0 Pro
                     </div>
                     
                     {/* Scanning Effect */}
@@ -91,13 +91,13 @@ export const LinkedInAgent: React.FC<LinkedInAgentProps> = ({ onClose, onSave })
                     )}
                 </div>
 
-                <div className="p-8 md:p-10 text-center">
+                <div className="p-10 md:p-16 text-center">
                     {status === 'idle' && (
-                        <form onSubmit={handleTransform} className="space-y-6">
+                        <form onSubmit={handleTransform} className="space-y-8 max-w-lg mx-auto">
                             <div>
-                                <h2 className="text-2xl font-bold text-neutral-900 mb-2">LinkedIn to Resume</h2>
-                                <p className="text-neutral-500 text-sm">
-                                    Paste your LinkedIn profile URL. Our AI agent will scan your public info and craft a polished resume instantly.
+                                <h2 className="text-3xl font-bold text-neutral-900 mb-3">LinkedIn to Resume Agent</h2>
+                                <p className="text-neutral-500 text-lg">
+                                    Paste your LinkedIn profile URL. Our specialized agent will scan your public info, infer missing details, and craft a polished resume.
                                 </p>
                             </div>
                             
@@ -107,79 +107,81 @@ export const LinkedInAgent: React.FC<LinkedInAgentProps> = ({ onClose, onSave })
                                     value={url} 
                                     onChange={e => setUrl(e.target.value)} 
                                     placeholder="https://www.linkedin.com/in/johndoe"
-                                    className="text-lg"
+                                    className="text-lg py-4"
                                 />
                                 {errorMsg && (
-                                    <p className="text-red-500 text-xs mt-2 flex items-center gap-1">
-                                        <AlertCircle className="w-3 h-3" /> {errorMsg}
+                                    <p className="text-red-500 text-sm mt-3 flex items-center gap-1 font-medium">
+                                        <AlertCircle className="w-4 h-4" /> {errorMsg}
                                     </p>
                                 )}
                             </div>
 
-                            <Button type="submit" className="w-full py-4 text-lg shadow-xl shadow-[#0077b5]/20 bg-[#0077b5] hover:bg-[#006097]">
+                            <Button type="submit" className="w-full py-5 text-lg shadow-xl shadow-[#0077b5]/20 bg-[#0077b5] hover:bg-[#006097] rounded-xl">
                                 Transform Profile <ArrowRight className="ml-2 w-5 h-5" />
                             </Button>
                         </form>
                     )}
 
                     {(status === 'scanning' || status === 'analyzing' || status === 'generating') && (
-                        <div className="py-8 space-y-6">
-                            <div className="relative w-24 h-24 mx-auto">
+                        <div className="py-12 space-y-8">
+                            <div className="relative w-32 h-32 mx-auto">
                                 <svg className="w-full h-full transform -rotate-90">
-                                    <circle cx="48" cy="48" r="44" stroke="#e5e5e5" strokeWidth="8" fill="none" />
+                                    <circle cx="64" cy="64" r="60" stroke="#e5e5e5" strokeWidth="8" fill="none" />
                                     <circle 
-                                        cx="48" cy="48" r="44" 
+                                        cx="64" cy="64" r="60" 
                                         stroke="#0077b5" strokeWidth="8" fill="none" 
-                                        strokeDasharray="276" 
-                                        strokeDashoffset={276 - (276 * progress) / 100}
+                                        strokeDasharray="377" 
+                                        strokeDashoffset={377 - (377 * progress) / 100}
                                         className="transition-all duration-300 ease-out"
                                     />
                                 </svg>
-                                <div className="absolute inset-0 flex items-center justify-center font-bold text-xl text-[#0077b5]">
+                                <div className="absolute inset-0 flex items-center justify-center font-bold text-3xl text-[#0077b5]">
                                     {progress}%
                                 </div>
                             </div>
                             
                             <div>
-                                <h3 className="text-xl font-bold text-neutral-900 animate-pulse">
-                                    {status === 'scanning' && 'Scanning Profile...'}
-                                    {status === 'analyzing' && 'Extracting Experience...'}
-                                    {status === 'generating' && 'Formatting Resume...'}
+                                <h3 className="text-2xl font-bold text-neutral-900 animate-pulse mb-2">
+                                    {status === 'scanning' && 'Scanning Profile Structure...'}
+                                    {status === 'analyzing' && 'Reasoning over Experience...'}
+                                    {status === 'generating' && 'Formatting Final Document...'}
                                 </h3>
-                                <p className="text-neutral-500 text-sm mt-2">AI is translating your profile data</p>
+                                <p className="text-neutral-500">
+                                    Using Gemini 3.0 Pro to analyze career history and skills.
+                                </p>
                             </div>
                         </div>
                     )}
 
                     {status === 'complete' && (
-                         <div className="py-6 space-y-6 animate-in zoom-in-95">
-                             <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600">
-                                 <CheckCircle2 className="w-10 h-10" />
+                         <div className="py-8 space-y-8 animate-in zoom-in-95">
+                             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto text-green-600 shadow-lg">
+                                 <CheckCircle2 className="w-12 h-12" />
                              </div>
                              <div>
-                                 <h2 className="text-2xl font-bold text-neutral-900">Resume Ready!</h2>
-                                 <p className="text-neutral-500 text-sm mt-2">
-                                     We've successfully converted your profile into a professional resume format.
+                                 <h2 className="text-3xl font-bold text-neutral-900 mb-3">Transformation Complete!</h2>
+                                 <p className="text-neutral-500 text-lg">
+                                     We've successfully converted your profile into a professional resume format using our advanced reasoning model.
                                  </p>
                              </div>
-                             <Button onClick={handleFinish} className="w-full py-4 text-lg shadow-xl shadow-green-500/20 bg-green-600 hover:bg-green-700 border-none">
-                                 Open Editor <ArrowRight className="ml-2 w-5 h-5" />
+                             <Button onClick={handleFinish} className="w-full max-w-md mx-auto py-5 text-lg shadow-xl shadow-green-500/20 bg-green-600 hover:bg-green-700 border-none rounded-xl">
+                                 Open in Editor <ArrowRight className="ml-2 w-5 h-5" />
                              </Button>
                          </div>
                     )}
                     
                     {status === 'error' && (
-                        <div className="py-6 space-y-6">
-                             <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600">
-                                 <X className="w-10 h-10" />
+                        <div className="py-8 space-y-8">
+                             <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mx-auto text-red-600 shadow-lg">
+                                 <X className="w-12 h-12" />
                              </div>
                              <div>
-                                 <h2 className="text-2xl font-bold text-neutral-900">Extraction Failed</h2>
-                                 <p className="text-neutral-500 text-sm mt-2">
+                                 <h2 className="text-3xl font-bold text-neutral-900 mb-3">Extraction Failed</h2>
+                                 <p className="text-neutral-500 text-lg">
                                      {errorMsg || "We couldn't access this profile. Please try again or check the URL."}
                                  </p>
                              </div>
-                             <Button onClick={() => setStatus('idle')} variant="secondary" className="w-full py-3">
+                             <Button onClick={() => setStatus('idle')} variant="secondary" className="w-full max-w-md mx-auto py-4">
                                  Try Again
                              </Button>
                         </div>

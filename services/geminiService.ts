@@ -1,7 +1,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import { ResumeData, Experience, ResumeAuditResult, CareerPathSuggestion, LinkedInContent, PublishedResume } from "../types";
-import { getStoredAPIKey } from "./storageService";
+import { getStoredAPIKey, getPreferredModel } from "./storageService";
 
 // Helper to get the AI instance dynamically
 const getAI = () => {
@@ -15,7 +15,23 @@ const getAI = () => {
   return new GoogleGenAI({ apiKey });
 };
 
-// --- STANDARD MODE (Fast, gemini-2.5-flash) ---
+// Helper to resolve the model name based on preference, but allow overrides for specific tasks
+const getModel = (taskComplexity: 'basic' | 'complex' = 'basic'): string => {
+    const preferred = getPreferredModel();
+    
+    // If user selected a specific model in settings, try to respect it, 
+    // but for complex reasoning tasks (like LinkedIn parsing), we might force a smarter model if the preference is too weak.
+    
+    if (taskComplexity === 'complex') {
+        // If user explicitly set a "Pro" model, use it. Otherwise default to 3-pro for complex tasks.
+        if (preferred.includes('pro')) return preferred;
+        return 'gemini-3-pro-preview';
+    }
+    
+    return preferred; 
+};
+
+// --- STANDARD MODE ---
 
 export const generateResumeSummary = async (data: ResumeData): Promise<string> => {
   const prompt = `
@@ -31,7 +47,7 @@ export const generateResumeSummary = async (data: ResumeData): Promise<string> =
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: getModel('basic'),
       contents: prompt,
     });
     return response.text?.trim() || "";
@@ -54,7 +70,7 @@ export const improveJobDescription = async (description: string, jobTitle: strin
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: getModel('basic'),
       contents: prompt,
     });
     return response.text?.trim() || "";
@@ -76,7 +92,7 @@ export const suggestSkills = async (jobTitle: string, currentDescription: string
   try {
     const ai = getAI();
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: getModel('basic'),
       contents: prompt,
     });
     const text = response.text?.trim() || "";
@@ -110,7 +126,7 @@ export const auditResume = async (data: ResumeData): Promise<ResumeAuditResult> 
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: getModel('basic'),
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
@@ -147,7 +163,7 @@ export const generateCoverLetter = async (data: ResumeData, jobDescription: stri
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: getModel('complex'),
             contents: prompt,
         });
         return response.text?.trim() || "";
@@ -157,12 +173,11 @@ export const generateCoverLetter = async (data: ResumeData, jobDescription: stri
     }
 };
 
-// --- ADVANCED MODE (Reasoning, gemini-3-pro-preview) ---
+// --- ADVANCED MODE (Reasoning) ---
 
 export const performDeepAudit = async (data: ResumeData): Promise<ResumeAuditResult> => {
     const context = JSON.stringify(data);
 
-    // Uses Gemini 3 Pro with Thinking for deep analysis
     const prompt = `
         Analyze this resume deeply. Identify gaps in career history, vague impact statements, and overused buzzwords.
         Critique it like a Fortune 500 executive recruiter.
@@ -181,11 +196,11 @@ export const performDeepAudit = async (data: ResumeData): Promise<ResumeAuditRes
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-pro-preview', // Explicitly use 3-pro for deep audit
             contents: prompt,
             config: { 
                 responseMimeType: 'application/json',
-                thinkingConfig: { thinkingBudget: 2048 } // Enable thinking for deep analysis
+                thinkingConfig: { thinkingBudget: 2048 } 
             }
         });
         const text = response.text?.trim() || "{}";
@@ -294,9 +309,10 @@ export const generateResumeFromLinkedIn = async (url: string): Promise<ResumeDat
     `;
 
     try {
+        // Use Gemini 3 Pro Preview for best reasoning capability for this complex task
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-3-pro-preview',
+            model: 'gemini-3-pro-preview', 
             contents: prompt,
             config: {
                 responseMimeType: 'application/json',
@@ -360,7 +376,7 @@ export const generateInteractivePortfolio = async (data: ResumeData): Promise<st
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: getModel('basic'),
             contents: prompt,
         });
         
@@ -399,7 +415,7 @@ export const generateInterviewQuestions = async (data: ResumeData): Promise<stri
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: getModel('basic'),
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
@@ -446,7 +462,7 @@ export const analyzeJobMatch = async (data: ResumeData, jobDescription: string):
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: getModel('complex'),
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
@@ -477,7 +493,7 @@ export const fixGrammarAndSpelling = async (data: ResumeData): Promise<ResumeDat
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: getModel('basic'),
             contents: prompt,
             config: { responseMimeType: 'application/json' }
         });
@@ -518,7 +534,7 @@ export const findBestCandidates = async (
     try {
         const ai = getAI();
         const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
+            model: getModel('complex'),
             contents: prompt,
             config: {
                 responseMimeType: 'application/json'

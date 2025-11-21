@@ -2,6 +2,7 @@
 import { ResumeData } from '../types';
 
 const API_KEY_STORAGE_KEY = 'gemini_api_key';
+const PREFERRED_MODEL_KEY = 'resubuild_preferred_model';
 
 // Helper to get the key based on user ID
 const getStorageKey = (userId?: string) => {
@@ -85,4 +86,14 @@ export const removeAPIKey = (): void => {
 
 export const hasAPIKey = (): boolean => {
   return !!(getStoredAPIKey() || process.env.API_KEY);
+};
+
+// --- AI Model Preference ---
+
+export const getPreferredModel = (): string => {
+  return localStorage.getItem(PREFERRED_MODEL_KEY) || 'gemini-2.5-flash';
+};
+
+export const savePreferredModel = (model: string): void => {
+  localStorage.setItem(PREFERRED_MODEL_KEY, model);
 };

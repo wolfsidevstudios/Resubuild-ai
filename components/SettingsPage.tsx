@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { updateUser, signOut } from '../services/firebase';
-import { getStoredAPIKey, saveAPIKey, removeAPIKey } from '../services/storageService';
+import { getStoredAPIKey, saveAPIKey, removeAPIKey, getPreferredModel, savePreferredModel } from '../services/storageService';
 import { Button } from './Button';
 import { Input } from './InputField';
 import { 
@@ -16,7 +16,11 @@ import {
     Bell,
     CheckCircle2,
     AlertCircle,
-    Fingerprint
+    Fingerprint,
+    BrainCircuit,
+    Zap,
+    Cpu,
+    Sparkles
 } from 'lucide-react';
 
 interface SettingsPageProps {
@@ -31,9 +35,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
   const [fullName, setFullName] = useState(user.displayName || '');
   const [isSaving, setIsSaving] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  
+  // Model Preference
+  const [preferredModel, setPreferredModel] = useState('gemini-2.5-flash');
 
   useEffect(() => {
     setApiKey(getStoredAPIKey() || '');
+    setPreferredModel(getPreferredModel());
   }, []);
 
   const handleSaveProfile = async () => {
@@ -59,6 +67,13 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
      setSuccessMsg('API Key settings saved.');
      setTimeout(() => setSuccessMsg(''), 3000);
   };
+  
+  const handleSaveModel = (model: string) => {
+      savePreferredModel(model);
+      setPreferredModel(model);
+      setSuccessMsg('AI Model preference updated.');
+      setTimeout(() => setSuccessMsg(''), 3000);
+  }
 
   const handleSignOut = async () => {
       if (confirm('Are you sure you want to sign out?')) {
@@ -72,6 +87,33 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
       if (providerId.includes('github')) return 'GitHub';
       return 'Email';
   };
+
+  const models = [
+      {
+          id: 'gemini-3-pro-preview',
+          name: 'Gemini 3 Pro',
+          desc: 'The best model in the world for multimodal understanding, and our most powerful agentic and vibe-coding model yet.',
+          tag: 'Most Intelligent',
+          icon: BrainCircuit,
+          color: 'purple'
+      },
+      {
+          id: 'gemini-2.5-flash', // Fallback for 2.5 pro request if mapped, or use 3-pro
+          name: 'Gemini 2.5 Flash',
+          desc: 'Our best model in terms of price-performance, offering well-rounded capabilities for high volume tasks.',
+          tag: 'Balanced',
+          icon: Zap,
+          color: 'blue'
+      },
+      {
+          id: 'gemini-2.5-flash-lite-latest',
+          name: 'Gemini 2.5 Flash-Lite',
+          desc: 'Our fastest flash model optimized for cost-efficiency and high throughput.',
+          tag: 'Ultra Fast',
+          icon: Cpu,
+          color: 'green'
+      }
+  ];
 
   return (
     <div className="min-h-screen bg-neutral-50 flex flex-col">
@@ -112,7 +154,7 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                         onClick={() => setActiveTab('integrations')}
                         className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors text-left ${activeTab === 'integrations' ? 'bg-neutral-900 text-white shadow-md' : 'text-neutral-600 hover:bg-white hover:shadow-sm'}`}
                     >
-                        <Key className="w-4 h-4" /> Integrations
+                        <Key className="w-4 h-4" /> Integrations & AI
                     </button>
                     <button 
                         onClick={() => setActiveTab('account')}
@@ -194,18 +236,19 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                     {activeTab === 'integrations' && (
                         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                             <div>
-                                <h2 className="text-2xl font-bold mb-1">API Integrations</h2>
-                                <p className="text-neutral-500">Manage your connection to external AI services.</p>
+                                <h2 className="text-2xl font-bold mb-1">API & Intelligence</h2>
+                                <p className="text-neutral-500">Manage your connection to external AI services and model preferences.</p>
                             </div>
 
+                            {/* API Key Section */}
                             <div className="bg-white p-6 md:p-8 rounded-3xl border border-neutral-200 shadow-sm space-y-6">
                                 <div>
                                     <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
                                         <div className="w-6 h-6 rounded bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white text-[10px]">AI</div>
-                                        Google Gemini AI
+                                        Google Gemini API Key
                                     </h3>
                                     <p className="text-sm text-neutral-500 leading-relaxed mb-6">
-                                        To use AI features like resume generation, auditing, and cover letter writing, you need to provide a Gemini API key. 
+                                        To use AI features, you need to provide a Gemini API key. 
                                         Your key is stored locally in your browser's secure storage.
                                     </p>
                                     
@@ -219,25 +262,54 @@ export const SettingsPage: React.FC<SettingsPageProps> = ({ onBack, user, userRo
                                         />
                                     </div>
                                 </div>
-
-                                <div className="bg-neutral-50 p-4 rounded-xl text-xs text-neutral-600 flex gap-3 items-start">
-                                    <Shield className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
-                                    <p>
-                                        We recommend using a restricted API key. Resubuild is a client-side application, meaning your key is used directly from your browser to Google's servers. We never see or store your key on our servers.
-                                    </p>
-                                </div>
-
                                 <div className="pt-4 border-t border-neutral-100 flex items-center gap-4">
                                     <Button onClick={handleSaveKey}>
                                         Update Key
                                     </Button>
-                                    {successMsg && (
+                                    {successMsg && apiKey && (
                                         <span className="text-sm text-green-600 flex items-center gap-1 animate-in fade-in">
                                             <CheckCircle2 className="w-4 h-4" /> {successMsg}
                                         </span>
                                     )}
                                 </div>
                             </div>
+
+                            {/* Model Selection Section */}
+                            <div className="bg-white p-6 md:p-8 rounded-3xl border border-neutral-200 shadow-sm space-y-6">
+                                <div>
+                                    <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                                        <Sparkles className="w-5 h-5 text-yellow-500" /> Default AI Model
+                                    </h3>
+                                    <p className="text-sm text-neutral-500 mb-6">
+                                        Choose the default intelligence model for all AI tools (Resume Builder, Audit, Chat).
+                                    </p>
+
+                                    <div className="grid gap-4">
+                                        {models.map(m => (
+                                            <button
+                                                key={m.id}
+                                                onClick={() => handleSaveModel(m.id)}
+                                                className={`text-left p-4 rounded-2xl border-2 transition-all ${preferredModel === m.id ? 'border-neutral-900 bg-neutral-50' : 'border-neutral-100 hover:border-neutral-200'}`}
+                                            >
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <m.icon className={`w-5 h-5 text-${m.color}-500`} />
+                                                        <span className="font-bold text-neutral-900">{m.name}</span>
+                                                    </div>
+                                                    {preferredModel === m.id && <CheckCircle2 className="w-5 h-5 text-neutral-900" />}
+                                                </div>
+                                                <div className={`inline-block text-[10px] font-bold px-2 py-0.5 rounded mb-2 bg-${m.color}-50 text-${m.color}-700 uppercase tracking-wider`}>
+                                                    {m.tag}
+                                                </div>
+                                                <p className="text-sm text-neutral-500 leading-relaxed">
+                                                    {m.desc}
+                                                </p>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
                         </div>
                     )}
 
