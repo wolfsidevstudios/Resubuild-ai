@@ -1,9 +1,9 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../services/supabase';
 import { Button } from './Button';
 import { Input } from './InputField';
-import { AlertCircle, CheckCircle2, Briefcase, User } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Briefcase, User, Loader2 } from 'lucide-react';
 
 interface AuthProps {
     onSuccess: () => void;
@@ -26,10 +26,17 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [msg, setMsg] = useState<string | null>(null);
+    
+    const isMounted = useRef(true);
+
+    useEffect(() => {
+        return () => { isMounted.current = false; };
+    }, []);
 
     // Initialize Google Sign-In
     useEffect(() => {
         const handleGoogleCredentialResponse = async (response: any) => {
+            if (!isMounted.current) return;
             setLoading(true);
             setError(null);
             try {
@@ -38,92 +45,124 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
                     token: response.credential,
                 });
                 if (error) throw error;
-                onSuccess();
+                if (isMounted.current) onSuccess();
             } catch (err: any) {
                 console.error("Google Auth Error:", err);
-                setError(err.message || 'Failed to sign in with Google');
+                if (isMounted.current) setError(err.message || 'Failed to sign in with Google');
             } finally {
-                setLoading(false);
+                if (isMounted.current) setLoading(false);
             }
         };
 
         const initializeGoogleBtn = () => {
-            if (window.google) {
-                window.google.accounts.id.initialize({
-                    client_id: '127898517822-9kedtn413hjan7t2t3gc8lbqdvu38al4.apps.googleusercontent.com',
-                    callback: handleGoogleCredentialResponse
-                });
-                
-                const btnDiv = document.getElementById('google-btn');
-                if (btnDiv) {
-                    window.google.accounts.id.renderButton(
-                        btnDiv,
-                        { 
-                            theme: "outline", 
-                            size: "large", 
-                            width: "100%", 
-                            shape: "pill",
-                            text: view === 'signin' ? "signin_with" : "signup_with" 
-                        }
-                    );
+            if (window.google && document.getElementById('google-btn')) {
+                try {
+                    window.google.accounts.id.initialize({
+                        client_id: '127898517822-9kedtn413hjan7t2t3gc8lbqdvu38al4.apps.googleusercontent.com',
+                        callback: handleGoogleCredentialResponse
+                    });
+                    
+                    const btnDiv = document.getElementById('google-btn');
+                    if (btnDiv) {
+                        window.google.accounts.id.renderButton(
+                            btnDiv,
+                            { 
+                                theme: "outline", 
+                                size: "large", 
+                                width: "100%", 
+                                shape: "pill",
+                                text: view === 'signin' ? "signin_with" : "signup_with" 
+                            }
+                        );
+                    }
+                } catch (e) {
+                    console.error("Google button render failed", e);
                 }
             }
         };
 
-        // Retry until script loads
         const timer = setInterval(() => {
             if (window.google) {
                 initializeGoogleBtn();
                 clearInterval(timer);
             }
-        }, 100);
+        }, 500);
+        
+        // Timeout for google script loading
+        const timeout = setTimeout(() => clearInterval(timer), 5000);
 
-        return () => clearInterval(timer);
+        return () => {
+            clearInterval(timer);
+            clearTimeout(timeout);
+        };
     }, [view, onSuccess]);
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (loading) return;
+
         setLoading(true);
         setError(null);
         setMsg(null);
 
-        try {
-            if (view === 'signup') {
-                // Sign Up with Metadata
+        // Safety timeout wrapper
+        const authPromise = async () => {
+             if (view === 'signup') {
                 const { data, error } = await supabase.auth.signUp({
                     email,
                     password,
                     options: {
                         data: {
                             full_name: fullName,
-                            role: role // 'candidate' or 'employer'
+                            role: role
                         }
                     }
                 });
                 if (error) throw error;
-
-                if (data.session) {
-                    onSuccess();
-                } else {
-                    setMsg('Account created! Please check your email to verify your account.');
-                }
+                return data;
             } else {
-                // Sign In
-                const { error } = await supabase.auth.signInWithPassword({
+                const { data, error } = await supabase.auth.signInWithPassword({
                     email,
                     password,
                 });
                 if (error) throw error;
-                onSuccess();
+                return data;
+            }
+        };
+
+        try {
+            // Race against a timeout
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Request timed out. Please check your connection.')), 10000)
+            );
+            
+            const data: any = await Promise.race([authPromise(), timeoutPromise]);
+
+            if (isMounted.current) {
+                if (data.session) {
+                    onSuccess();
+                } else if (view === 'signup' && data.user && !data.session) {
+                    setMsg('Account created! Please check your email to confirm.');
+                    // Switch to sign in view after delay to prevent "stuck" feeling
+                    setTimeout(() => {
+                        if (isMounted.current) {
+                            setView('signin');
+                            setMsg('Please sign in after confirming your email.');
+                        }
+                    }, 3000);
+                }
             }
         } catch (err: any) {
-            let errorMessage = err.message || 'An error occurred';
-            if (errorMessage.includes('Database error saving new user')) {
-                errorMessage = 'System Error: The Supabase database trigger failed. Please ensure your database table "public.profiles" exists.';
+            console.error("Auth Error:", err);
+            if (isMounted.current) {
+                let errorMessage = err.message || 'An error occurred';
+                if (errorMessage.includes('Database error')) {
+                    errorMessage = 'Service temporarily unavailable. Please try again later.';
+                }
+                setError(errorMessage);
             }
-            setError(errorMessage);
         } finally {
-            setLoading(false);
+            if (isMounted.current) setLoading(false);
         }
     };
 
@@ -193,14 +232,14 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
                 />
 
                 {error && (
-                    <div className="p-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-start gap-2 border border-red-100">
+                    <div className="p-4 rounded-xl bg-red-50 text-red-600 text-sm flex items-start gap-2 border border-red-100 animate-in slide-in-from-top-2">
                         <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> 
                         <span>{error}</span>
                     </div>
                 )}
                 
                 {msg && (
-                    <div className="p-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2 border border-green-100">
+                    <div className="p-4 rounded-xl bg-green-50 text-green-600 text-sm flex items-center gap-2 border border-green-100 animate-in slide-in-from-top-2">
                         <CheckCircle2 className="w-4 h-4" /> {msg}
                     </div>
                 )}
@@ -225,7 +264,7 @@ export const Auth: React.FC<AuthProps> = ({ onSuccess, defaultView = 'signin' })
             </div>
 
             {/* Google Sign-In Button Container */}
-            <div id="google-btn" className="w-full flex justify-center"></div>
+            <div id="google-btn" className="w-full flex justify-center min-h-[40px]"></div>
 
             <div className="mt-8 text-center">
                 <p className="text-sm text-neutral-600">
