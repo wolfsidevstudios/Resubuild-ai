@@ -44,7 +44,9 @@ import {
   FileCode,
   BarChart3,
   Clock,
-  Wand2
+  Wand2,
+  HelpCircle,
+  Book
 } from 'lucide-react';
 import { Button } from './Button';
 import { Auth } from './Auth';
@@ -60,6 +62,7 @@ interface LandingPageProps {
   onViewTerms?: () => void;
   onViewPrivacy?: () => void;
   onViewAbout?: () => void;
+  onViewResources?: () => void;
 }
 
 // --- Helper Components ---
@@ -544,7 +547,7 @@ const FEATURES = [
     }
 ];
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover, onGuestTry, onGoToAssets, onViewTerms, onViewPrivacy, onViewAbout }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticated, onGoToDiscover, onGuestTry, onGoToAssets, onViewTerms, onViewPrivacy, onViewAbout, onViewResources }) => {
   const [showAuth, setShowAuth] = useState(false);
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signup');
   const [waitlistPlan, setWaitlistPlan] = useState<string | null>(null);
@@ -694,11 +697,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           <div className="flex items-center gap-4">
              <div className="hidden md:flex items-center gap-6 mr-4">
                 <button onClick={onViewAbout} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">About</button>
+                <button onClick={onViewResources} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Resources</button>
                 <button onClick={() => document.getElementById('features')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Features</button>
                 <button onClick={() => document.getElementById('pricing')?.scrollIntoView({behavior: 'smooth'})} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Plans</button>
-                {onGoToDiscover && (
-                    <button onClick={onGoToDiscover} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 transition-colors">Discover</button>
-                )}
             </div>
             {isAuthenticated ? (
                 <Button onClick={onStart} variant="primary" className="px-6 shadow-lg shadow-neutral-900/10 hover:shadow-neutral-900/20">
@@ -838,7 +839,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           </div>
       </section>
 
-      {/* --- MEGA FEATURE SHOWCASE (20+ Sections) --- */}
+      {/* --- MEGA FEATURE SHOWCASE --- */}
       <section id="features" className="bg-white border-t border-neutral-200">
           <div className="max-w-7xl mx-auto px-6 py-24">
               <div className="text-center mb-24">
@@ -865,6 +866,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
                               </div>
                           </div>
                       </ScrollReveal>
+                  ))}
+              </div>
+          </div>
+      </section>
+
+      {/* FAQ Section - Added for Content Density */}
+      <section className="py-24 bg-neutral-50 border-t border-neutral-200">
+          <div className="max-w-4xl mx-auto px-6">
+              <div className="text-center mb-16">
+                  <h2 className="text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+                  <p className="text-xl text-neutral-500">Common questions about Kyndra Workspace.</p>
+              </div>
+              <div className="space-y-6">
+                  {[
+                      { q: "Is Resubuild/Kyndra really free?", a: "Yes! Our core features like the resume builder, job search, and basic AI tools are free to use. We support the platform with unobtrusive ads." },
+                      { q: "How does the AI Resume Builder work?", a: "We use advanced LLMs (Gemini 2.5/3.0) to analyze your input and format it into a professional JSON structure. We then render this into ATS-friendly PDFs." },
+                      { q: "Is my data safe?", a: "Absolutely. Your personal data is stored securely. We do not sell your data to third parties. You can export or delete your account at any time." },
+                      { q: "Can I use this for school?", a: "Yes, our Student Hub features specific tools for essay outlining, flashcard generation, and study planning tailored for high school and university students." }
+                  ].map((item, i) => (
+                      <div key={i} className="bg-white p-6 rounded-2xl border border-neutral-200">
+                          <h3 className="font-bold text-lg mb-2 flex items-center gap-2">
+                              <HelpCircle className="w-5 h-5 text-blue-600" /> {item.q}
+                          </h3>
+                          <p className="text-neutral-600 leading-relaxed">{item.a}</p>
+                      </div>
                   ))}
               </div>
           </div>
@@ -1102,6 +1128,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onStart, isAuthenticat
           <div className="flex gap-8 text-sm text-neutral-500 flex-wrap justify-center">
               <a href="#" className="hover:text-neutral-900 transition-colors">Features</a>
               <a href="#" className="hover:text-neutral-900 transition-colors">Pricing</a>
+              <button onClick={onViewResources} className="hover:text-purple-600 text-purple-600 font-bold transition-colors flex items-center gap-1"><Book className="w-3 h-3"/> Resources & Guides</button>
               <a href="/design-pilot" className="hover:text-purple-600 text-purple-600 font-bold transition-colors flex items-center gap-1"><FlaskConical className="w-3 h-3"/> Design Pilot</a>
               <button onClick={onViewAbout} className="hover:text-neutral-900 transition-colors font-medium text-neutral-600">About Us</button> 
               <button onClick={onViewPrivacy} className="hover:text-neutral-900 transition-colors">Privacy</button>

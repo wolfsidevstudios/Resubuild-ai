@@ -20,13 +20,14 @@ import { SuspendedView } from './components/SuspendedView';
 import { CookieBanner } from './components/CookieBanner';
 import { AgeGateModal } from './components/AgeGateModal';
 import { FormViewer } from './components/FormViewer';
+import { ResourcesPage } from './components/ResourcesPage';
 import { ResumeData, UserRole, UserProfile } from './types';
 import { auth, getOrCreateUserProfile } from './services/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { createEmptyResume, getResumeById } from './services/storageService';
 import { Loader2, X } from 'lucide-react';
 
-type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot' | 'terms' | 'privacy' | 'suspended' | 'about' | 'form-viewer';
+type View = 'landing' | 'dashboard' | 'employer-dashboard' | 'onboarding' | 'builder' | 'discover' | 'guest-resupilot' | 'not-found' | 'app-assets' | 'settings' | 'design-pilot' | 'terms' | 'privacy' | 'suspended' | 'about' | 'form-viewer' | 'resources';
 
 const ROUTES: Record<string, View> = {
   '/': 'landing',
@@ -42,7 +43,8 @@ const ROUTES: Record<string, View> = {
   '/terms': 'terms',
   '/privacy': 'privacy',
   '/about': 'about',
-  '/suspended': 'suspended'
+  '/suspended': 'suspended',
+  '/resources': 'resources'
 };
 
 function App() {
@@ -155,7 +157,7 @@ function App() {
 
   const routeUser = async (currentUser: User | null, targetView?: View) => {
       if (!currentUser) {
-          if (['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about', 'form-viewer'].includes(view)) {
+          if (['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about', 'form-viewer', 'resources'].includes(view)) {
              // stay on public page
           } else {
              navigate('landing');
@@ -246,7 +248,7 @@ function App() {
              setUserRole(null);
              setUserProfile(null);
              setShowConsentModal(false);
-             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about', 'form-viewer'];
+             const publicViews: View[] = ['landing', 'guest-resupilot', 'app-assets', 'discover', 'design-pilot', 'terms', 'privacy', 'about', 'form-viewer', 'resources'];
              if (!publicViews.includes(view)) {
                 // Only redirect if we aren't on a public page (like form viewer)
                 if (!window.location.pathname.startsWith('/forms/')) {
@@ -329,11 +331,16 @@ function App() {
             onViewTerms={() => navigate('terms')}
             onViewPrivacy={() => navigate('privacy')}
             onViewAbout={() => navigate('about')}
+            onViewResources={() => navigate('resources')}
         />
       )}
       
       {view === 'about' && (
           <AboutPage onBack={() => user ? routeUser(user) : navigate('landing')} />
+      )}
+      
+      {view === 'resources' && (
+          <ResourcesPage onBack={() => user ? routeUser(user) : navigate('landing')} />
       )}
       
       {view === 'terms' && (
@@ -441,7 +448,7 @@ function App() {
       )}
 
       {/* Terms Modal */}
-      {user && userProfile && !userProfile.terms_accepted && view !== 'suspended' && view !== 'terms' && view !== 'privacy' && view !== 'about' && (
+      {user && userProfile && !userProfile.terms_accepted && view !== 'suspended' && view !== 'terms' && view !== 'privacy' && view !== 'about' && view !== 'resources' && (
           <TermsModal 
               userId={user.uid} 
               onAccept={() => {
